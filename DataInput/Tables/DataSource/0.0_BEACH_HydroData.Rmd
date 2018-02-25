@@ -1,0 +1,192 @@
+---
+title: "BEACH Hydro Data Preparation"
+author: "PAZ"
+date: "31/01/2018"
+output: pdf_document
+---
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+Sys.setlocale("LC_ALL", "English")
+
+MAC = FALSE
+```
+
+# Purpose
+
+# Lab parameters and field constants
+
+```{r}
+source("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring/global.R")
+```
+
+
+# Packages
+
+```{r, message=FALSE}
+
+# Plotting functions
+library("scales")
+library("tidyr")
+library("dplyr")
+library("reshape")
+
+```
+
+## Working directory
+
+```{r, message=FALSE}
+
+# setwd("D:/Documents/these_pablo/Alteckendorf2016/R")
+# setwd("/Users/DayTightChunks/Documents/PhD/Routput/Alteck/R")
+getwd()
+
+```
+
+# Rainfall
+```{r}
+if (MAC) {
+  # provide source directory
+} else {
+  rain = read.csv2("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring/Data/sixMinutePluvioAlteck2016.csv", header = F)
+}
+
+head(rain)
+
+rain$V1 <- as.character(rain$V1)
+rain$Date = as.POSIXct(strptime(rain$V1,
+                                "%d/%m/%Y %H:%M", tz="EST") )
+
+rain$DayMoYr = as.POSIXct(strptime(rain$V1,
+                                   "%d/%m/%Y", tz="EST")  ) 
+
+# Check number of NA values
+CHECKO = FALSE
+if (CHECKO){
+  sum(is.na(rain$Date))
+  naDates = rain[is.na(rain$Date == TRUE),]  
+}
+
+rainDay <- rain %>%
+  group_by(DayMoYr) %>%
+  dplyr::summarize(Rain.mm = sum(V2))
+```
+
+## Prepare Rainfall Time Series (TSS)
+
+```{r}
+rainDay$time = seq.int(nrow(rainDay)) 
+rain_tss = rainDay[,c("time", "Rain.mm")] 
+#rain_tss = rbind(c("2016-03-25 to 2016-07-11", NA), rain_tss)
+write.table(rain_tss, "BEACH_R/rain_mmday.tss", sep="\t", row.names = F)
+```
+
+## Analyse Rainfall Monthly Values
+
+```{r}
+rainDay$Month <- 
+  ifelse(rainDay$DayMoYr >= as.POSIXct("2016-03-24 00:30:00", tz = "EST") &
+           rainDay$DayMoYr < as.POSIXct("2016-04-01 00:00:00", tz = "EST"), "March",
+         ifelse(rainDay$DayMoYr >= as.POSIXct("2016-04-01 00:00:00", tz = "EST") &
+                  rainDay$DayMoYr < as.POSIXct("2016-05-01 00:00:00", tz = "EST"), "April",
+                ifelse(rainDay$DayMoYr >= as.POSIXct("2016-05-01 00:00:00", tz = "EST") &
+                         rainDay$DayMoYr < as.POSIXct("2016-06-01 00:00:00", tz = "EST"), "May",
+                       ifelse(rainDay$DayMoYr >= as.POSIXct("2016-06-01 00:00:00", tz = "EST") & 
+                                rainDay$DayMoYr < as.POSIXct("2016-07-01 00:00:00", tz = "EST"), "June", "July" )
+                            )
+                     )
+         )
+
+rainDay$Wet = ifelse(rainDay$Rain.mm > 0, 1, 0)
+rainDay$Dry = ifelse(rainDay$Rain.mm == 0, 1, 0)
+
+rainSumm <- rainDay %>%
+  group_by(Month) %>%
+  dplyr::summarize(WetDays = sum(Wet),
+                   DryDays = sum(Dry),
+                   MeanP = mean(Rain.mm),
+                   StdP = sd(Rain.mm),
+                   TotP = sum(Rain.mm))
+
+rainSumm$Prct = rainSumm$WetDays/(rainSumm$WetDays+rainSumm$DryDays)
+```
+
+# Discharge
+
+```{r}
+q = read.csv2("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring/Data/hydroAlteck2016_smooth_R.csv")
+head(q)
+
+q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
+
+q$DayMoYr = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y", tz="EST"))
+
+CHECKO = F
+if (CHECKO){
+  sum(is.na(q$Date))
+naDates = q[is.na(q$Date == TRUE),]
+
+duplicateAlteck <- q[duplicated(q$DateCheck),]
+head(duplicateAlteck)
+}
+## Convert m3.h -> m3
+q$Vol2min <- q$Q.HW1*2/60
+
+qDay <- q %>%
+  group_by(DayMoYr) %>%
+  dplyr::summarize(Q.m3 = sum(Vol2min))
+
+qDay$Q.mm = (qDay$Q.m3/catchment_area)*10^3
+```
+
+## Prepare Discharge Time Series (TSS)
+
+```{r}
+qDay$time = seq.int(nrow(qDay)) 
+
+# Qm3/day
+DischQm3_tss = qDay[,c("time", "Q.m3")] 
+write.table(DischQm3_tss, "BEACH_R/disch_m3day.tss", sep="\t", row.names = F)
+
+# Qmm/day
+DischQmm_tss = qDay[,c("time", "Q.mm")] 
+write.table(DischQmm_tss, "BEACH_R/disch_mmday.tss", sep="\t", row.names = F)
+```
+
+
+## Analyse Discharge Monthly Values
+
+
+```{r}
+qDay$Month <- 
+  ifelse(qDay$DayMoYr >= as.POSIXct("2016-03-24 00:30:00", tz = "EST") &
+           qDay$DayMoYr < as.POSIXct("2016-04-01 00:00:00", tz = "EST"), "March",
+         ifelse(qDay$DayMoYr >= as.POSIXct("2016-04-01 00:00:00", tz = "EST") &
+                  qDay$DayMoYr < as.POSIXct("2016-05-01 00:00:00", tz = "EST"), "April",
+                ifelse(qDay$DayMoYr >= as.POSIXct("2016-05-01 00:00:00", tz = "EST") &
+                         qDay$DayMoYr < as.POSIXct("2016-06-01 00:00:00", tz = "EST"), "May",
+                       ifelse(qDay$DayMoYr >= as.POSIXct("2016-06-01 00:00:00", tz = "EST") & 
+                                qDay$DayMoYr < as.POSIXct("2016-07-01 00:00:00", tz = "EST"), "June", "July" )
+                            )
+                     )
+         )
+
+dischSumm <- qDay %>%
+  group_by(Month) %>%
+  dplyr::summarize(MeanQmm = mean(Q.mm),
+                   SdevQmm = sd(Q.mm),
+                   MeanQm3 = mean(Q.m3))
+
+```
+
+# EvapoTranspiration (ETP)
+
+Note, these calculations are done in the excel file for now: ZornDaily_Oct2015toJune2017.xls 
+
+```{r}
+etp = read.csv2("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring/Data/ZornDaily.csv", sep = ",")
+head(etp)
+
+etp$DATE = as.character(etp$DATE) 
+etp$DayMoYr = as.POSIXct(strptime(etp$DATE, "%m/%d/%y", tz="EST"))
+
+```
