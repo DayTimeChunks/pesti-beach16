@@ -6,6 +6,7 @@ import os
 print(os.getcwd())
 
 dem = readmap("dem_slope")
+dem_ldd = readmap("dem_ldd")
 slope_rad = sin(atan(max(slope(dem), 0.001)))
 
 # Test for radians vs degrees
@@ -17,4 +18,19 @@ slope_rad = sin(atan(max(slope(dem), 0.001)))
 
 landuse = readmap("landuse")
 clone = readmap("clone")
-aguila(clone)
+
+ini_theta = dem - dem + 0.20
+tot_depth = (dem - mapminimum(dem))*scalar(10**3)
+
+ldd1 = readmap("ldd")
+ldd2 = lddcreate(dem, 10, 1e31, 1e31, 1e31)  # second param = "outflowdepth" ??
+
+cell_area = cellarea()
+up_area = accuflux(ldd1, cell_area)
+up_area2 = accuflux(ldd2, cell_area)
+wetness = ln(up_area / tan(slope_rad))
+wetness2 = ln(up_area2 / tan(slope_rad))
+
+wet = wetness - wetness2
+
+aguila(wet)
