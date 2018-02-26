@@ -8,15 +8,24 @@ output: pdf_document
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL", "English")
 
-MAC = FALSE
+MAC = TRUE
 ```
 
 # Purpose
 
+Generate BEACH calibration data with:
+
+- **groupAlteck2016_R.csv** (Book 04)
+
 # Lab parameters and field constants
 
 ```{r}
-source("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring/global.R")
+if (MAC) {
+  path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+} else {
+  path = file.path("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring")
+}
+source(file.path(path, "global.R"))
 ```
 
 
@@ -43,12 +52,12 @@ getwd()
 ```
 
 # Rainfall
+
+**Note: Not for TSS**
+This was not the source for BEACH input, this was only to analyse Alteck's Pluviometer, which has only rainfall from March 2016 onward.
+
 ```{r}
-if (MAC) {
-  # provide source directory
-} else {
-  rain = read.csv2("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring/Data/sixMinutePluvioAlteck2016.csv", header = F)
-}
+rain = read.csv2(file.path(path, "Data/sixMinutePluvioAlteck2016.csv"), header = F)
 
 head(rain)
 
@@ -74,10 +83,13 @@ rainDay <- rain %>%
 ## Prepare Rainfall Time Series (TSS)
 
 ```{r}
-rainDay$time = seq.int(nrow(rainDay)) 
-rain_tss = rainDay[,c("time", "Rain.mm")] 
-#rain_tss = rbind(c("2016-03-25 to 2016-07-11", NA), rain_tss)
-write.table(rain_tss, "BEACH_R/rain_mmday.tss", sep="\t", row.names = F)
+if (FALSE) {
+  rainDay$time = seq.int(nrow(rainDay)) 
+  rain_tss = rainDay[,c("time", "Rain.mm")] 
+  #rain_tss = rbind(c("2016-03-25 to 2016-07-11", NA), rain_tss)
+  write.table(rain_tss, "BEACH_R/rain_mmday.tss", sep="\t", row.names = F)  
+}
+
 ```
 
 ## Analyse Rainfall Monthly Values
@@ -110,46 +122,67 @@ rainSumm <- rainDay %>%
 rainSumm$Prct = rainSumm$WetDays/(rainSumm$WetDays+rainSumm$DryDays)
 ```
 
-# Discharge
+# Discharge & Response Variables (with markers)
 
 ```{r}
-q = read.csv2("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring/Data/hydroAlteck2016_smooth_R.csv")
-head(q)
+q = read.csv2(file.path(path, "Data/groupAlteck2016_R.csv"))
+q = q[ , c("Date", "DateCheck", "Q.HW1", "DayMoYr", "Vol2min", "sampleQ", "Type", "SubWeeks", "Weeks", "WeekNo" )]
+names(q)
+
+mark = read.csv(file.path(path, "Data/MarkerResponse_R05.csv"))
+mark = mark[, c("WeekSubWeek", 
+                # "AveDischarge.m3.h", "Volume.m3",  "Sampled.Hrs", 
+                # "Sampled", 
+                "Conc.mug.L" , "Conc.SD",
+                # "Vol.SPE.L", "Conc.in500uL", 
+                "OXA_mean", "OXA_SD", "ESA_mean", "ESA_SD", 
+                "N.x", "diss.d13C", "SD.d13C",
+                "MES.mg.L", "MES.sd", "MO.mg.L", "Conc.Solids.mug.gMES", "Conc.Solids.ug.gMES.SD", 
+                "N.y",  "filt.d13C",  "filt.SD.d13C" #, 
+                #"DD13C.diss", "DD13C.filt" 
+                )] 
+names(mark)
+# Delete repeated W6 observation, or with NA in week markers
+mark = mark[mark$WeekSubWeek != as.character("W6-3j7") & !is.na(mark$WeekSubWeek), ]
+
+
 
 q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
-
 q$DayMoYr = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y", tz="EST"))
 
 CHECKO = F
 if (CHECKO){
   sum(is.na(q$Date))
-naDates = q[is.na(q$Date == TRUE),]
+  naDates = q[is.na(q$Date == TRUE),]
 
-duplicateAlteck <- q[duplicated(q$DateCheck),]
-head(duplicateAlteck)
+  duplicateAlteck <- q[duplicated(q$DateCheck),]
+  head(duplicateAlteck)
 }
 ## Convert m3.h -> m3
-q$Vol2min <- q$Q.HW1*2/60
 
-qDay <- q %>%
-  group_by(DayMoYr) %>%
-  dplyr::summarize(Q.m3 = sum(Vol2min))
 
-qDay$Q.mm = (qDay$Q.m3/catchment_area)*10^3
+#qDay <- q %>%
+#  group_by(DayMoYr) %>%
+#  dplyr::summarize(Q.m3 = sum(Vol2min))
+
+#qDay$Q.mm = (qDay$Q.m3/catchment_area)*10^3
 ```
 
 ## Prepare Discharge Time Series (TSS)
 
 ```{r}
-qDay$time = seq.int(nrow(qDay)) 
+if (F) {
+  qDay$time = seq.int(nrow(qDay)) 
 
-# Qm3/day
-DischQm3_tss = qDay[,c("time", "Q.m3")] 
-write.table(DischQm3_tss, "BEACH_R/disch_m3day.tss", sep="\t", row.names = F)
-
-# Qmm/day
-DischQmm_tss = qDay[,c("time", "Q.mm")] 
-write.table(DischQmm_tss, "BEACH_R/disch_mmday.tss", sep="\t", row.names = F)
+  # Qm3/day
+  DischQm3_tss = qDay[,c("time", "Q.m3")] 
+  write.table(DischQm3_tss, "BEACH_R/disch_m3day.tss", sep="\t", row.names = F)
+  
+  # Qmm/day
+  DischQmm_tss = qDay[,c("time", "Q.mm")] 
+  write.table(DischQmm_tss, "BEACH_R/disch_mmday.tss", sep="\t", row.names = F)
+  
+}
 ```
 
 
@@ -183,7 +216,7 @@ dischSumm <- qDay %>%
 Note, these calculations are done in the excel file for now: ZornDaily_Oct2015toJune2017.xls 
 
 ```{r}
-etp = read.csv2("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring/Data/ZornDaily.csv", sep = ",")
+etp = read.csv2(file.path(path, "Data/ZornDaily.csv"), sep = ",")
 head(etp)
 
 etp$DATE = as.character(etp$DATE) 
