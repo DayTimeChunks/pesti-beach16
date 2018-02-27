@@ -1,4 +1,3 @@
-
 from pcraster._pcraster import *
 from pcraster.framework import *
 import os
@@ -86,15 +85,14 @@ class BeachModel(DynamicModel):
         Landscape & Hydro Maps
         """
         self.dem = self.readmap("dem_slope")  # 192 - 231 m a.s.l
-        self.zero_map = self.dem - self.dem  # Zero map to generate scalar maps
-
-        self.slope_rad = sin(atan(max(slope(self.dem), 0.001)))  # Slope in radians
         self.dem_route = self.readmap("dem_ldd")  # To route surface run-off
-        self.ldd = self.readmap("ldd")  # To route subsurface lateral flow & build TWI
-        # TODO: Check best ldd ?
-        # self.ldd = lddcreate(self.dem, 10, 1e31, 1e31, 1e31)  # There are differences btw. ldd's
+        self.zero_map = self.dem - self.dem  # Zero map to generate scalar maps
+        mask = self.dem / self.dem
 
-        self.tot_depth = (self.dem - mapminimum(self.dem))*scalar(10**3)  # mm
+        self.ldd_surf = lddcreate(self.dem_route, 1e31, 1e31, 1e31, 1e31)  # To route runoff
+        self.ldd_subs = lddcreate(self.dem, 1e31, 1e31, 1e31, 1e31)  # To route lateral flow & build TWI
+
+        self.tot_depth = (self.dem - mapminimum(self.dem)) * scalar(10 ** 3)  # mm
         self.z0 = self.zero_map + 10  # mm
         self.z1 = self.zero_map + 140  # mm
         self.z2 = self.tot_depth - self.z0 - self.z1  # mm
@@ -114,22 +112,96 @@ class BeachModel(DynamicModel):
 
         # Topographical Wetness Index
         self.up_area = accuflux(self.ldd, self.cell_area)
+        self.slope_rad = sin(atan(max(slope(self.dem), 0.001)))  # Slope in radians
         self.wetness = ln(self.up_area / tan(self.slope_rad))
 
         """
         Pesticides Maps
         """
-        self.smback = self.readmap("sm_back")  # Map initial/background pesticide in soil (mg/m2)
-        self.app0 = self.readmap("app0")  # Pesticide applied (mg/m2) on Julian day 177 (March 25, 2016).
-        self.app1 = self.readmap("app1")  # Pesticide applied (mg/m2) on Julian day 197 (April 14, 2016).
-        self.app2 = self.readmap("app3")  # Pesticide applied (mg/m2) on Julian day 238 (May 25, 2016).
+        # Mass
+        # in ug/m2 = conc. (ug/g soil) * density (g/cm3) * (10^6 cm3 / m3) * (1 m/10^3 mm) * depth_layer (mm)
+        self.smback_z0 = (self.zero_map + 0.06) * self.p_b * scalar(
+            10 ** 6 / 10 ** 3) * self.z0  # Based on detailed soils
+        self.smback_z1 = (self.zero_map + 0.03) * self.p_b * scalar(
+            10 ** 6 / 10 ** 3) * self.z1  # Based on detailed soils
+        self.smback_z2 = (self.zero_map + 0.00001) * self.p_b * scalar(10 ** 6 / 10 ** 3) * self.z2  # Assumed
 
+        # Carbon Delta (Background)
+        # Assumed theoretical max @99% deg Streitwieser Semiclassical Limits
+        self.delta_z0 = self.zero_map - 23.7
+        self.delta_z0_ini = self.delta_z0
+        self.delta_z1 = self.zero_map - 23.7
+        self.delta_z1_ini = self.delta_z1
+        self.delta_z2 = self.zero_map - 23.7
+        self.delta_z2_ini = self.delta_z2
+
+        # Applications Mass
+        # Product concentration (active ing.)
+        double = 2.0  # ~ Dosage for corn when growing beet
+        d_gold = 915 * 10 ** 6  # ug/L S-met
+        m_gold = 960 * 10 ** 6  # ug/L
+
+        # Dosages # L/Ha * 1Ha/1000m2 = L/m2
+        d_beet = None
+        d_corn = 2.1 * 1 / 10 ** 4  # L/Ha * 1 Ha / 10000 m2
+        m_beet = 0.6 * 1 / 10 ** 4 * double
+        m_corn = 2.0 * 1 / 10 ** 4
+        m_beet_Friess = 0.6 * 1 / 10 ** 4 * (double + 1)  # (Likely larger dosage, early in the season)
+        m_beet_Mathis = 0.6 * 1 / 10 ** 4 * (double + 1)  # (Likely larger dosage, early in the season)
+
+        # Assign dosages based on Farmer-Crop combinations [ug/m2]
+        fa_cr = readmap("farmer_crop")  # Contains codes to assign appropriate dosage
+        app_conc = (  # [ug/m2]
+            ifthenelse(fa_cr == 1111,  # 1111 (Friess, Beet)
+                       m_beet_Friess * m_gold * mask,
+                       ifthenelse(fa_cr == 1122,  # 1112 (Friess-Corn),
+                                  m_corn * m_gold * mask,
+                                  ifthenelse(fa_cr == 1212,  # 1212 (Speich-Corn),
+                                             m_corn * m_gold * mask,
+                                             ifthenelse(fa_cr == 1312,  # 1312 (Mahler-Corn),
+                                                        m_corn * m_gold * mask,
+                                                        ifthenelse(fa_cr == 1412,  # 1412 (Schmitt-Corn)
+                                                                   d_corn * d_gold * mask,
+                                                                   ifthenelse(fa_cr == 1511,  # 1511 (Burger-Beet)
+                                                                              m_beet * m_gold * mask,
+                                                                              # 1711 (Mathis-Beet),
+                                                                              ifthenelse(fa_cr == 1711,
+                                                                                         m_beet_Mathis * m_gold * mask,
+                                                                                         # 1611 (Kopp-Beet)
+                                                                                         ifthenelse(
+                                                                                             fa_cr == 1611,
+                                                                                             m_beet * m_gold * mask,
+                                                                                             0 * mask))))))))
+        )
+        # Pesticide applied (ug/m2) on Julian day 177 (March 25, 2016).
+        # March 26th, Friess and Mathis
+        self.app1 = ifthenelse(fa_cr == 1111, 1*app_conc,
+                               # 1111 (Friess, Beet), 1112 (Friess-Corn),
+                               ifthenelse(fa_cr == 1112, 1*app_conc,
+                                          ifthenelse(fa_cr == 1711, 1*app_conc,  # 1711 (Mathis-Beet)
+                                                     0*app_conc)))
+        # Pesticide applied (ug/m2) on Julian day 197 (April 14, 2016).
+        # April 14, Kopp and Burger
+        self.app2 = ifthenelse(fa_cr == 1511, 1*app_conc,  # 1511 (Burger-Beet)
+                               ifthenelse(fa_cr == 1611, 1*app_conc,  # 1611 (Kopp-Beet),
+                                          0*app_conc))
+
+        # Pesticide applied (ug/m2) on Julian day 238 (May 25, 2016).
+        # May 25, Schmidt and Speich, and (out of transect): Friess and Mahler
+        # Note: Speich and Friess could be 1 week later.
+        self.app3 = ifthenelse(fa_cr == 1112, 1 * app_conc,  # 1112 (Friess-Corn)
+                               ifthenelse(fa_cr == 1212, 1 * app_conc,  # 1212 (Speich-Corn),
+                                          ifthenelse(fa_cr == 1412, 1 * app_conc,  # 1412 (Schmitt-Corn),
+                                                     ifthenelse(fa_cr == 1312, 1 * app_conc,  # 1312 (Mahler-Corn)
+                                                                0 * app_conc))))
+
+        # Applications delta
         # Use map algebra to produce a initial signature map,
-        # where app1 > 0, else background sig. (plots with no new mass will be 0)
         # ATT: Need to do mass balance on addition of new layer.
-        self.app0delta = ifthenelse(self.app0 > 0, scalar(-32.3), scalar(-23.7))
-        self.app1delta = ifthenelse(self.app2 > 0, scalar(-32.3), scalar(-23.7))
-        self.app2delta = ifthenelse(self.app3 > 0, scalar(-32.3), scalar(-23.7))
+        # where app1 > 0, else background sig. (plots with no new mass will be 0)
+        self.app1delta = ifthenelse(self.app1 > 0, scalar(-32.3), scalar(-23.7))
+        self.app2delta = ifthenelse(self.app2 > 0, scalar(-32.3), scalar(-23.7))
+        self.app3delta = ifthenelse(self.app3 > 0, scalar(-32.3), scalar(-23.7))
 
         # Convert mg/m2 -> mg
         self.pestmass_z0 = self.smback * self.cell_area  # mg
@@ -140,7 +212,7 @@ class BeachModel(DynamicModel):
         self.pestmass_z2_ini = self.pestmass_z2
 
         """
-        Temperature Maps and params
+        Temperature maps and params
         """
         self.lag = 0.8  # lag coefficient (-), 0 < lag < 1; -> in SWAT, lag = 0.80
         # Generating initial surface temp map (15 deg is arbitrary)
@@ -153,13 +225,13 @@ class BeachModel(DynamicModel):
         # The damping depth (dd) is calculated daily and is a function of max. damping depth (dd_max), (mm):
         self.dd_max = (2500 * self.p_b) / (self.p_b + 686 * exp(-5.63 * self.p_b))
 
+        # TODO
         # Average Annual air temperature (celcius - Layon!! Not Alteckendorf yet!!)
         self.temp_ave_air = 12.2  # 12.2 is for Layon
 
         """
         Output & Observations (tss and observation maps)
         """
-
         # Output time series (tss)
 
         # Outlet
@@ -171,16 +243,16 @@ class BeachModel(DynamicModel):
 
         # Hydro
         self.out_vol_m3_tss = TimeoutputTimeseries("out_vol_m3", self, "outlet.map", noHeader=False)
-        self.out_runoff_m3_tss = TimeoutputTimeseries("Out_runoff_m3", self, "outlet.map", noHeader=False)
-        self.out_latflow_m3_ss = TimeoutputTimeseries("Out_latflow_m3", self, "outlet.map", noHeader=False)
-        self.out_percol_m3_tss = TimeoutputTimeseries("Out_percol_m3", self, "outlet.map", noHeader=False)
-        self.out_etp_m3_tss = TimeoutputTimeseries("Out_etp_m3", self, "outlet.map", noHeader=False)
-        self.tot_ch_storage_m3_tss = TimeoutputTimeseries("Tot_ch_storage_m3", self, "outlet.map", noHeader=False)
+        self.out_runoff_m3_tss = TimeoutputTimeseries("out_runoff_m3", self, "outlet.map", noHeader=False)
+        self.out_latflow_m3_ss = TimeoutputTimeseries("out_latflow_m3", self, "outlet.map", noHeader=False)
+        self.out_percol_m3_tss = TimeoutputTimeseries("out_percol_m3", self, "outlet.map", noHeader=False)
+        self.out_etp_m3_tss = TimeoutputTimeseries("out_etp_m3", self, "outlet.map", noHeader=False)
+        self.tot_ch_storage_m3_tss = TimeoutputTimeseries("oot_ch_storage_m3", self, "outlet.map", noHeader=False)
 
         # Transects and detailed soils
         ###########
-        self.obs_trans = self.readmap("observe_trans")
-        self.obs_detail = self.readmap("observe_detail")
+        self.obs_trans = self.readmap("weekly_smp")
+        self.obs_detail = self.readmap("detailed_smp")
 
         """ 
         Simulation start time: Oct 1st, 2015 
@@ -210,3 +282,4 @@ class BeachModel(DynamicModel):
             " Crop Parameters "
             # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_lookup.html?highlight=lookupscalar
             setglobaloption('matrixtable')  # allows lookupscalar to read more than 2 expressions.
+
