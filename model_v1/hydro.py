@@ -5,7 +5,7 @@ from pcraster.framework import *
 # import time
 # print(os.getcwd())
 
-# Aspects not currently being used
+
 def getBiomassCover(model, frac_soil_cover):
     # biomass cover conversion (SWAT adaptation)
     biomass_cover = ifthenelse(frac_soil_cover > scalar(0), ln(frac_soil_cover) / (-5 * float(10) ** (-5)),

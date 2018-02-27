@@ -83,7 +83,7 @@ class BeachModel(DynamicModel):
         """
 
         """
-            Landscape & Hydro
+        Landscape & Hydro Maps
         """
         self.dem = self.readmap("dem_slope")  # 192 - 231 m a.s.l
         self.zero_map = self.dem - self.dem  # Zero map to generate scalar maps
@@ -117,7 +117,7 @@ class BeachModel(DynamicModel):
         self.wetness = ln(self.up_area / tan(self.slope_rad))
 
         """
-            Pesticides
+        Pesticides Maps
         """
         self.smback = self.readmap("sm_back")  # Map initial/background pesticide in soil (mg/m2)
         self.app0 = self.readmap("app0")  # Pesticide applied (mg/m2) on Julian day 177 (March 25, 2016).
@@ -140,10 +140,73 @@ class BeachModel(DynamicModel):
         self.pestmass_z2_ini = self.pestmass_z2
 
         """
-        # Output & Observations
+        Temperature Maps and params
         """
-        self.obs = self.readmap("observe")
+        self.lag = 0.8  # lag coefficient (-), 0 < lag < 1; -> in SWAT, lag = 0.80
+        # Generating initial surface temp map (15 deg is arbitrary)
+        self.temp_z0_fin = self.zero_map + 15
+        self.temp_z1_fin = self.zero_map + 15
+        self.temp_z2_fin = self.zero_map + 15
+        self.temp_surf_fin = self.zero_map + 15
 
+        # Maximum damping depth (dd_max)
+        # The damping depth (dd) is calculated daily and is a function of max. damping depth (dd_max), (mm):
+        self.dd_max = (2500 * self.p_b) / (self.p_b + 686 * exp(-5.63 * self.p_b))
 
+        # Average Annual air temperature (celcius - Layon!! Not Alteckendorf yet!!)
+        self.temp_ave_air = 12.2  # 12.2 is for Layon
 
+        """
+        Output & Observations (tss and observation maps)
+        """
 
+        # Output time series (tss)
+
+        # Outlet
+        ###########
+        # Pesticide
+        self.out_mb_pest_tss = TimeoutputTimeseries("out_mb_pest", self, "outlet.map", noHeader=False)
+        self.out_delta_tss = TimeoutputTimeseries("out_delta", self, "outlet.map", noHeader=False)
+        self.out_mass_tss = TimeoutputTimeseries("out_mass", self, "outlet.map", noHeader=False)
+
+        # Hydro
+        self.out_vol_m3_tss = TimeoutputTimeseries("out_vol_m3", self, "outlet.map", noHeader=False)
+        self.out_runoff_m3_tss = TimeoutputTimeseries("Out_runoff_m3", self, "outlet.map", noHeader=False)
+        self.out_latflow_m3_ss = TimeoutputTimeseries("Out_latflow_m3", self, "outlet.map", noHeader=False)
+        self.out_percol_m3_tss = TimeoutputTimeseries("Out_percol_m3", self, "outlet.map", noHeader=False)
+        self.out_etp_m3_tss = TimeoutputTimeseries("Out_etp_m3", self, "outlet.map", noHeader=False)
+        self.tot_ch_storage_m3_tss = TimeoutputTimeseries("Tot_ch_storage_m3", self, "outlet.map", noHeader=False)
+
+        # Transects and detailed soils
+        ###########
+        self.obs_trans = self.readmap("observe_trans")
+        self.obs_detail = self.readmap("observe_detail")
+
+        """ 
+        Simulation start time: Oct 1st, 2015 
+        """
+        yy = scalar(2015)
+        mm = scalar(10)
+        dd = scalar(1)
+
+        date_factor = 1
+        if (100 * yy + mm - 190002.5) < 0:
+            date_factor = -1
+
+        # simulation start time in JD (Julian Day)
+        self.jd_start = 367 * yy - rounddown(7 * (yy + rounddown((mm + 9) / 12)) / 4) + rounddown(
+            (275 * mm) / 9) + dd + 1721013.5 - 0.5 * date_factor
+        self.jd_cum = 0
+        self.jd_dt = 1  # Time step size (days)
+
+        def dynamic(self):
+            jd_sim = self.jd_start + self.jd_cum
+            fields = timeinputscalar('landuse.tss', nominal(self.landuse))
+            # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_timeinput....html?highlight=timeinputscalar
+            # returns value of land-use field (i.e. n = 22), per time step. (Layon)
+            # So, at dt = 1
+            # fields's values: 98 98	98	98	98	98	98	98	98	98	98	98	13	98	15	99	99	99	99	99	99	98
+
+            " Crop Parameters "
+            # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_lookup.html?highlight=lookupscalar
+            setglobaloption('matrixtable')  # allows lookupscalar to read more than 2 expressions.
