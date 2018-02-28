@@ -8,10 +8,19 @@ from pcraster.framework import *
 
 def getBiomassCover(model, frac_soil_cover):
     # biomass cover conversion (SWAT adaptation)
+    # SWAT requires CV (Kg/Ha) to compute soil cover index, here we assume frac_soil_cover as the index,
+    # and use it to inversely obtain biomass_cover (CV)
+    # eq. 1:1.2.16 (p. 37, SWAT)
     biomass_cover = ifthenelse(frac_soil_cover > scalar(0), ln(frac_soil_cover) / (-5 * float(10) ** (-5)),
                                scalar(0))
+    # eq. 1:1.3.11, (p. 44, SWAT)
     bcv = biomass_cover / (biomass_cover + exp(7.563 - 1.297 * 10 ** (-4) * biomass_cover))
-    model.bcvTss.sample(bcv)
+    model.bcvTss.sample(bcv)  # bcv should range 0 (bare soil) to 1 (complete cover)
+
+    # frac_soil_cover is obtained via:
+    # frac_soil_cover = 1 - exp(-mu * LAI) <- function of dev. stage and max LAI!
+    # Alternatively, could be obtained as:
+    # frac_soil_cover = ((Kcb - Kcmin)/(Kcmax - Kcmin))^(1+0.5*mean_height)  # In: Allen1998
     return bcv
 
 
@@ -452,7 +461,7 @@ def getPotET(sow_yy, sow_mm, sow_dd,
 
     # Pot. Transpiration
     # Due to Allen et al., 1998
-    # frac_soil_cover = ((kcb - kcb_ini)/(kcmax - kcb_ini)) ^ (1+0.5 * height)
+    frac_soil_cover = ((kcb - kcb_ini)/(kcmax - kcb_ini)) ** (1+0.5 * height)
     pot_transpir = kcb * et0
 
     # Pot. Evaporation
@@ -467,5 +476,5 @@ def getPotET(sow_yy, sow_mm, sow_dd,
     # Total available soil water that can be depleted from the root
     # zone before moisture stress starts
     depletable_water = p_tab + 0.04 * (5 - pot_et)
-    dictionary = {"Tp": pot_transpir, "Ep": pot_evapor, "P": depletable_water}  # , "f": frac_soil_cover}
+    dictionary = {"Tp": pot_transpir, "Ep": pot_evapor, "P": depletable_water, "f": frac_soil_cover}
     return dictionary

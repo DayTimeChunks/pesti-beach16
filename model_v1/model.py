@@ -282,4 +282,59 @@ class BeachModel(DynamicModel):
             " Crop Parameters "
             # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_lookup.html?highlight=lookupscalar
             setglobaloption('matrixtable')  # allows lookupscalar to read more than 2 expressions.
+            crop_type = lookupscalar('croptable.tbl', 1, fields)  # (table, col-value, row-value)
+            sow_yy = lookupscalar('croptable.tbl', 2, fields)
+            sow_mm = lookupscalar('croptable.tbl', 3, fields)  # sowing or Greenup month
+            sow_dd = lookupscalar('croptable.tbl', 4, fields)  # sowing day
+            len_grow_stage_ini = lookupscalar('croptable.tbl', 5, fields)  # old: Lini. length of initial crop growth stage
+            len_dev_stage = lookupscalar('croptable.tbl', 6, fields)  # Ldev: length of development stage
+            len_mid_stage = lookupscalar('croptable.tbl', 7, fields)  # Lmid: length of mid-season stage
+            len_end_stage = lookupscalar('croptable.tbl', 8, fields)  # Lend: length of late season stage
+            kcb_ini = lookupscalar('croptable.tbl', 9, fields)  # basal crop coefficient at initial stage
+            kcb_mid = lookupscalar('croptable.tbl', 10, fields)  # basal crop coefficient at mid season stage
+            kcb_end = lookupscalar('croptable.tbl', 11, fields)  # basal crop coefficient at late season stage
+            max_LAI = lookupscalar('croptable.tbl', 12, fields)  # maximum leaf area index
+            mu = lookupscalar('croptable.tbl', 13, fields)  # light use efficiency
+            max_height = lookupscalar('croptable.tbl', 14, fields)  # maximum crop height
+
+            max_root_depth = lookupscalar('croptable.tbl', 15, fields) * 1000  # max root depth converting from m to mm
+            # Max RD (m) according to Allen 1998, Table 22 (now using FAO source)
+            # Sugar beet = 0.7 - 1.2
+            # Corn = 1.0 - 1.7
+            # Grazing pasture 0.5 - 1.5
+            # Spring Wheat = 1.0 -1.5
+            # Winter Wheat = 1.5 -1.8
+            # Apple trees = 1.0-2.0
+
+            p_tab = lookupscalar('croptable.tbl', 16,
+                                 fields)  # depletable theta before water stress (Allen1998, Table no.22)
+            # p_tab (-) according to Allen 1998, Table 22 (now using FAO source)
+            # Sugar beet = 0.55
+            # Corn = 0.55
+            # Grazing Pasture = 0.6
+            # Spring Wheat = 0.55
+            # Winter Wheat = 0.55
+            # Apple trees = 0.5
+
+            """ Soil physical parameters """
+            # Saturated moisture capacity is equal for depth0 and depth1
+            theta_sat_z0z1 = lookupscalar('croptable.tbl', 17, fields)  # saturated moisture of the first layer # [-]
+            theta_fcap_z0z1 = lookupscalar('croptable.tbl', 18,
+                                           fields)  # field capacity of 1st layer (equal for D0 and k=1)
+            theta_sat_z2 = lookupscalar('croptable.tbl', 19, fields)  # saturated moisture of 2nd layer
+            theta_fcap_z2 = lookupscalar('croptable.tbl', 20, fields)  # field capacity of the 2nd layer
+            theta_wp = lookupscalar('croptable.tbl', 21, fields)  # wilting point moisture
+            k_sat_z0z1 = lookupscalar('croptable.tbl', 22, fields)  # saturated conductivity of the first layer
+            k_sat_z2 = lookupscalar('croptable.tbl', 23, fields)  # saturated conductivity of the second layer
+            CN2 = lookupscalar('croptable.tbl', 24, fields)  # curve number of moisture condition II
+
+            # adjusting K_sat
+            k_sat_z0z1 *= self.s1
+            k_sat_z2 *= self.s2
+
+            "Assign time-series data to spatial location, map is implicitly defined as the clonemap."
+            precip = timeinputscalar('rain.tss', 1)  # daily precipitation data as time series (mm)
+            temp_bare_soil = timeinputscalar('T_bare.tss', nominal('clone'))
+            # T_bare, based on SWAT (Neitsch2009), p.43. Radiation term = (Rs*(1-albedo)-14)/20
+            # -> see ET0.xls, SWAT doc. and Allen et al., 2006 (FAO65), Albedo = 0.05 (bare soil)
 

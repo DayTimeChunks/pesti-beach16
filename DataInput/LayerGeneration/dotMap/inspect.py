@@ -89,4 +89,4 @@ app2delta = ifthenelse(app2 > 0, scalar(-32.3), scalar(-23.7))
 # aguila(fa_cr, app2, app3)
 
 # layon = readmap("landuseCopy")
-aguila(app2)
+aguila(landuse)

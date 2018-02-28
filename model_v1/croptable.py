@@ -1,27 +1,120 @@
 import numpy as np
 import pandas as pd
 
-# Crop table paramters
-sow_mm = {"Corn": 4, "Wheat": 3, "Beet": 3}
-
-
 path = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/"
 path += "croptable_start.csv"
 
 croptable = pd.read_csv(path, sep=";")
 
-crop_conditions = [
-    (croptable['croptype'] == 1),
-    (croptable['croptype'] == 2),
-    (croptable['croptype'] == 5)
-]
-sow_mm = [4, 3, 3]
-
-croptable['sow_yy'] = 2016
-croptable['sow_mm'] = np.select(crop_conditions, sow_mm, default=0)
-
-
-
+# For landuse reference
 landuse = {"Corn": 1, "Wheat": 2, "Oats": 3, "Alfalfa": 4, "Beet": 5,
-               "Greenery": 6, "Dirt Road": 7, "Grass Road": 8, "Paved Road": 9, "Ditch": 10,
-               "Fallow": 11, "Hedge": 12, "Orchard": 13}
+           "Greenery": 6, "Dirt Road": 7, "Grass Road": 8, "Paved Road": 9, "Ditch": 10,
+           "Fallow": 11, "Hedge": 12, "Orchard": 13}
+
+# Corn, Wheat, Beet
+crop_conditions = [
+    (croptable.loc[1:, 'crop_type'] == 1),  # Corn
+    (croptable.loc[1:, 'crop_type'] == 2),  # Wheat
+    (croptable.loc[1:, 'crop_type'] == 5)  # Beat
+]
+sow_yy = [2016, 2015, 2016]
+sow_mm = [5, 10, 3]  # May, Oct, March
+sow_dd = [1, 15, 25]
+
+# Corn, Wheat, Beet
+len_grow_stage_ini = [28, 160, 50]  # (days)
+len_dev_stage = [14, 75, 40]  # (days)
+len_mid_stage = [14, 75, 50]  # (days)
+len_end_stage = [14, 25, 40]  # (days)
+kcb_ini = [0.3, 0.7, 0.35]  # (-)
+kcb_mid = [1.2, 1.15, 1.2]  # (-)
+kcb_end = [0.5, 0.25, 0.7]  # (-)
+max_LAI = [7, 6.3, 4.5]  # (-)
+mu = [3.5, 1.5, 1.8]  # (g biomass / MJ), not used, see: getBiomassCover()
+max_height = [2.43, 0.79, 0.55]  # m  (SWAT needs 'm')
+max_root_depth = [1, 1.4, 1]  # m (convert to mm on run())
+p_tab = [0.55, 0.55, 0.55]  # Depletion coeff (-) assumed total from FAO.
+
+croptable.loc[1:, 'sow_yy'] = np.select(crop_conditions, sow_yy, default=0)
+croptable.loc[1:, 'sow_mm'] = np.select(crop_conditions, sow_mm, default=0)
+croptable.loc[1:, 'sow_dd'] = np.select(crop_conditions, sow_dd, default=0)
+croptable.loc[1:, 'len_grow_stage_ini'] = np.select(crop_conditions, len_grow_stage_ini, default=0)
+croptable.loc[1:, 'len_dev_stage'] = np.select(crop_conditions, len_dev_stage, default=0)
+croptable.loc[1:, 'len_mid_stage'] = np.select(crop_conditions, len_mid_stage, default=0)
+croptable.loc[1:, 'len_end_stage'] = np.select(crop_conditions, len_end_stage, default=0)
+croptable.loc[1:, 'kcb_ini'] = np.select(crop_conditions, kcb_ini, default=0.15)
+croptable.loc[1:, 'kcb_mid'] = np.select(crop_conditions, kcb_mid, default=0.15)
+croptable.loc[1:, 'kcb_end'] = np.select(crop_conditions, kcb_end, default=0.15)
+croptable.loc[1:, 'max_LAI'] = np.select(crop_conditions, max_LAI, default=0)
+croptable.loc[1:, 'mu'] = np.select(crop_conditions, mu, default=0)
+croptable.loc[1:, 'max_height'] = np.select(crop_conditions, max_height, default=0)
+croptable.loc[1:, 'max_root_depth'] = np.select(crop_conditions, max_root_depth, default=0)
+croptable.loc[1:, 'p_tab'] = np.select(crop_conditions, p_tab, default=0)
+
+croptable.loc[1:, 'theta_sat_z0z1'] = 0.61
+croptable.loc[1:, 'theta_fcap_z0z1'] = 0.2
+croptable.loc[1:, 'theta_sat_z2'] = 0.61
+croptable.loc[1:, 'theta_fcap_z2'] = 0.2
+croptable.loc[1:, 'theta_wp'] = 0.1
+
+# Ksat mm/h in second rainfall event Leaching range: 0.13 mm/h - 1.8 mm/h (1.8*24h =43.2)
+croptable.loc[1:, 'k_sat_z0z1'] = 3240  # mm/day = 135 mm/h * 24h/day * 10mm/cm
+croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
+
+# Curve Number guidelines:
+# https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb1044171.pdf
+# https://en.wikipedia.org/wiki/Runoff_curve_number
+# Will assume HSG Group C (final infiltration rate 1.3-3.8 mm per hour)
+cn_conditions = [
+    (croptable.loc[1:, 'crop_type'] == 1),  # Corn
+    (croptable.loc[1:, 'crop_type'] == 2),  # Wheat
+    (croptable.loc[1:, 'crop_type'] == 5),  # Beet
+    (croptable.loc[1:, 'crop_type'] == 6),  # Greenery
+    (croptable.loc[1:, 'crop_type'] == 7),  # Dirt Road
+    (croptable.loc[1:, 'crop_type'] == 8),  # Grass Road
+    (croptable.loc[1:, 'crop_type'] == 9),  # Paved Road
+    (croptable.loc[1:, 'crop_type'] == 10),  # Ditch
+    (croptable.loc[1:, 'crop_type'] == 11),  # Fallow
+    (croptable.loc[1:, 'crop_type'] == 12),  # Hedge
+    (croptable.loc[1:, 'crop_type'] == 13)  # Orchard
+]
+# Assumed Poor hydrologic conditions (HC)
+# Hydraulic condition is based on combination factors that affect infiltration and runoff, including
+# (a) density and canopy of vegetative areas,
+# (b) amount of year-round cover,
+# (c) amount of grass or close-seeded legumes,
+# (d) percent of residue cover on the land surface (good gt 20%),and
+# (e) degree of surface roughness.
+CN2 = {"Corn": {"A": 72, "B": 81, "C": 82, "D": 91},  # poor HC
+       "Wheat": {"A": 72, "B": 81, "C": 82, "D": 91},  # poor HC
+       "Beet": {"A": 72, "B": 81, "C": 82, "D": 91},  # poor HC
+       "Greenery": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
+       "Dirt Road": {"A": 72, "B": 82, "C": 87, "D": 89},  # Table 2-2a
+       "Grass Road": {"A": 59, "B": 74, "C": 82, "D": 86},  # Farmsteads, # Table 2-2c
+       "Paved Road": {"A": 98, "B": 98, "C": 98, "D": 98},  # Table 2-2a
+       "Ditch": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
+       "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
+       "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
+       "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82}  # Woods-grass, fair HC, # Table 2-2c
+       }
+
+group_C = [CN2["Corn"]["C"],
+           CN2["Wheat"]["C"],
+           CN2["Beet"]["C"],
+           CN2["Greenery"]["C"],
+           CN2["Dirt Road"]["C"],
+           CN2["Grass Road"]["C"],
+           CN2["Paved Road"]["C"],
+           CN2["Ditch"]["C"],
+           CN2["Fallow"]["C"],
+           CN2["Hedge"]["C"],
+           CN2["Orchard"]["C"]
+           ]
+
+croptable.loc[1:, 'CN2'] = np.select(cn_conditions, group_C, default=98)
+
+
+saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/croptable.csv"
+# croptable.to_csv(saved, sep=';', index=False)
+
+
