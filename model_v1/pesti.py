@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 
 from pcraster._pcraster import *
 from pcraster.framework import *
@@ -371,7 +371,7 @@ def update_layer_delta(model, layer, process, mass_process,
         raise NotImplementedError
 
     if process == "latflux":
-        delta2_f2 = accuflux(model.ldd, mass_gain*delta_layer)/accuflux(model.ldd, mass_tot)
+        delta2_f2 = accuflux(model.ldd_subs, mass_gain*delta_layer)/accuflux(model.ldd_subs, mass_tot)
         delta_int = (delta_layer * f1) + delta2_f2 - (delta_layer * f3)
     else:
         mass_tot = mass_before_transport + mass_gain - mass_loss
@@ -611,7 +611,7 @@ def getLateralMassFlux(model, layer, theta_sat, theta_fcap, sorption_model="line
 
     # Cell mass loss
     cell_mass_loss_downstream = max(model.c1 * (depth * theta_layer - depth * theta_fcap), scalar(0)) * conc_layer_aq
-    upstream_mass_inflow = (model.wetness * accuflux(model.ldd, cell_mass_loss_downstream)) / accuflux(model.ldd,
+    upstream_mass_inflow = (model.wetness * accuflux(model.ldd_subs, cell_mass_loss_downstream)) / accuflux(model.ldd_subs,
                                                                                                        model.wetness)
     net_mass_latflux = upstream_mass_inflow - cell_mass_loss_downstream
     return {"net_mass_latflux": net_mass_latflux,

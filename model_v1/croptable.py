@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
 
@@ -58,7 +59,7 @@ croptable.loc[1:, 'theta_fcap_z2'] = 0.2
 croptable.loc[1:, 'theta_wp'] = 0.1
 
 # Ksat mm/h in second rainfall event Leaching range: 0.13 mm/h - 1.8 mm/h (1.8*24h =43.2)
-croptable.loc[1:, 'k_sat_z0z1'] = 3240  # mm/day = 135 mm/h * 24h/day * 10mm/cm
+croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day = 135 mm/h * 24h/day * 10mm/cm
 croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
 
 # Curve Number guidelines:
@@ -115,6 +116,6 @@ croptable.loc[1:, 'CN2'] = np.select(cn_conditions, group_C, default=98)
 
 
 saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/croptable.csv"
-# croptable.to_csv(saved, sep=';', index=False)
+croptable.to_csv(saved, sep=';', index=False)
 
 

@@ -1,4 +1,4 @@
-
+# -*- coding: utf-8 -*-
 from pcraster._pcraster import *
 from pcraster.framework import *
 # import os
@@ -15,7 +15,7 @@ def getBiomassCover(model, frac_soil_cover):
                                scalar(0))
     # eq. 1:1.3.11, (p. 44, SWAT)
     bcv = biomass_cover / (biomass_cover + exp(7.563 - 1.297 * 10 ** (-4) * biomass_cover))
-    model.bcvTss.sample(bcv)  # bcv should range 0 (bare soil) to 1 (complete cover)
+    # model.bcvTss.sample(bcv)  # bcv should range 0 (bare soil) to 1 (complete cover)
 
     # frac_soil_cover is obtained via:
     # frac_soil_cover = 1 - exp(-mu * LAI) <- function of dev. stage and max LAI!
@@ -84,7 +84,11 @@ def runoff_SCS(model, rain,
 
     # Moisture content [-] of first two depths -> avoids excessive runoff
     theta_d0d1 = (model.z0 * model.theta_z0 + model.z1 * model.theta_z1) / (model.z0 + model.z1)
-    model.thetaD0D1tss.sample(theta_d0d1)
+    # try:
+    #     model.thetaD0D1tss.sample(theta_d0d1)
+    # except AttributeError, e:
+    #     print(e)
+
 
     # Soil Water content in mm (soil column of first two depths)
     # -> avoids ecessive runoff by considering not only the first very shallow layer saturation capacity
@@ -133,7 +137,7 @@ def getLayerMoisture(model, layer,
         theta_temp_layer = model.theta_z1
         theta_ini = model.theta_z1
     elif layer == 2:
-        store = True
+        store = False
         depth = model.z2
         theta_temp_layer = model.theta_z2
         theta_ini = model.theta_z2
@@ -159,7 +163,11 @@ def getLayerMoisture(model, layer,
                               scalar(0))
         theta_temp_check_z0 = ifthenelse(theta_temp_check_z0 > theta_sat,
                                          theta_sat, theta_temp_check_z0)
-        model.z0Check_satex.sample(satex_z0 * model.z0)
+        # try:
+        #     model.z0Check_satex.sample(satex_z0 * model.z0)
+        # except AttributeError, e:
+        #     print(e)
+
 
         # Deep percolation (Raes, 2002, in Sheikh2009)
         deep_percolation_z0 = ifthenelse(theta_temp_check_z0 > theta_fcap,
@@ -219,7 +227,7 @@ def getLayerMoisture(model, layer,
             # Check for possible error (due to excess infiltration)
             satex_z = ifthenelse(theta_temp_layer > theta_sat,
                                  theta_temp_layer - theta_sat, scalar(0))
-            model.z1Check_satex.sample(satex_z * depth)  # Should always be zero
+            #model.z1Check_satex.sample(satex_z * depth)  # Should always be zero
         elif layer == 2:
             theta_ini_mm = model.theta_z2 * depth
 
@@ -264,7 +272,7 @@ def getLayerMoisture(model, layer,
     # State_1 = cell_moisture_outflow
     # model.wetness1 = ifthenelse(State_1> 0,Wetness,0)
     # Cell inflow
-    upstream_cell_inflow = (model.wetness * accuflux(model.ldd, cell_moisture_outflow)) / accuflux(model.ldd,
+    upstream_cell_inflow = (model.wetness * accuflux(model.ldd_subs, cell_moisture_outflow)) / accuflux(model.ldd_subs,
                                                                                                    model.wetness)
 
     # Cell inflow - cell outflow
