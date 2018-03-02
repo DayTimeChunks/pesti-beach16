@@ -99,7 +99,11 @@ class BeachModel(DynamicModel):
         self.tot_depth = (self.dem - mapminimum(self.dem)) * scalar(10 ** 3)  # mm
         self.z0 = self.zero_map + 10  # mm
         self.z1 = self.zero_map + 140  # mm
-        self.z2 = self.tot_depth - self.z0 - self.z1  # mm
+        self.z2 = max((self.tot_depth - self.z0 - self.z1), 10)  # mm
+
+        # self.depth_diff = (self.z0 + self.z1 + self.z2) - self.tot_depth
+
+
 
         # Initial moisture (arbitrary, Oct, 2015)
         self.theta_z0 = self.zero_map + 0.25  # map of initial soil moisture in top layer (-)
@@ -256,6 +260,7 @@ class BeachModel(DynamicModel):
         self.out_mass_tss = TimeoutputTimeseries("out_mass", self, "outlet.map", noHeader=False)
 
         # Hydro
+        self.tot_rain_m3_tss = TimeoutputTimeseries("res_outRain_m3", self, "outlet.map", noHeader=False)
         self.out_vol_m3_tss = TimeoutputTimeseries("res_outVol_m3", self, "outlet.map", noHeader=False)
         self.out_runoff_m3_tss = TimeoutputTimeseries("res_outRunoff_m3", self, "outlet.map", noHeader=False)
         self.out_latflow_m3_tss = TimeoutputTimeseries("res_outLatflow_m3", self, "outlet.map", noHeader=False)
@@ -268,6 +273,12 @@ class BeachModel(DynamicModel):
         ###########
         self.obs_trans = self.readmap("weekly_smp")
         self.obs_detail = self.readmap("detailed_smp")
+
+        # Landscape analysis
+        self.z0_tss = TimeoutputTimeseries("res_z0_mm", self, "outlet.map", noHeader=False)
+        self.z1_tss = TimeoutputTimeseries("res_z1_mm", self, "outlet.map", noHeader=False)
+        self.z2_tss = TimeoutputTimeseries("res_z2_mm", self, "outlet.map", noHeader=False)
+        self.ztot_tss = TimeoutputTimeseries("res_ztot_mm", self, "outlet.map", noHeader=False)
 
         """ 
         Simulation start time: Oct 1st, 2015 
@@ -731,13 +742,12 @@ class BeachModel(DynamicModel):
         # Precipitation total
         rain_m3 = precip * cellarea() / 1000  # m3
         tot_rain_m3 = accuflux(self.ldd_subs, rain_m3)
-        # self.Tot_rain_m3_Tss.sample(tot_rain_m3)
+        self.tot_rain_m3_tss.sample(tot_rain_m3)
 
         # Discharge due to runoff at the outlet
         runoff_m3 = runoff_z0 * cellarea() / 1000  # m3
         out_runoff_m3 = accuflux(self.ldd_surf, runoff_m3)
         self.out_runoff_m3_tss.sample(out_runoff_m3)
-
 
 
         # Out due to lateral flow
@@ -761,8 +771,6 @@ class BeachModel(DynamicModel):
         out_latflow_m3 = accuflux(self.ldd_subs, latflow_m3)
         self.out_latflow_m3_tss.sample(out_latflow_m3)
 
-
-
         # Percolation (only interested in the bottom-most layer, where mass leaves the model)
         percol_z2_m3 = percolation_z2 * cellarea() / 1000  # m3
         out_percol_m3 = accuflux(self.ldd_subs, percol_z2_m3)
@@ -784,8 +792,12 @@ class BeachModel(DynamicModel):
         global_mb_water = tot_rain_m3 - out_runoff_m3 - out_percol_m3 - out_etp_m3 + out_latflow_m3 - out_ch_storage_m3
         self.global_mb_water_tss.sample(global_mb_water)
 
-        vol_disch_m3 = runoff_m3 + latflow_m3
+        vol_disch_m3 = out_runoff_m3 + latflow_m3
         self.out_vol_m3_tss.sample(vol_disch_m3)
+        self.z0_tss.sample(self.z0)
+        self.z1_tss.sample(self.z1)
+        self.z2_tss.sample(self.z2)
+        self.ztot_tss.sample(self.tot_depth)
 
         ######################
         # Pesticide Balance
@@ -832,10 +844,12 @@ class BeachModel(DynamicModel):
 
         "Write a map for specific time step"
         timeStep = self.currentTimeStep()
-        if timeStep == 4 or timeStep == 40:
+        if self.jd_cum == 2 or self.jd_cum == 154:
             # self.report(precip, 'precip.map')  # stores a ".map" file
+            # self.report(self.tot_depth, 'tot_depth.map')  # stores a ".map" file
             # self.precip = self.readmap()
-            # aguila(precip)
+            # self.precip = self.readmap()
+            aguila(self.z2, self.depth_diff)
             # discharge = accuflux(self.ldd, runoff_z0)
             # Tot precip at time step.
             # tot_precip = accuflux(self.ldd, precip)
@@ -850,7 +864,7 @@ class BeachModel(DynamicModel):
         self.jd_cum += self.jd_dt  # updating JDcum, currently dt = 1 day
 
 
-nTimeSteps = 300
+nTimeSteps = 155
 myAlteck16 = BeachModel("clone.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps, firstTimestep=153)  # an instance of the Dynamic Framework
 

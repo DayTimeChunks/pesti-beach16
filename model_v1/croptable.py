@@ -1,8 +1,14 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
+PC = False
 
-path = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/"
+if PC:
+    path = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/"
+else:
+    # path = "C:/Users/DayTimeChunks/Documents/PhD/HydrologicalMonitoring"
+    path = "C:/Users/DayTimeChunks/Documents/Models/pesti-beach16/DataInput/Tables/DataSource/"
+
 path += "croptable_start.csv"
 
 croptable = pd.read_csv(path, sep=";")
@@ -58,9 +64,12 @@ croptable.loc[1:, 'theta_sat_z2'] = 0.61
 croptable.loc[1:, 'theta_fcap_z2'] = 0.2
 croptable.loc[1:, 'theta_wp'] = 0.1
 
+ksat_condition = [
+    (croptable.loc[1:, 'crop_type'] == 10)  # Ditch
+]
 # Ksat mm/h in second rainfall event Leaching range: 0.13 mm/h - 1.8 mm/h (1.8*24h =43.2)
-croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day = 135 mm/h * 24h/day * 10mm/cm
-croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
+croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, 0.00001, default=43.2)  # mm/day = 135 mm/h * 24h/day * 10mm/cm
+croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, 0.00001, default=43.2)  # mm/day
 
 # Curve Number guidelines:
 # https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb1044171.pdf
@@ -93,7 +102,7 @@ CN2 = {"Corn": {"A": 72, "B": 81, "C": 82, "D": 91},  # poor HC
        "Dirt Road": {"A": 72, "B": 82, "C": 87, "D": 89},  # Table 2-2a
        "Grass Road": {"A": 59, "B": 74, "C": 82, "D": 86},  # Farmsteads, # Table 2-2c
        "Paved Road": {"A": 98, "B": 98, "C": 98, "D": 98},  # Table 2-2a
-       "Ditch": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
+       "Ditch": {"A": 98, "B": 98, "C": 98, "D": 98},  # Paved -> should add to vol.
        "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
        "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
        "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82}  # Woods-grass, fair HC, # Table 2-2c
@@ -114,8 +123,11 @@ group_C = [CN2["Corn"]["C"],
 
 croptable.loc[1:, 'CN2'] = np.select(cn_conditions, group_C, default=98)
 
-
-saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/croptable.csv"
-croptable.to_csv(saved, sep=';', index=False)
-
+if PC:
+    saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/croptable.csv"
+    croptable.to_csv(saved, sep=';', index=False)
+else:
+    print ("True")
+    np.savetxt('C:/Users/DayTimeChunks/Documents/Models/pesti-beach16/model_v1/croptable.tbl',
+               croptable.values, fmt='%d', delimiter="\t")  # header="X\tY\tZ\tValue")
 
