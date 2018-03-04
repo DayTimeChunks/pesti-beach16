@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+
 sns.set_context(rc={'lines.markeredgewidth': 0.1})
 sns.set(style="whitegrid")
 
@@ -16,9 +17,6 @@ else:
 
 path += "qmBlk_R.csv"
 obs = pd.read_csv(path, sep=",")
-
-
-
 
 
 def add_margin(ax, x=0.05, y=0.05):
