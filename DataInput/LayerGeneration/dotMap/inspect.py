@@ -19,6 +19,15 @@ slope_rad = sin(atan(max(slope(dem), 0.001)))
 landuse = readmap("landuse")
 clone = readmap("clone")
 
+weekly = readmap("weekly_smp")
+weekly = order(weekly)
+# result = boolean(weekly)
+report(weekly, 'weekly_ord.map')  # stores a ".map" file
+
+result2 = readmap("weekly_ord")
+print("running")
+# aguila(result2)
+
 ini_theta = dem - dem + 0.20
 tot_depth = (dem - mapminimum(dem))*scalar(10**3)
 
@@ -88,5 +97,4 @@ app2ug = app2 * cellarea()
 app2delta = ifthenelse(app2 > 0, scalar(-32.3), scalar(-23.7))
 # aguila(fa_cr, app2, app3)
 
-# layon = readmap("landuseCopy")
-aguila(landuse)
+

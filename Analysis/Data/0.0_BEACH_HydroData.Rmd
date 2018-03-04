@@ -1,5 +1,5 @@
 ---
-title: "BEACH Hydro Data Preparation"
+title: "Observed Data Prep for Model Analysis"
 author: "PAZ"
 date: "31/01/2018"
 output: pdf_document
@@ -8,7 +8,8 @@ output: pdf_document
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL", "English")
 
-MAC = F
+MAC = T
+WIN = T
 ```
 
 # Purpose
@@ -21,7 +22,11 @@ Generate BEACH calibration data with:
 
 ```{r}
 if (MAC) {
-  path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+  if (WIN){
+    path = file.path("C:/Users/DayTimeChunks/Documents/PhD/HydrologicalMonitoring")
+  } else {
+    path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+  }
 } else {
   path = file.path("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring")
 }
@@ -47,7 +52,12 @@ library("zoo") # na.approx()
 ```{r, message=FALSE}
 
 # setwd("D:/Documents/these_pablo/Alteckendorf2016/R")
+
+# MAC
 # setwd("/Users/DayTightChunks/Documents/PhD/Routput/Alteck/R")
+
+# Mac-WIN
+# setwd("C:/Users/DayTightChunks/Documents/Models/pesti-beach16/Analysis/Data")
 getwd()
 
 ```
@@ -310,6 +320,8 @@ m <- q %>%
   dplyr::summarise(SubWeeks = SubWeeks[1])
   
 qmBlk = merge(qmBlk, m, by = "DayMoYr")
+
+write.csv(qmBlk, "qmBlk_R.csv", row.names = F) # , sep = ";", dec = ".")
 ```
 
 
@@ -323,7 +335,8 @@ qmBlk$time = seq.int(nrow(qmBlk))
 
 qmBlk$VolTot.m3 = qmBlk$VolTot.L/10^3
 Volm3_tss = qmBlk[,c("time", "VolTot.m3")] 
-write.table(Volm3_tss, "BEACH_R/Vol_m3day.tss", sep="\t", row.names = F)
+
+# write.table(Volm3_tss, "BEACH_R/Vol_m3day.tss", sep="\t", row.names = F)
 
 
 

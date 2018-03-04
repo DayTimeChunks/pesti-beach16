@@ -93,36 +93,38 @@ class BeachModel(DynamicModel):
         self.zero_map = self.dem - self.dem  # Zero map to generate scalar maps
         mask = self.dem / self.dem
 
-        self.ldd_surf = lddcreate(self.dem_route, 1e31, 1e31, 1e31, 1e31)  # To route runoff
+        # self.ldd_surf = lddcreate(self.dem_route, 1e31, 1e31, 1e31, 1e31)  # To route runoff
         self.ldd_subs = lddcreate(self.dem, 1e31, 1e31, 1e31, 1e31)  # To route lateral flow & build TWI
 
-        self.tot_depth = (self.dem - mapminimum(self.dem)) * scalar(10 ** 3)  # mm
+        self.datum_depth = (self.dem - mapminimum(self.dem)) * scalar(10 ** 3)  # mm
         self.z0 = self.zero_map + 10  # mm
         self.z1 = self.zero_map + 140  # mm
-        self.z2 = max((self.tot_depth - self.z0 - self.z1), 10)  # mm
-
-        # self.depth_diff = (self.z0 + self.z1 + self.z2) - self.tot_depth
-
+        self.z2 = self.datum_depth + 300 - self.z0 - self.z1  # mm
+        self.tot_depth = self.z0 + self.z1 + self.z2
 
 
         # Initial moisture (arbitrary, Oct, 2015)
-        self.theta_z0 = self.zero_map + 0.25  # map of initial soil moisture in top layer (-)
-        self.theta_z1 = self.zero_map + 0.25
-        self.theta_z2 = self.zero_map + 0.25
+        self.theta_z0 = self.zero_map + 0.4  # map of initial soil moisture in top layer (-)
+        self.theta_z1 = self.zero_map + 0.4
+        self.theta_z2 = self.zero_map + 0.4
 
         # Need initial states to compute change in storage after each run
         self.theta_z0_ini = self.theta_z0
         self.theta_z1_ini = self.theta_z1
         self.theta_z2_ini = self.theta_z2
 
-        self.outlet = self.readmap("outlet")
-        self.landuse = self.readmap("landuse")
+        self.outlet = self.readmap("outlet_true")
+
+        # TODO: temporary fix to landuse.map with holes!!!
+        self.landuse = self.readmap("fields_cover")
 
         # Topographical Wetness Index
-        self.cell_area = cellarea()
-        self.up_area = accuflux(self.ldd_surf, self.cell_area) # in radians
+        self.cell_area = 4
+        self.up_area = accuflux(self.ldd_subs, self.cell_area)
         self.slope = sin(atan(max(slope(self.dem), 0.001)))  # Slope in radians
         self.wetness = ln(self.up_area / tan(self.slope))
+
+
 
         """
         Pesticides Maps
@@ -255,30 +257,36 @@ class BeachModel(DynamicModel):
         # Outlet
         ###########
         # Pesticide
-        self.global_mb_pest_tss = TimeoutputTimeseries("res_global_mb_pest", self, "outlet.map", noHeader=False)
-        self.out_delta_tss = TimeoutputTimeseries("out_delta", self, "outlet.map", noHeader=False)
-        self.out_mass_tss = TimeoutputTimeseries("out_mass", self, "outlet.map", noHeader=False)
+        self.global_mb_pest_tss = TimeoutputTimeseries("res_global_mb_pest", self, nominal("outlet_true"), noHeader=False)
+        self.out_delta_tss = TimeoutputTimeseries("out_delta", self, nominal("outlet_true"), noHeader=False)
+        self.out_mass_tss = TimeoutputTimeseries("out_mass", self, nominal("outlet_true"), noHeader=False)
 
         # Hydro
-        self.tot_rain_m3_tss = TimeoutputTimeseries("res_outRain_m3", self, "outlet.map", noHeader=False)
-        self.out_vol_m3_tss = TimeoutputTimeseries("res_outVol_m3", self, "outlet.map", noHeader=False)
-        self.out_runoff_m3_tss = TimeoutputTimeseries("res_outRunoff_m3", self, "outlet.map", noHeader=False)
-        self.out_latflow_m3_tss = TimeoutputTimeseries("res_outLatflow_m3", self, "outlet.map", noHeader=False)
-        self.out_percol_m3_tss = TimeoutputTimeseries("res_outPercol_m3", self, "outlet.map", noHeader=False)
-        self.out_etp_m3_tss = TimeoutputTimeseries("res_outEtp_m3", self, "outlet.map", noHeader=False)
-        self.out_ch_storage_m3_tss = TimeoutputTimeseries("res_outChStorage_m3", self, "outlet.map", noHeader=False)
-        self.global_mb_water_tss = TimeoutputTimeseries("res_global_waterMB", self, "outlet.map", noHeader=False)
+        self.tot_rain_m3_tss = TimeoutputTimeseries("res_accuRain_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_vol_m3_tss = TimeoutputTimeseries("res_accuVol_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_runoff_m3_tss = TimeoutputTimeseries("res_accuRunoff_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_latflow_m3_tss = TimeoutputTimeseries("res_outLatflow_m3", self, nominal("outlet_true"), noHeader=False)
+        # self.out_percol_m3_tss = TimeoutputTimeseries("res_outPercol_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_percol_z2_m3_tss = TimeoutputTimeseries("res_accuPercol_z2_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_etp_m3_tss = TimeoutputTimeseries("res_accuEtp_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_ch_storage_m3_tss = TimeoutputTimeseries("res_accuChStorage_m3", self, nominal("outlet_true"), noHeader=False)
+        self.global_mb_water_tss = TimeoutputTimeseries("res_global_waterMB", self, nominal("outlet_true"), noHeader=False)
+
+
 
         # Transects and detailed soils
         ###########
-        self.obs_trans = self.readmap("weekly_smp")
-        self.obs_detail = self.readmap("detailed_smp")
+        # self.obs_trans = self.readmap("weekly_smp")
+        # self.obs_detail = self.readmap("detailed_smp")
 
-        # Landscape analysis
-        self.z0_tss = TimeoutputTimeseries("res_z0_mm", self, "outlet.map", noHeader=False)
-        self.z1_tss = TimeoutputTimeseries("res_z1_mm", self, "outlet.map", noHeader=False)
-        self.z2_tss = TimeoutputTimeseries("res_z2_mm", self, "outlet.map", noHeader=False)
-        self.ztot_tss = TimeoutputTimeseries("res_ztot_mm", self, "outlet.map", noHeader=False)
+        # self.obs_runoff_m3_tss = TimeoutputTimeseries("obs_runoff_m3", self, ordinal("weekly_ord.map"), noHeader=False)
+        # self.obs_cum_runoff_m3_tss = TimeoutputTimeseries("obs_runoff_m3_cum", self, ordinal("weekly_ord.map"), noHeader=False)
+        # self.obs_latflow_m3_tss = TimeoutputTimeseries("obs_latflow_m3", self, "weekly_smp.map", noHeader=False)
+        # self.obs_percol_m3_tss = TimeoutputTimeseries("obs_percol_m3", self, "weekly_smp.map", noHeader=False)
+        # self.obs_etp_m3_tss = TimeoutputTimeseries("obs_etp_m3", self, "weekly_smp.map", noHeader=False)
+        # self.obs_ch_storage_m3_tss = TimeoutputTimeseries("obs_chStorage_m3", self, "weekly_smp.map", noHeader=False)
+
+
 
         """ 
         Simulation start time: Oct 1st, 2015 
@@ -300,6 +308,7 @@ class BeachModel(DynamicModel):
     def dynamic(self):
         jd_sim = self.jd_start + self.jd_cum
         fields = timeinputscalar('landuse.tss', nominal(self.landuse))
+
         # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_timeinput....html?highlight=timeinputscalar
         # returns value of land-use field (i.e. n = 22), per time step. (Layon)
         # So, at dt = 1
@@ -364,12 +373,14 @@ class BeachModel(DynamicModel):
         map is implicitly defined as the clonemap.
         """
         precip = timeinputscalar('rain.tss', 1)  # daily precipitation data as time series (mm)
-        temp_bare_soil = timeinputscalar('T_bare.tss', nominal('clone'))  # SWAT, Neitsch2009, p.43.
-        temp_air = timeinputscalar('airTemp.tss', nominal('clone'))
+        temp_bare_soil = timeinputscalar('T_bare.tss', nominal('clone_nom'))  # SWAT, Neitsch2009, p.43.
+        temp_air = timeinputscalar('airTemp.tss', nominal('clone_nom'))
         et0 = timeinputscalar('ET0.tss', 1)  # daily ref. ETP at Zorn station (mm)
         wind = timeinputscalar('U2.tss', 1)  # wind speed time-series at 2 meters height
         humid = timeinputscalar('RHmin.tss', 1)  # minimum relative humidity time-series # PA: (-)
         # precipVol = precip * cellarea() / 1000  # m3
+
+
 
         ################
         # Crop growth ##
@@ -472,6 +483,7 @@ class BeachModel(DynamicModel):
         #########################
         # Moisture, z0
         self.theta_z0_ini = self.theta_z0
+
         z0_moisture = getLayerMoisture(self, 0,
                                        precip, theta_wp, CN2, crop_type,
                                        jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage,
@@ -489,6 +501,10 @@ class BeachModel(DynamicModel):
         # self.report(discharge, "dt" + str(self.jd_cum) + "discharge.map")
         lat_flow_z0 = z0_moisture["lat_flow"]
         lat_outflow_z0 = z0_moisture["cell_lat_outflow"]
+
+        # self.obs_runoff_m3_tss.sample(runoff_z0*4/1000)
+
+
 
         #########################
         # Mass Transfer, z0
@@ -575,8 +591,8 @@ class BeachModel(DynamicModel):
         # Update state variables
         # Change in storage - Moisture
         self.theta_z0 = z0_moisture["theta_final"]
-        ch_storage_z0_m3 = (self.theta_z0 * self.z0 * cellarea() / 1000) - \
-                           (self.theta_z0_ini * self.z0 * cellarea() / 1000)
+        ch_storage_z0_m3 = (self.theta_z0 * self.z0 * 4 / 1000) - \
+                           (self.theta_z0_ini * self.z0 * 4 / 1000)
         self.theta_z0_ini = self.theta_z0
 
         # Change in mass storage after degradation - Pesticide Mass
@@ -644,8 +660,8 @@ class BeachModel(DynamicModel):
         # Update state variables
         # Change in storage - Moisture
         self.theta_z1 = z1_moisture["theta_final"]
-        ch_storage_z1_m3 = (self.theta_z1 * self.z1 * cellarea() / 1000) - \
-                           (self.theta_z1_ini * self.z1 * cellarea() / 1000)
+        ch_storage_z1_m3 = (self.theta_z1 * self.z1 * 4 / 1000) - \
+                           (self.theta_z1_ini * self.z1 * 4 / 1000)
         self.theta_z1_ini = self.theta_z1
 
         # Change in storage - Pesticide Mass
@@ -714,8 +730,8 @@ class BeachModel(DynamicModel):
         # Update state variables
         # Change in storage - Moisture
         self.theta_z2 = z2_moisture["theta_final"]
-        ch_storage_z2_m3 = (self.theta_z2 * self.z2 * cellarea() / 1000) - \
-                           (self.theta_z2_ini * self.z2 * cellarea() / 1000)
+        ch_storage_z2_m3 = (self.theta_z2 * self.z2 * 4 / 1000) - \
+                           (self.theta_z2_ini * self.z2 * 4 / 1000)
         self.theta_z2_ini = self.theta_z2
 
         #self.theta_z2tss.sample(self.theta_z2)
@@ -740,24 +756,22 @@ class BeachModel(DynamicModel):
         # Water Balance
         ######################
         # Precipitation total
-        rain_m3 = precip * cellarea() / 1000  # m3
+        rain_m3 = precip * 4 / 1000  # m3
         tot_rain_m3 = accuflux(self.ldd_subs, rain_m3)
         self.tot_rain_m3_tss.sample(tot_rain_m3)
 
         # Discharge due to runoff at the outlet
-        runoff_m3 = runoff_z0 * cellarea() / 1000  # m3
-        out_runoff_m3 = accuflux(self.ldd_surf, runoff_m3)
-        self.out_runoff_m3_tss.sample(out_runoff_m3)
+        runoff_m3 = runoff_z0 * 4 / 1000  # m3
+        out_runoff_m3 = accuflux(self.ldd_subs, runoff_m3)
+        self.out_runoff_m3_tss.sample(out_runoff_m3)  # save to outlet
+        # self.obs_cum_runoff_m3_tss.sample(out_runoff_m3)  # save to sample locations
 
+        # Net lateral flow
+        net_latflow_z0_m3 = lat_flow_z0 * 4 / 1000  # m3
+        net_latflow_z1_m3 = lat_flow_z1 * 4 / 1000
+        net_latflow_z2_m3 = lat_flow_z2 * 4 / 1000
+        net_latflow_m3 = net_latflow_z0_m3 + net_latflow_z1_m3 + net_latflow_z2_m3
 
-        # Out due to lateral flow
-        # latflow_z0_m3 = lat_outflow_z0 * cellarea() / 1000  # m3
-        # latflow_z1_m3 = lat_outflow_z1 * cellarea() / 1000
-        # latflow_z2_m3 = lat_outflow_z2 * cellarea() / 1000
-        latflow_z0_m3 = lat_flow_z0 * cellarea() / 1000  # m3
-        latflow_z1_m3 = lat_flow_z1 * cellarea() / 1000
-        latflow_z2_m3 = lat_flow_z2 * cellarea() / 1000
-        latflow_m3 = latflow_z0_m3 + latflow_z1_m3 + latflow_z2_m3
         # Here accuflux(), why? Bc. have to think of the accumulation of
         # discharge potential that builds by accounting for each cell that is counted
         # in the direction of falling topography. It may seem that each cell is transporting
@@ -768,18 +782,17 @@ class BeachModel(DynamicModel):
         # is not done until the end of the lateral flow computation, thus
         # every cell transfers to its neighbour only its own potential amount.
         # The cummulative computation is a summary of a whole day's process.
-        out_latflow_m3 = accuflux(self.ldd_subs, latflow_m3)
-        self.out_latflow_m3_tss.sample(out_latflow_m3)
+        out_net_latflow_m3 = accuflux(self.ldd_subs, net_latflow_m3)
 
         # Percolation (only interested in the bottom-most layer, where mass leaves the model)
-        percol_z2_m3 = percolation_z2 * cellarea() / 1000  # m3
+        percol_z2_m3 = percolation_z2 * 4 / 1000  # m3
         out_percol_m3 = accuflux(self.ldd_subs, percol_z2_m3)
-        self.out_percol_m3_tss.sample(out_percol_m3)
+        self.out_percol_z2_m3_tss.sample(out_percol_m3)
 
         # Evapotranspiration
-        etp_z0_m3 = etp_z0 * cellarea() / 1000  # m3
-        etp_z1_m3 = etp_z1 * cellarea() / 1000
-        etp_z2_m3 = etp_z2 * cellarea() / 1000
+        etp_z0_m3 = etp_z0 * 4 / 1000  # m3
+        etp_z1_m3 = etp_z1 * 4 / 1000
+        etp_z2_m3 = etp_z2 * 4 / 1000
         etp_m3 = etp_z0_m3 + etp_z1_m3 + etp_z2_m3
         out_etp_m3 = accuflux(self.ldd_subs, etp_m3)
         self.out_etp_m3_tss.sample(out_etp_m3)
@@ -789,15 +802,18 @@ class BeachModel(DynamicModel):
         out_ch_storage_m3 = accuflux(self.ldd_subs, ch_storage_m3)
         self.out_ch_storage_m3_tss.sample(out_ch_storage_m3)
 
-        global_mb_water = tot_rain_m3 - out_runoff_m3 - out_percol_m3 - out_etp_m3 + out_latflow_m3 - out_ch_storage_m3
+        global_mb_water = tot_rain_m3 - out_runoff_m3 - out_percol_m3 - out_etp_m3 + out_net_latflow_m3 - out_ch_storage_m3
         self.global_mb_water_tss.sample(global_mb_water)
 
-        vol_disch_m3 = out_runoff_m3 + latflow_m3
+        # Out due to lateral flow
+        out_latflow_z0_m3 = lat_outflow_z0 * 4 / 1000  # m3
+        out_latflow_z1_m3 = lat_outflow_z1 * 4 / 1000
+        out_latflow_z2_m3 = lat_outflow_z2 * 4 / 1000
+        out_latflow_m3 = out_latflow_z0_m3 + out_latflow_z1_m3 + out_latflow_z2_m3
+        self.out_latflow_m3_tss.sample(out_latflow_m3)
+
+        vol_disch_m3 = out_runoff_m3 + out_latflow_m3
         self.out_vol_m3_tss.sample(vol_disch_m3)
-        self.z0_tss.sample(self.z0)
-        self.z1_tss.sample(self.z1)
-        self.z2_tss.sample(self.z2)
-        self.ztot_tss.sample(self.tot_depth)
 
         ######################
         # Pesticide Balance
@@ -809,11 +825,11 @@ class BeachModel(DynamicModel):
         # cum_appl_catch_mg = upstream(self.ldd_subs, self.cum_appl_mg)
 
         # Loss to run-off
-        out_runoff_mg = accuflux(self.ldd_surf, z0_mass_runoff["mass_runoff"])
-        cum_out_runoff_mg = accuflux(self.ldd_surf, self.cum_runoff_mg)
+        out_runoff_mg = accuflux(self.ldd_subs, z0_mass_runoff["mass_runoff"])
+        cum_out_runoff_mg = accuflux(self.ldd_subs, self.cum_runoff_mg)
 
         # Loss to air/volatilized
-        out_volat_mg = accuflux(self.ldd_surf, z0_mass_volatilized["mass_loss"])
+        out_volat_mg = accuflux(self.ldd_subs, z0_mass_volatilized["mass_loss"])
         # cum_out_volat_mg = accuflux(self.ldd, ...)
 
         # Loss to leaching
@@ -844,18 +860,15 @@ class BeachModel(DynamicModel):
 
         "Write a map for specific time step"
         timeStep = self.currentTimeStep()
-        if self.jd_cum == 2 or self.jd_cum == 154:
-            # self.report(precip, 'precip.map')  # stores a ".map" file
-            # self.report(self.tot_depth, 'tot_depth.map')  # stores a ".map" file
-            # self.precip = self.readmap()
-            # self.precip = self.readmap()
-            aguila(self.z2, self.depth_diff)
-            # discharge = accuflux(self.ldd, runoff_z0)
-            # Tot precip at time step.
-            # tot_precip = accuflux(self.ldd, precip)
-
-            # aguila(tot_precip)
-            print 'running the dynamic function for time step: ', timeStep
+        if timeStep == 200:  # April 17 = 200dt
+            report(out_runoff_m3, "resdt" + str(timeStep) + "_accu_runoff_m3.map")  # Check against data
+            report(runoff_m3, "resdt" + str(timeStep) + "_cell_runoff_m3.map")  # Check ditch results
+            report(percolation_z0, "resdt" + str(timeStep) + "_percol_z0.map")  # Check ditch results
+            report(percolation_z1, "resdt" + str(timeStep) + "_percol_z1.map")  # Check ditch results
+            report(percolation_z2, "resdt" + str(timeStep) + "_percol_z2.map")  # Check ditch results
+            # report(nmap, 'zzTest.map')
+            # aguila(nmap, self.temp_z0_fin)
+            print 'dynamic time step: ', timeStep
 
         # Other:
         #
@@ -864,16 +877,18 @@ class BeachModel(DynamicModel):
         self.jd_cum += self.jd_dt  # updating JDcum, currently dt = 1 day
 
 
-nTimeSteps = 155
-myAlteck16 = BeachModel("clone.map")  # an instance of the model, which inherits from class: DynamicModel
-dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps, firstTimestep=153)  # an instance of the Dynamic Framework
+firstTimeStep = 1
+nTimeSteps = 366
+myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
+dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps, firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
 
 t0 = datetime.now()
-
 dynamicModel.run()
 t1 = datetime.now()
+
 duration = t1 - t0
 print("Total minutes: ", duration.total_seconds() / 60)
+print("Minutes/Yr: ", (duration.total_seconds() / 60)/(nTimeSteps-firstTimeStep)*365)
 
 
 

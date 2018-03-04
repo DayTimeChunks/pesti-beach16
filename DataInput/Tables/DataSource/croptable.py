@@ -22,7 +22,7 @@ landuse = {"Corn": 1, "Wheat": 2, "Oats": 3, "Alfalfa": 4, "Beet": 5,
 crop_conditions = [
     (croptable.loc[1:, 'crop_type'] == 1),  # Corn
     (croptable.loc[1:, 'crop_type'] == 2),  # Wheat
-    (croptable.loc[1:, 'crop_type'] == 5)  # Beat
+    (croptable.loc[1:, 'crop_type'] == 5)  # Beet
 ]
 sow_yy = [2016, 2015, 2016]
 sow_mm = [5, 10, 3]  # May, Oct, March
@@ -58,20 +58,24 @@ croptable.loc[1:, 'max_height'] = np.select(crop_conditions, max_height, default
 croptable.loc[1:, 'max_root_depth'] = np.select(crop_conditions, max_root_depth, default=0)
 croptable.loc[1:, 'p_tab'] = np.select(crop_conditions, p_tab, default=0)
 
+# theta_condition = [
+#     (croptable.loc[1:, 'crop_type'] == 10)  # Ditch
+# ]
 croptable.loc[1:, 'theta_sat_z0z1'] = 0.61
 croptable.loc[1:, 'theta_fcap_z0z1'] = 0.2
 croptable.loc[1:, 'theta_sat_z2'] = 0.61
 croptable.loc[1:, 'theta_fcap_z2'] = 0.2
 croptable.loc[1:, 'theta_wp'] = 0.1
 
-# ksat_condition = [
-#     (croptable.loc[1:, 'crop_type'] == 10)  # Ditch
-# ]
+ksat_condition = [
+    (croptable.loc[1:, 'crop_type'] == 9),  # Paved Road
+    (croptable.loc[1:, 'crop_type'] == 10),  # Ditch
+]
 # Ksat mm/h in second rainfall event Leaching range: 0.13 mm/h - 1.8 mm/h (1.8*24h =43.2)
-# croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, 0.00001, default=43.2)  # mm/day = 135 mm/h * 24h/day * 10mm/cm
-# croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, 0.00001, default=43.2)  # mm/day
-croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day = 135 mm/h * 24h/day * 10mm/cm
-croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
+croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, [0.0001, 0.0001], default=43.2)  # mm/day = 135 mm/h * 24h/day * 10mm/cm
+croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [0.0001, 0.0001], default=43.2)  # mm/day
+# croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day = 135 mm/h * 24h/day * 10mm/cm
+# croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
 
 # Curve Number guidelines:
 # https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb1044171.pdf
@@ -131,5 +135,5 @@ if PC:
 else:
     print ("True")
     np.savetxt('C:/Users/DayTimeChunks/Documents/Models/pesti-beach16/model_v1/croptable.tbl',
-               croptable.values, fmt='%d', delimiter="\t")  # header="X\tY\tZ\tValue")
+               croptable.values, fmt='%10.5f', delimiter="\t")  # header="X\tY\tZ\tValue")
 
