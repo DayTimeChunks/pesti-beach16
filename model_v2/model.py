@@ -274,11 +274,13 @@ class BeachModel(DynamicModel):
         self.out_vol_m3_tss = TimeoutputTimeseries("res_accuVol_m3", self, nominal("outlet_true"), noHeader=False)
         self.out_runoff_m3_tss = TimeoutputTimeseries("res_accuRunoff_m3", self, nominal("outlet_true"), noHeader=False)
         self.out_latflow_m3_tss = TimeoutputTimeseries("res_outLatflow_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_net_latflow_m3_tss = TimeoutputTimeseries("res_accuLatflow_m3", self, nominal("outlet_true"), noHeader=False)
         # self.out_percol_m3_tss = TimeoutputTimeseries("res_outPercol_m3", self, nominal("outlet_true"), noHeader=False)
         self.out_percol_z2_m3_tss = TimeoutputTimeseries("res_accuPercol_z2_m3", self, nominal("outlet_true"), noHeader=False)
         self.out_etp_m3_tss = TimeoutputTimeseries("res_accuEtp_m3", self, nominal("outlet_true"), noHeader=False)
         self.out_ch_storage_m3_tss = TimeoutputTimeseries("res_accuChStorage_m3", self, nominal("outlet_true"), noHeader=False)
         self.global_mb_water_tss = TimeoutputTimeseries("res_global_waterMB", self, nominal("outlet_true"), noHeader=False)
+        self.storage_z2_m3_tss = TimeoutputTimeseries("res_accuStorage_z2_m3", self, nominal("outlet_true"), noHeader=False)
 
 
 
@@ -794,6 +796,7 @@ class BeachModel(DynamicModel):
         # every cell transfers to its neighbour only its own potential amount.
         # The cummulative computation is a summary of a whole day's process.
         out_net_latflow_m3 = accuflux(self.ldd_subs, net_latflow_m3)
+        self.out_net_latflow_m3_tss.sample(out_net_latflow_m3)
 
         # Percolation (only interested in the bottom-most layer, where mass leaves the model)
         percol_z2_m3 = percolation_z2 * 4 / 1000  # m3
@@ -816,14 +819,22 @@ class BeachModel(DynamicModel):
         global_mb_water = tot_rain_m3 - out_runoff_m3 - out_percol_m3 - out_etp_m3 + out_net_latflow_m3 - out_ch_storage_m3
         self.global_mb_water_tss.sample(global_mb_water)
 
-        # Out due to lateral flow
+        # Out due to lateral flow (only at the outlet cell)
         out_latflow_z0_m3 = (lat_outflow_z0 + lat_inflow_z0) * 4 / 1000  # m3
         out_latflow_z1_m3 = (lat_outflow_z1 + lat_inflow_z1) * 4 / 1000
         out_latflow_z2_m3 = (lat_outflow_z2 + lat_inflow_z2) * 4 / 1000
         out_latflow_m3 = out_latflow_z0_m3 + out_latflow_z1_m3 + out_latflow_z2_m3
         self.out_latflow_m3_tss.sample(out_latflow_m3)
 
-        vol_disch_m3 = out_runoff_m3 + out_latflow_m3
+        cell_vol_z0 = self.theta_z0 * self.z0 * 4 / 1000
+        cell_vol_z1 = self.theta_z1 * self.z1 * 4 / 1000
+        cell_vol_z2 = self.theta_z2 * self.z2 * 4 / 1000
+        cell_vol_tot_m3 = cell_vol_z0 + cell_vol_z1 + cell_vol_z2
+        vol_tot_m3 = accuflux(self.ldd_subs, cell_vol_tot_m3)
+        self.storage_z2_m3_tss.sample(vol_tot_m3)
+
+        # Runoff + accu_latflow
+        vol_disch_m3 = out_runoff_m3 + out_net_latflow_m3
         self.out_vol_m3_tss.sample(vol_disch_m3)
 
         ######################
