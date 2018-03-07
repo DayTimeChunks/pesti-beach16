@@ -4,6 +4,8 @@ import math as m
 import datetime
 import jdcal
 
+
+
 """
 Import simulated data 
 Observations are already imported above.
@@ -23,12 +25,13 @@ else:
 
 # C:/Users/DayTimeChunks/Documents/Models/pesti-beach16
 simQ = pd.read_table(path + "res_accuVol_m3.tss", skiprows=4, delim_whitespace=True, names=['dt', 'Volm3'], header=None)
-simLF = pd.read_table(path + "res_outLatflow_m3.tss", skiprows=4, delim_whitespace=True, names=['dt', 'LFm3'], header=None)
-simPerc = pd.read_table(path1 + "res_accuPercol_z2_m3.tss", skiprows=4, delim_whitespace=True, names=['dt', 'Percolm3'], header=None)
+simLF = pd.read_table(path + "res_accuLatflow_m3.tss", skiprows=4, delim_whitespace=True, names=['dt', 'LFm3'], header=None)
+# simPerc = pd.read_table(path1 + "res_accuPercol_z2_m3.tss", skiprows=4, delim_whitespace=True, names=['dt', 'Percolm3'], header=None)
+simStore = pd.read_table(path + "res_accuStorage_m3.tss", skiprows=4, delim_whitespace=True, names=['dt', 'Percolm3'], header=None)
 
 
 sim = simQ.merge(simLF, left_on='dt', right_on='dt')
-# sim = sim.merge(simPerc, left_on='dt', right_on='dt')
+sim = sim.merge(simStore, left_on='dt', right_on='dt')
 
 
 sim['Q_sim.L'] = sim['Volm3'] * 10 ** 3
