@@ -280,7 +280,7 @@ class BeachModel(DynamicModel):
         self.out_etp_m3_tss = TimeoutputTimeseries("res_accuEtp_m3", self, nominal("outlet_true"), noHeader=False)
         self.out_ch_storage_m3_tss = TimeoutputTimeseries("res_accuChStorage_m3", self, nominal("outlet_true"), noHeader=False)
         self.global_mb_water_tss = TimeoutputTimeseries("res_global_waterMB", self, nominal("outlet_true"), noHeader=False)
-        self.storage_z2_m3_tss = TimeoutputTimeseries("res_accuStorage_z2_m3", self, nominal("outlet_true"), noHeader=False)
+        self.storage_m3_tss = TimeoutputTimeseries("res_accuStorage_m3", self, nominal("outlet_true"), noHeader=False)
 
 
 
@@ -831,7 +831,7 @@ class BeachModel(DynamicModel):
         cell_vol_z2 = self.theta_z2 * self.z2 * 4 / 1000
         cell_vol_tot_m3 = cell_vol_z0 + cell_vol_z1 + cell_vol_z2
         vol_tot_m3 = accuflux(self.ldd_subs, cell_vol_tot_m3)
-        self.storage_z2_m3_tss.sample(vol_tot_m3)
+        self.storage_m3_tss.sample(vol_tot_m3)
 
         # Runoff + accu_latflow
         vol_disch_m3 = out_runoff_m3 + out_net_latflow_m3
@@ -908,7 +908,7 @@ class BeachModel(DynamicModel):
         self.jd_cum += self.jd_dt  # updating JDcum, currently dt = 1 day
 
 
-firstTimeStep = 150
+firstTimeStep = 1
 nTimeSteps = 280
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps, firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
