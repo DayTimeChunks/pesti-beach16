@@ -26,11 +26,11 @@ class BeachModel(DynamicModel):
     def initial(self):
         """ Physical parameters """
         self.c1 = 0.25  # subsurface flow coefficient
-        self.c2 = 0.25
+        self.c2 = 0.25  # not used (second layer)
         self.drain_coef = 0.8063  # drainage coefficient
         self.s1 = 1  # coefficient to calibrate Ksat1
         self.s2 = 0.5  # coefficient to calibrate Ksat2
-        self.k = scalar(0.03)  # coefficient of declining LAI in end stage
+        self.k = 0.03  # coefficient of declining LAI in end stage
 
         """ Soil Properties """
         self.p_b = 1.4  # Soil bulk density (g/cm^3)
@@ -99,7 +99,7 @@ class BeachModel(DynamicModel):
         self.datum_depth = (self.dem - mapminimum(self.dem)) * scalar(10 ** 3)  # mm
         self.z0 = self.zero_map + 10  # mm
         self.z1 = self.zero_map + 140  # mm
-        self.z2 = self.datum_depth + 300 - self.z0 - self.z1  # mm
+        self.z2 = self.datum_depth + 300 - self.z0 - self.z1  # mm (150mm at outlet)
         self.tot_depth = self.z0 + self.z1 + self.z2
 
 
@@ -866,6 +866,14 @@ class BeachModel(DynamicModel):
             report(percolation_z0, "resdt" + str(timeStep) + "_percol_z0.map")  # Check ditch results
             report(percolation_z1, "resdt" + str(timeStep) + "_percol_z1.map")  # Check ditch results
             report(percolation_z2, "resdt" + str(timeStep) + "_percol_z2.map")  # Check ditch results
+            # report(nmap, 'zzTest.map')
+            # aguila(nmap, self.temp_z0_fin)
+            print 'dynamic time step: ', timeStep
+        if timeStep == 274:  # June 30
+            # Saving initial moisture for v2
+            report(self.theta_z0, "resV1" + str(timeStep) + "_theta_z0.map")  # Check ditch results
+            report(self.theta_z1, "resV1" + str(timeStep) + "_theta_z1.map")  # Check ditch results
+            report(self.theta_z2, "resV1" + str(timeStep) + "_theta_z2.map")  # Check ditch results
             # report(nmap, 'zzTest.map')
             # aguila(nmap, self.temp_z0_fin)
             print 'dynamic time step: ', timeStep

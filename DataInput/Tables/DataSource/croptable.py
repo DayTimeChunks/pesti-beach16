@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
+
+# Which computer's directory?
 PC = False
+# What model version?
+version = 'v2'
 
 if PC:
     path = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/"
@@ -58,12 +62,12 @@ croptable.loc[1:, 'max_height'] = np.select(crop_conditions, max_height, default
 croptable.loc[1:, 'max_root_depth'] = np.select(crop_conditions, max_root_depth, default=0)
 croptable.loc[1:, 'p_tab'] = np.select(crop_conditions, p_tab, default=0)
 
-# theta_condition = [
-#     (croptable.loc[1:, 'crop_type'] == 10)  # Ditch
-# ]
-croptable.loc[1:, 'theta_sat_z0z1'] = 0.61
+theta_condition = [
+    (croptable.loc[1:, 'crop_type'] == 10)  # Ditch
+]
+croptable.loc[1:, 'theta_sat_z0z1'] = np.select(theta_condition, [1.0], default=0.61)
 croptable.loc[1:, 'theta_fcap_z0z1'] = 0.2
-croptable.loc[1:, 'theta_sat_z2'] = 0.61
+croptable.loc[1:, 'theta_sat_z2'] = np.select(theta_condition, [1.0], default=0.61)
 croptable.loc[1:, 'theta_fcap_z2'] = 0.2
 croptable.loc[1:, 'theta_wp'] = 0.1
 
@@ -71,10 +75,10 @@ ksat_condition = [
     (croptable.loc[1:, 'crop_type'] == 9),  # Paved Road
     (croptable.loc[1:, 'crop_type'] == 10),  # Ditch
 ]
-# Ksat mm/h in second rainfall event Leaching range: 0.13 mm/h - 1.8 mm/h (1.8*24h =43.2)
-croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, [0.0001, 0.0001], default=43.2)  # mm/day = 135 mm/h * 24h/day * 10mm/cm
+# Ksat mm/h in second rainfall event Leaching experiment range: 0.13 mm/h - 1.8 mm/h (1.8*24h =43.2)
+croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, [0.0001, 0.0001], default=43.2)  # mm/day
 croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [0.0001, 0.0001], default=43.2)  # mm/day
-# croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day = 135 mm/h * 24h/day * 10mm/cm
+# croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day
 # croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
 
 # Curve Number guidelines:
@@ -101,9 +105,9 @@ cn_conditions = [
 # (c) amount of grass or close-seeded legumes,
 # (d) percent of residue cover on the land surface (good gt 20%),and
 # (e) degree of surface roughness.
-CN2 = {"Corn": {"A": 72, "B": 81, "C": 82, "D": 91},  # poor HC
-       "Wheat": {"A": 72, "B": 81, "C": 82, "D": 91},  # poor HC
-       "Beet": {"A": 72, "B": 81, "C": 82, "D": 91},  # poor HC
+CN2 = {"Corn": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
+       "Wheat": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
+       "Beet": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
        "Greenery": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
        "Dirt Road": {"A": 72, "B": 82, "C": 87, "D": 89},  # Table 2-2a
        "Grass Road": {"A": 59, "B": 74, "C": 82, "D": 86},  # Farmsteads, # Table 2-2c
@@ -111,7 +115,8 @@ CN2 = {"Corn": {"A": 72, "B": 81, "C": 82, "D": 91},  # poor HC
        "Ditch": {"A": 98, "B": 98, "C": 98, "D": 98},  # Paved -> should add to vol.
        "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
        "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
-       "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82}  # Woods-grass, fair HC, # Table 2-2c
+       "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82},  # Woods-grass, fair HC, # Table 2-2c
+       "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-2b, but Bare Soil treatment
        }
 
 group_C = [CN2["Corn"]["C"],
@@ -134,6 +139,8 @@ if PC:
     croptable.to_csv(saved, sep=';', index=False)
 else:
     print ("True")
-    np.savetxt('C:/Users/DayTimeChunks/Documents/Models/pesti-beach16/model_v1/croptable.tbl',
+    saved = "croptable_end.csv"
+    croptable.to_csv(saved, sep=',', index=False)
+    np.savetxt('C:/Users/DayTimeChunks/Documents/Models/pesti-beach16/model_' + version + '/croptable.tbl',
                croptable.values, fmt='%10.5f', delimiter="\t")  # header="X\tY\tZ\tValue")
 
