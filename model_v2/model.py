@@ -26,6 +26,7 @@ class BeachModel(DynamicModel):
         # dem = self.dem
 
     def initial(self):
+        # Get initial parameters, make a dictionary of the raw file.
         import csv
         ini_path = 'initial.csv'
         ini_param = {}
@@ -81,7 +82,7 @@ class BeachModel(DynamicModel):
 
         self.temp_ref = ini_param.get("temp_ref")  # Temp.  reference
 
-        self.beta_temperature = ini_param.get("beta_temperature")  # Need to find a correct value for 'B', exponent in moisture dependency (Dairon)
+        self.beta_moisture = ini_param.get("beta_moisture")  # Need to find a correct value for 'B', exponent in moisture dependency (Dairon)
         self.alpha_temperature = ini_param.get("alpha_temperature")  # Need to confirm units Ea = 54000 KJ/mol; R = 8.314 J/mol/Kelvin
 
         """

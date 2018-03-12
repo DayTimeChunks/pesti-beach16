@@ -245,13 +245,16 @@ def degrade(model, layer,
     theta_factor = ifthenelse(theta_aq_layer <= 0.5 * theta_wp, 0,
                               ifthenelse(theta_aq_layer <= theta_fcap,
                                          (((theta_aq_layer - 0.5 * theta_wp) / (
-                                             theta_fcap - theta_wp)) ** model.beta_temperature),
+                                             theta_fcap - theta_wp)) ** model.beta_moisture),
                                          1))
     # Temperature factor in biodegradation
     # F_T_1
     temp_factor = ifthenelse(temp_layer <= 0, 0,
                              ifthenelse(temp_layer < 5,
-                                        (temp_layer / 5) * exp(model.alpha_temperature) * (5 - model.temp_ref), 1))
+                                        (temp_layer / 5) * exp(model.alpha_temperature) * (5 - model.temp_ref),
+                                        exp(model.alpha_temperature * (5 - model.temp_ref))
+                                        )
+                             )
     # Half-life as a function of temperature and moisture
     dt_50 = max(model.dt_50_ref * theta_factor * temp_factor, 0)
 
