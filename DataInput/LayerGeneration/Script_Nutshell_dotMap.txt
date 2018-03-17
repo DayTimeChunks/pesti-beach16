@@ -50,3 +50,9 @@ pcrcalc version: Apr 16 2015 (win64/msvc)
 
 pcrcalc area.map = catchment(ldd.map, outlet.map)
 pcrcalc version: Apr 16 2015 (win64/msvc)
+
+
+
+# Convert .map to asc:
+map2asc outlet_true.map outlet_tru.asc
+map2asc version: Apr 16 2015 (win64/msvc)

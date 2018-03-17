@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 
 # Which computer's directory?
-PC = False
+PC = True
 # What model version?
-version = 'v2'
+version = 'v4'
 
 if PC:
     path = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/"
@@ -29,8 +29,8 @@ crop_conditions = [
     (croptable.loc[1:, 'crop_type'] == 5)  # Beet
 ]
 sow_yy = [2016, 2015, 2016]
-sow_mm = [5, 10, 3]  # May, Oct, March
-sow_dd = [1, 15, 25]
+sow_mm = [4, 10, 3]  # Apr, Oct, March
+sow_dd = [10, 15, 25]
 
 # Corn, Wheat, Beet
 len_grow_stage_ini = [28, 160, 50]  # (days)
@@ -65,26 +65,35 @@ croptable.loc[1:, 'p_tab'] = np.select(crop_conditions, p_tab, default=0)
 theta_condition = [
     (croptable.loc[1:, 'crop_type'] == 10)  # Ditch
 ]
-croptable.loc[1:, 'theta_sat_z0z1'] = np.select(theta_condition, [1.0], default=0.61)
+croptable.loc[1:, 'theta_sat_z0z1'] = np.select(theta_condition, [0.61], default=0.61)
 croptable.loc[1:, 'theta_fcap_z0z1'] = 0.2
-croptable.loc[1:, 'theta_sat_z2'] = np.select(theta_condition, [1.0], default=0.61)
+croptable.loc[1:, 'theta_sat_z2'] = np.select(theta_condition, [0.61], default=0.61)
 croptable.loc[1:, 'theta_fcap_z2'] = 0.2
 croptable.loc[1:, 'theta_wp'] = 0.1
 
 ksat_condition = [
-    (croptable.loc[1:, 'crop_type'] == 9),  # Paved Road
+    (croptable.loc[1:, 'crop_type'] == 7),  # Dirt Road, assumed Group C, 1.3-3.8 mm/h -> 2.6 mm/h = 62mm/day
+    (croptable.loc[1:, 'crop_type'] == 9),  # Paved Road, assumed Group D, < 1.3mm/h = 31 mm/day
     (croptable.loc[1:, 'crop_type'] == 10),  # Ditch
+
 ]
-# Ksat mm/h in second rainfall event Leaching experiment range: 0.13 mm/h - 1.8 mm/h (1.8*24h =43.2)
-croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, [0.0001, 0.0001], default=43.2)  # mm/day
-croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [0.0001, 0.0001], default=43.2)  # mm/day
+# Ksat mm/h in 1st rainfall event Leaching experiment: 134 mm/h -> 3216 mm/day
+# Ksat mm/h in 2nd rainfall event Leaching experiment range:
+# 0.13 mm/h -> 3.12 mm/day
+# 1.8 mm/h (1.8*24h =43.2)
+# 5.3 mm/h -> 127 mm/day   <- Group B!!!
+# 26.8 mm/h -> 643.2 mm/day  <- Already Group A, unlikely based on soil characteristics!!!
+croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, [62, 31, 643], default=127)  # mm/day
+croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [62, 31, 127], default=127)  # mm/day
 # croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day
 # croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
 
 # Curve Number guidelines:
 # https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb1044171.pdf
 # https://en.wikipedia.org/wiki/Runoff_curve_number
-# Will assume HSG Group C (final infiltration rate 1.3-3.8 mm per hour)
+# Will assume:
+# HSG Group B (final infiltration rate 3.8–7.6 mm per hour)
+# HSG Group C (final infiltration rate 1.3-3.8 mm per hour)
 cn_conditions = [
     (croptable.loc[1:, 'crop_type'] == 1),  # Corn
     (croptable.loc[1:, 'crop_type'] == 2),  # Wheat
@@ -119,28 +128,30 @@ CN2 = {"Corn": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
        "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-2b, but Bare Soil treatment
        }
 
-group_C = [CN2["Corn"]["C"],
-           CN2["Wheat"]["C"],
-           CN2["Beet"]["C"],
-           CN2["Greenery"]["C"],
-           CN2["Dirt Road"]["C"],
-           CN2["Grass Road"]["C"],
-           CN2["Paved Road"]["C"],
-           CN2["Ditch"]["C"],
-           CN2["Fallow"]["C"],
-           CN2["Hedge"]["C"],
-           CN2["Orchard"]["C"]
-           ]
+group = [CN2["Corn"]["B"],
+         CN2["Wheat"]["B"],
+         CN2["Beet"]["B"],
+         CN2["Greenery"]["B"],
+         CN2["Dirt Road"]["B"],
+         CN2["Grass Road"]["B"],
+         CN2["Paved Road"]["B"],
+         CN2["Ditch"]["B"],
+         CN2["Fallow"]["B"],
+         CN2["Hedge"]["B"],
+         CN2["Orchard"]["B"]
+         ]
 
-croptable.loc[1:, 'CN2'] = np.select(cn_conditions, group_C, default=98)
+croptable.loc[1:, 'CN2'] = np.select(cn_conditions, group, default=98)
 
 if PC:
-    saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/croptable.csv"
+    saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/croptable_end.csv"
+    # saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/croptable.csv"
     croptable.to_csv(saved, sep=';', index=False)
+    model = "D:/Documents/these_pablo/Models/BEACH2016/model_" + version + '/croptable.tbl'
+    np.savetxt(model, croptable.values, fmt='%10.5f', delimiter="\t")
 else:
     print ("True")
     saved = "croptable_end.csv"
     croptable.to_csv(saved, sep=',', index=False)
     np.savetxt('C:/Users/DayTimeChunks/Documents/Models/pesti-beach16/model_' + version + '/croptable.tbl',
                croptable.values, fmt='%10.5f', delimiter="\t")  # header="X\tY\tZ\tValue")
-

@@ -29,7 +29,7 @@ class BeachModel(DynamicModel):
         # Get initial parameters, make a dictionary of the raw file.
         import csv
         ini_path = 'initial.csv'
-        ini_param = {}
+        ini_param = {}  # Dictionary to store the values
         with open(ini_path, 'r') as f:
             reader = csv.reader(f, delimiter=',')
             for row in reader:
