@@ -130,7 +130,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # First-sensitivity:
         """ Physical parameters """
         self.c1 = scalar(self.ini_param.get("c1"))  # subsurface flow coefficient
-        # self.c2 = self.ini_param.get("c2")  # not used (second layer)
+        self.c2 = self.ini_param.get("c2")  # not used (second layer)
         self.drain_coef = scalar(self.ini_param.get("drain_coef"))  # drainage coefficient
         self.k = scalar(self.ini_param.get("k"))  # coefficient of declining LAI in end stage
 
@@ -968,7 +968,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # aguila 1\res_nash_q_m3.tss 2\res_nash_q_m3.tss
 
         # Daily Maps
-        self.report(vol_disch_m3, 'q')  # discharge map for all cells (accuflux)
+        # self.report(vol_disch_m3, 'q')  # discharge map for all cells (accuflux)
         # self.report(vol_tot_m3, 'storage')  # Total catchment storage m3
 
         # Produce only one map for every realization
@@ -983,14 +983,16 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Nash
         # aguila 1\res_nash_q_m3.tss 2\res_nash_q_m3.tss 3\res_nash_q_m3.tss
         # aguila 6\res_nash_q_m3.tss 7\res_nash_q_m3.tss 8\res_nash_q_m3.tss
+        # aguila 9\res_nash_q_m3.tss 10\res_nash_q_m3.tss 11\res_nash_q_m3.tss 12\res_nash_q_m3.tss
         # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
         # Tot discharge & Daily discharge
         # aguila 8\res_q_obs_tot_m3.tss 8\res_q_sim_tot_m3.tss 8\res_accuVol_m3.tss q_obs_m3day.tss
         # aguila 1\res_accuLatflow_m3.tss 1\res_accuVol_m3.tss q_obs_m3day.tss
 
     def postmcloop(self):
-        names = ["q"]  # Discharge, Nash_Discharge
-        mcaveragevariance(names, self.sampleNumbers(), self.timeSteps())
+        pass
+        #names = ["q"]  # Discharge, Nash_Discharge
+        #mcaveragevariance(names, self.sampleNumbers(), self.timeSteps())
         # aguila --timesteps=[170,280,1] q-ave q-var outlet_true.map
         # percentiles = [0.25, 0.5, 0.75]
         # mcpercentiles(names, percentiles, self.sampleNumbers(), self.timeSteps())
@@ -1015,37 +1017,6 @@ print("Total minutes: ", duration.total_seconds() / 60)
 print("Minutes/Yr: ", (duration.total_seconds() / 60) / (nTimeSteps - firstTimeStep) * 365)
 
 # Current test, with Permeable bottom layer!
-
-# Implementing first sensitivity analysis via mc loop
-# Initial parameters are changed by 25%
-# Discharge change is evaluated:
-# a) Temporally via tss files (stored in folder realizations)
-# b) As total at the end of the simulation. Total for sim, is only counted if, obs is not NA.
-# Parameters tested are:
-# Baseline
-# 1) drain_coef = 0.8 & latflow_coef (c1) = 0.8
-# Case A
-# 2) drain_coef + 0.15
-# 3) drain_coef - 0.15
-# 4) latflow_coef (c1) + 0.15
-# 5) latflow_coef (c1) - 0.15
-
-# Original baseline
-# Case B
-# 6) drain_coef = 0.8 & latflow_coef (c1) = 0.25
-# 7) latflow_coef (c1) + 0.15
-# 8) latflow_coef (c1) - 0.15  <- old best result!
-
-# Case C
-# 9) z0 * 1.15
-# 10) z0 * 0.75
-
-# Case D
-# 11) *1.15 Ksat
-# 12) *0.75
-
-# Results:
-# c1 is likely too high on baseline, but now will test a full year,
 
 # Checked-success:
 # Testing whether Nash calculations work
