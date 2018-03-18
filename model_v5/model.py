@@ -130,7 +130,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # First-sensitivity:
         """ Physical parameters """
         self.c1 = scalar(self.ini_param.get("c1"))  # subsurface flow coefficient
-        # self.c2 = self.ini_param.get("c2")  # not used (second layer)
+        self.c2 = scalar(self.ini_param.get("c2"))  # not used (second layer)
         self.drain_coef = scalar(self.ini_param.get("drain_coef"))  # drainage coefficient
         self.k = scalar(self.ini_param.get("k"))  # coefficient of declining LAI in end stage
 
@@ -378,6 +378,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Stochastic / test parameters
         print("state:", m_state)
         self.report(self.c1, 'c1')
+        self.report(self.c2, 'c2')
         self.report(self.drain_coef, 'd1')
         self.report(self.z0, 'z0')
         self.report(self.s1, 's1')
@@ -966,7 +967,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # aguila 1\res_nash_q_m3.tss 2\res_nash_q_m3.tss
 
         # Daily Maps
-        self.report(vol_disch_m3, 'q')  # discharge map for all cells (accuflux)
+        # self.report(vol_disch_m3, 'q')  # discharge map for all cells (accuflux)
         # self.report(vol_tot_m3, 'storage')  # Total catchment storage m3
 
         # Produce only one map for every realization
@@ -996,7 +997,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # aguila --quantiles=[0.25,0.75,0.25] --timesteps=[170,280,1] q
 
 
-nrOfSamples = 12 # Samples are each a MonteCarlo realization
+nrOfSamples = 11  # Samples are each a MonteCarlo realization
 firstTimeStep = 1
 nTimeSteps = 280
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
