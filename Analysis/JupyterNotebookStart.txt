@@ -1,0 +1,12 @@
+
+1.Open the Anaconda prompt
+
+2.Activate python env.
+
+cd /d D:\Documents\these_pablo\Models\BEACH2016
+activate Python27-PyCharm
+
+
+3. Strat notebook:
+
+jupyter notebook

@@ -1,0 +1,40 @@
+---
+title: "BEACH Formalisms"
+header-includes: \usepackage{mathtools} \usepackage{natbib}
+output:
+  pdf_document:
+    citation_package: natbib
+    keep_tex: yes
+  word_document: default
+bibliography: library.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Note: For word, replace string:
+# ${[...comment..]:$.$ <- $.$}  # ignore dots.
+
+```
+
+```{r include=FALSE}
+# automatically create a bib database for R packages
+knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
+```
+
+
+
+# Methodology
+
+## Hydrological Framework
+
+To determine the change in soil moisture content ($\frac{d\theta_i}{dt}$) in the unsaturated zone at each cell *i*, the following hydrological processes are included:
+
+[comment]:$$
+\begin{equation}
+D\frac{d\theta_i}{dt} = P_i + R_i + \Delta LF_i - Ea_i - Ta_i - DP_i 
+\label{eq:hydro} 
+\end{equation}
+[comment]:$$
+
+where *D* is depth of soil moisture simulation (mm), $\theta$ is soil moisture content (m^3^ m^-3^), *dt* is model time step (day), *P* is precipitation (mm), *R* is runoff (mm), $\Delta LF$ is the difference between lateral inflow and outflow from a given cell (mm), *Ea* is the actual evaporation (mm), *Ta* actual transpiration (mm) and *DP* is the deep percolation (mm).

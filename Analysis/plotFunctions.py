@@ -113,8 +113,8 @@ def hydro_dt(data, m3=False):
 
 def nash(data, n_tests):
     fig, ax1 = plt.subplots()
-    # time = data['Jdays'][200:]
-    time = data.ix[:, 0]
+    # time = data.iloc['Jdays'][200:]
+    time = data.iloc[:, 0]
     # n1 = data['Nash.c1'][200:]
 
     legend = []
@@ -123,7 +123,7 @@ def nash(data, n_tests):
         legend.append(l)
 
     for i in range(1, n_tests + 1):
-        ax1.plot(time, data.ix[:, i], label=legend[i-1])
+        ax1.plot(time, data.iloc[:, i], label=legend[i-1])
 
     ylabel = 'Nash'
     ax1.set_xlabel('Time (days)')

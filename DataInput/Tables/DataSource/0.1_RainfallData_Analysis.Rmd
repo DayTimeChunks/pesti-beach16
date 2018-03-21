@@ -1,0 +1,117 @@
+---
+title: "Analysis Rainfall"
+author: "PAZ"
+date: "15 mars 2018"
+output: pdf_document
+---
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+Sys.setlocale("LC_ALL", "English")
+
+MAC = F
+WIN = T
+```
+
+
+# Lab parameters and field constants
+
+```{r}
+if (MAC) {
+  if (WIN){
+    path = file.path("C:/Users/DayTimeChunks/Documents/PhD/HydrologicalMonitoring")
+  } else {
+    path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+  }
+} else {
+  path = file.path("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring")
+}
+source(file.path(path, "global.R"))
+```
+
+
+# Packages
+
+```{r, message=FALSE}
+
+# Plotting functions
+library("scales")
+library("tidyr")
+library("dplyr")
+library("reshape")
+library("zoo") # na.approx()
+
+```
+
+
+# Rainfall
+
+**Note: Not for TSS**
+This was not the source for BEACH input, this was only to analyse Alteck's Pluviometer, which has only rainfall from March 2016 onward.
+
+```{r}
+# rain = read.csv2(file.path(path, "Data/sixMinutePluvioAlteck2016.csv"), header = F)
+rain = read.csv2("12minRain.csv", header = T, dec = ".")
+
+head(rain)
+
+rain$V1 <- as.character(rain$Date)
+rain$Date = as.POSIXct(strptime(rain$V1,
+                                "%d/%m/%Y %H:%M", tz="EST") )
+
+rain$DayMoYr = as.POSIXct(strptime(rain$V1,
+                                   "%d/%m/%Y", tz="EST")  ) 
+
+# Check number of NA values
+CHECKO = FALSE
+if (CHECKO){
+  sum(is.na(rain$Date))
+  naDates = rain[is.na(rain$Date == TRUE),]  
+}
+
+rainDay <- rain %>%
+  group_by(DayMoYr) %>%
+  dplyr::summarize(Rain.mm = sum(Rain.mm))
+```
+
+## Prepare Rainfall Time Series (TSS)
+
+```{r}
+if (FALSE) {
+  rainDay$time = seq.int(nrow(rainDay)) 
+  rain_tss = rainDay[,c("time", "Rain.mm")] 
+  #rain_tss = rbind(c("2016-03-25 to 2016-07-11", NA), rain_tss)
+  write.csv(rainDay, "../rain_mmday.csv", row.names = F, sep = ",")
+  write.table(rain_tss, "../rain_mmday.tss", sep="\t", row.names = F)  
+}
+
+```
+
+## Analyse Rainfall Monthly Values
+
+```{r}
+rainDay$Month <- 
+  ifelse(rainDay$DayMoYr >= as.POSIXct("2016-03-24 00:30:00", tz = "EST") &
+           rainDay$DayMoYr < as.POSIXct("2016-04-01 00:00:00", tz = "EST"), "March",
+         ifelse(rainDay$DayMoYr >= as.POSIXct("2016-04-01 00:00:00", tz = "EST") &
+                  rainDay$DayMoYr < as.POSIXct("2016-05-01 00:00:00", tz = "EST"), "April",
+                ifelse(rainDay$DayMoYr >= as.POSIXct("2016-05-01 00:00:00", tz = "EST") &
+                         rainDay$DayMoYr < as.POSIXct("2016-06-01 00:00:00", tz = "EST"), "May",
+                       ifelse(rainDay$DayMoYr >= as.POSIXct("2016-06-01 00:00:00", tz = "EST") & 
+                                rainDay$DayMoYr < as.POSIXct("2016-07-01 00:00:00", tz = "EST"), "June", "July" )
+                            )
+                     )
+         )
+
+rainDay$Wet = ifelse(rainDay$Rain.mm > 0, 1, 0)
+rainDay$Dry = ifelse(rainDay$Rain.mm == 0, 1, 0)
+
+rainSumm <- rainDay %>%
+  group_by(Month) %>%
+  dplyr::summarize(WetDays = sum(Wet),
+                   DryDays = sum(Dry),
+                   MeanP = mean(Rain.mm),
+                   StdP = sd(Rain.mm),
+                   TotP = sum(Rain.mm))
+
+rainSumm$Prct = rainSumm$WetDays/(rainSumm$WetDays+rainSumm$DryDays)
+```

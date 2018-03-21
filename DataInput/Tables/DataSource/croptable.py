@@ -5,7 +5,7 @@ import pandas as pd
 # Which computer's directory?
 PC = True
 # What model version?
-version = 'v4'
+version = 'v6'  # v6
 
 if PC:
     path = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/"
@@ -71,6 +71,18 @@ croptable.loc[1:, 'theta_sat_z2'] = np.select(theta_condition, [0.61], default=0
 croptable.loc[1:, 'theta_fcap_z2'] = 0.2
 croptable.loc[1:, 'theta_wp'] = 0.1
 
+
+# Dynamic Ksat
+# Most assume constant Group B, unless crop.
+# Fallow (11), Greenery (6), Orchard (13)
+# 5.3 mm/h -> 127 mm/day   <- Group B!!!
+
+# Ditch (10), Dirt Road (7), Grass Road (8)
+# 1.8 mm/h -> 43.2 mm/day
+
+# Paved road (9)
+# 0.13 mm/h -> 3.12 mm/day
+
 ksat_condition = [
     (croptable.loc[1:, 'crop_type'] == 7),  # Dirt Road, assumed Group C, 1.3-3.8 mm/h -> 2.6 mm/h = 62mm/day
     (croptable.loc[1:, 'crop_type'] == 9),  # Paved Road, assumed Group D, < 1.3mm/h = 31 mm/day
@@ -83,8 +95,8 @@ ksat_condition = [
 # 1.8 mm/h (1.8*24h =43.2)
 # 5.3 mm/h -> 127 mm/day   <- Group B!!!
 # 26.8 mm/h -> 643.2 mm/day  <- Already Group A, unlikely based on soil characteristics!!!
-croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, [62, 31, 643], default=127)  # mm/day
-croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [62, 31, 127], default=127)  # mm/day
+croptable.loc[1:, 'k_sat_z0z1'] = np.select(ksat_condition, [62, 31, 43.2], default=643)  # mm/day
+croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [62, 31, 43.2], default=43.2)  # mm/day
 # croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day
 # croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
 
@@ -128,17 +140,18 @@ CN2 = {"Corn": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
        "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-2b, but Bare Soil treatment
        }
 
-group = [CN2["Corn"]["B"],
-         CN2["Wheat"]["B"],
-         CN2["Beet"]["B"],
-         CN2["Greenery"]["B"],
-         CN2["Dirt Road"]["B"],
-         CN2["Grass Road"]["B"],
-         CN2["Paved Road"]["B"],
-         CN2["Ditch"]["B"],
-         CN2["Fallow"]["B"],
-         CN2["Hedge"]["B"],
-         CN2["Orchard"]["B"]
+letter = "B"
+group = [CN2["Corn"][letter],
+         CN2["Wheat"][letter],
+         CN2["Beet"][letter],
+         CN2["Greenery"][letter],
+         CN2["Dirt Road"][letter],
+         CN2["Grass Road"][letter],
+         CN2["Paved Road"][letter],
+         CN2["Ditch"][letter],
+         CN2["Fallow"][letter],
+         CN2["Hedge"][letter],
+         CN2["Orchard"][letter]
          ]
 
 croptable.loc[1:, 'CN2'] = np.select(cn_conditions, group, default=98)
