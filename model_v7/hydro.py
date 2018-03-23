@@ -343,7 +343,7 @@ def getLayerMoisture(model, layer,
     theta_temp_layer += lateral_flow_layer / depth
     overflow = ifthenelse(theta_temp_layer > theta_sat, theta_temp_layer - theta_sat, scalar(0))
     theta_temp_layer -= overflow
-    overflow_height = overflow_height * depth  # mm
+    overflow_height = overflow * depth  # mm
 
     if store:
         water_balance_layer += lateral_flow_layer
