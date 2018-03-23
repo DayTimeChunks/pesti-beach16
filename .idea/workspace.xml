@@ -2,15 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="eeb2bdff-6f2f-4397-b547-c798e9d95752" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/WriteUp.zip" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/WriteUp/IsotopeMethods.pdf" afterPath="$PROJECT_DIR$/WriteUp/IsotopeMethods.pdf" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/WriteUp/IsotopeMethods.Rmd" afterPath="$PROJECT_DIR$/WriteUp/IsotopeMethods.Rmd" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/WriteUp/IsotopeMethods.tex" afterPath="$PROJECT_DIR$/WriteUp/IsotopeMethods.tex" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/WriteUp/packages.bib" afterPath="$PROJECT_DIR$/WriteUp/packages.bib" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/model_s1/pesti.py" afterPath="$PROJECT_DIR$/model_s1/pesti.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/model_v7/hydro.py" afterPath="$PROJECT_DIR$/model_v7/hydro.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/model_v7/model.py" afterPath="$PROJECT_DIR$/model_v7/model.py" />
     </list>
     <ignored path=".idea/dataSources.local.xml" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -42,13 +34,13 @@
   <component name="FileEditorManager">
     <splitter split-orientation="vertical" split-proportion="0.47396386">
       <split-first>
-        <splitter split-orientation="horizontal" split-proportion="0.6430575">
+        <splitter split-orientation="horizontal" split-proportion="0.38115332">
           <split-first>
             <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
               <file leaf-file-name="pesti.py" pinned="false" current-in-tab="false">
                 <entry file="file://$PROJECT_DIR$/model_s1/pesti.py">
                   <provider selected="true" editor-type-id="text-editor">
-                    <state relative-caret-position="60">
+                    <state relative-caret-position="5325">
                       <caret line="356" column="22" selection-start-line="356" selection-start-column="22" selection-end-line="356" selection-end-column="22" />
                       <folding />
                     </state>
@@ -58,7 +50,7 @@
               <file leaf-file-name="hydro.py" pinned="false" current-in-tab="false">
                 <entry file="file://$PROJECT_DIR$/model_v7/hydro.py">
                   <provider selected="true" editor-type-id="text-editor">
-                    <state relative-caret-position="213">
+                    <state relative-caret-position="6510">
                       <caret line="435" column="30" selection-start-line="435" selection-start-column="12" selection-end-line="435" selection-end-column="30" />
                       <folding />
                     </state>
@@ -84,7 +76,7 @@
             </leaf>
           </split-first>
           <split-second>
-            <leaf>
+            <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
               <file leaf-file-name="model.py" pinned="false" current-in-tab="true">
                 <entry file="file://$PROJECT_DIR$/model_v7/model.py">
                   <provider selected="true" editor-type-id="text-editor">
@@ -104,7 +96,7 @@
               <file leaf-file-name="pesti.py" pinned="false" current-in-tab="false">
                 <entry file="file://$PROJECT_DIR$/model_s1/pesti.py">
                   <provider selected="true" editor-type-id="text-editor">
-                    <state relative-caret-position="192">
+                    <state relative-caret-position="9360">
                       <caret line="625" column="94" selection-start-line="625" selection-start-column="69" selection-end-line="625" selection-end-column="94" />
                       <folding />
                     </state>
@@ -132,7 +124,7 @@
             </leaf>
           </split-first>
           <split-second>
-            <leaf>
+            <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
               <file leaf-file-name="model.py" pinned="false" current-in-tab="true">
                 <entry file="file://$PROJECT_DIR$/model_s1/model.py">
                   <provider selected="true" editor-type-id="text-editor">
@@ -283,8 +275,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
-      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -319,6 +309,8 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scope" />
+      <pane id="Scratches" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -688,9 +680,9 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-1918" y="-157" width="1805" height="1033" extended-state="0" />
-    <editor active="true" />
+    <editor active="false" />
     <layout>
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.19115144" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.1934203" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
@@ -923,15 +915,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/model_s1/model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="627" column="52" selection-start-line="627" selection-start-column="52" selection-end-line="627" selection-end-column="52" />
+        <state relative-caret-position="137">
+          <caret line="976" column="29" selection-start-line="976" selection-start-column="26" selection-end-line="976" selection-end-column="29" />
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/model_s1/pesti.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
+        <state relative-caret-position="5325">
           <caret line="356" column="22" selection-start-line="356" selection-start-column="22" selection-end-line="356" selection-end-column="22" />
           <folding />
         </state>
@@ -939,7 +931,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/model_v7/hydro.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="213">
+        <state relative-caret-position="6510">
           <caret line="435" column="30" selection-start-line="435" selection-start-column="12" selection-end-line="435" selection-end-column="30" />
           <folding />
         </state>
