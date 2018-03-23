@@ -341,6 +341,9 @@ def getLayerMoisture(model, layer,
 
     # Water Mass Balance & Moisture Update #######
     theta_temp_layer += lateral_flow_layer / depth
+    overflow = ifthenelse(theta_temp_layer > theta_sat, theta_temp_layer - theta_sat, scalar(0))
+    theta_temp_layer -= overflow
+    overflow_height = overflow_height * depth  # mm
 
     if store:
         water_balance_layer += lateral_flow_layer
@@ -430,6 +433,7 @@ def getLayerMoisture(model, layer,
             "runoff": roff_z0,  # mm
             "drain_lat_outflow": cell_drainge_outflow,  # mm
             "lat_flow": lateral_flow_layer,  # net mm
+            "overflow_height": overflow_height,  # mm
             "ETP": etp_layer,
             "balance": water_balance_layer,
             "upstream_lat_inflow": upstream_cell_inflow,

@@ -335,7 +335,7 @@ def update_layer_delta(model, layer, process, mass_process,
                        mass_before_transport):
     if layer == 0:
         delta_layer = model.delta_z0
-        delta_layer_above = 0
+        delta_layer_above = None
         mass_layer = model.pestmass_z0
     elif layer == 1:
         delta_layer = model.delta_z1
@@ -391,29 +391,29 @@ def getVolatileMass(model, app_days, temp_air, theta_sat, rel_diff_model="option
     # Volatilize only during peak volatilization time i.e., first 24 hrs, @Prueger2005.
     if model.jd_cum in app_days:
         theta_layer = model.theta_z0
-        mass_layer = model.pestmass_z0
-        depth = model.z0
+        mass_layer = model.pestmass_z0  # ug
+        depth_m = model.z0 * 1/10**3  # Convert to m (needed for final mass computation on cell basis)
         # Air boundary layer, assumed equivalent to top soil thickness
-        thickness_a = model.z0  # m (Thickness air boundary layer)
+        thickness_a = depth_m  # m (Thickness air boundary layer)
         # D_ar (metolachlor) = 0.03609052694; Diffusion coefficient in air (cm^2/s); https://www.gsi-net.com
-        diff_ar = 0.03609 * 86400 * 10e-04  # m2/d (Diff. coeff in air at reference Temp., in Kelvin, D_a,r)
+        diff_ar = 0.03609 * 86400 * 1/10**4  # m2/d (Diff. coeff in air at reference Temp., in Kelvin, D_a,r)
         # TODO: define actual temperature, the value here is temp_bare_soil, not temp_air
         diff_a = (temp_air / 293.15) ** 1.75 * diff_ar  # m2/d (Diff. coefficient adjusted to air Temp., D_a)
 
         if rel_diff_model == "option-1":
             # Millington and Quirk, 1960 (in Leistra, 2001, p.48)
             # a,b parameters: Jin and Jury, 1996 (in Leistra, 2001)
-            diff_relative_gas = diff_a * (theta_sat - theta_layer) ** 2 / theta_sat ** (2 / 3)
+            diff_relative_gas = diff_a * (theta_sat - theta_layer) ** 2 / theta_sat ** (2 / 3)  # m2/d
         elif rel_diff_model == "option-2":
             # Currie 1960 (in Leistra, 2001)
             # a,b parameters: Baker, 1987 (in Leistra, 2001)
-            diff_relative_gas = diff_a * 2.5 * (theta_sat - theta_layer) ** 3
+            diff_relative_gas = diff_a * 2.5 * (theta_sat - theta_layer) ** 3  # m2/d
         else:
             print("No appropriate relative diffusion parameter option chosen for getVolatileMass()")
-            diff_relative_gas = diff_a
+            diff_relative_gas = diff_a  # m2/d
 
         r_a = thickness_a / diff_a  # d/m resistance for transport through boundary air layer
-        r_s = (0.5 * theta_layer) / diff_relative_gas
+        r_s = (0.5 * depth_m) / diff_relative_gas  # d/m
 
         if sorption_model == "linear":
             # Retardation factor
@@ -423,19 +423,20 @@ def getVolatileMass(model, app_days, temp_air, theta_sat, rel_diff_model="option
         if gas:
             # Leistra et al., 2001
             theta_gas = theta_sat - theta_layer
-            conc_layer_aq = mass_layer / ((cellarea() * depth) *
-                                          (theta_gas * model.k_h + theta_layer * retard_layer))  # mg/L
+            # Remember that: m2 * mm = L
+            conc_layer_aq = mass_layer / ((cellarea() * model.z0) *
+                                          (theta_gas * model.k_h + theta_layer * retard_layer))  # ug/L
         else:
             # Whelan, 1987 # No gas phase considered
-            conc_layer_aq = (mass_layer / cellarea()) / (theta_layer * retard_layer * depth)  # mg/L
+            conc_layer_aq = (mass_layer / cellarea()) / (theta_layer * retard_layer * model.z0)  # ug/L
 
-        # Convert mg/L to mg/m3, as will be multiplying by cell's area in m2
-        conc_layer_aq *= 10 ** 3  # mg/m3
-        conc_gas_layer = conc_layer_aq / model.k_h  # Henry's  mg/m3
-        volat_flux = (conc_gas_layer / (r_a + r_s)) * cellarea()  # mg/day
+        # Convert ug/L to ug/m3, as will be multiplying by cell's area in m2
+        conc_layer_aq *= 10 ** 3  # ug/m3
+        conc_gas_layer = conc_layer_aq / model.k_h  # Henry's  ug/m3
+        volat_flux = (conc_gas_layer / (r_a + r_s)) * cellarea()  # ug/day
     else:
         volat_flux = 0
-    return {"mass_loss": volat_flux}  # mg / day
+    return {"mass_loss": volat_flux}  # ug / day
 
 
 def getKfilm(model, runoffvelocity):

@@ -1,0 +1,20 @@
+---
+title: "Temperature BEACH"
+author: "PAZ"
+date: "May 8, 2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Temperature
+
+Temperture is an important parameter regulating chemical and biological processes. To simulate its evolution across time and space this model follows [@Nietsch2009], where the average daily soil temperature ($^{\circ}$C) at the center of each soil layer is given by:
+
+$$
+T_{soil, k, t} = l \cdot T_{soil, k, t-1} + (1.0 - l) \cdot \big[df \cdot [\overline{T}_{AAir} - T_{ssurf}]+T_{ssurf}]
+$$
+
+where $l$ is a lag coefficient (0 - 1.0) regulating the influence of the previous day's temperature, the subscript $t-1$, refers to the previous day, $df$ is a depth factor, $\overline{T}_{AAir}$ is the average annual air temperature and $T_{ssurf}$ is the soil surface temperature at time $t$.  

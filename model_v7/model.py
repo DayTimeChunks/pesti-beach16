@@ -101,6 +101,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.tot_accu_drain_m3_tss = TimeoutputTimeseries("res_o_totDrain_m3", self, nominal("outlet_true"),
                                                               noHeader=False)
         # LF options
+        self.sat_accu_overflow_m3_tss = TimeoutputTimeseries("res_of_accuLatflow_m3", self, nominal("outlet_true"),
+                                                              noHeader=False)
+
+        self.tot_accu_of_latflow_m3_tss = TimeoutputTimeseries("res_of_totLatflow_m3", self, nominal("outlet_true"),
+                                                              noHeader=False)
+
         self.out_accu_i_latflow_m3_tss = TimeoutputTimeseries("res_i_accuLatflow_m3", self, nominal("outlet_true"),
                                                               noHeader=False)
         self.tot_accu_i_latflow_m3_tss = TimeoutputTimeseries("res_i_totLatflow_m3", self, nominal("outlet_true"),
@@ -404,6 +410,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.tot_ilf_m3 = 0  # upstream inflow
         self.tot_olf_m3 = 0  # downstream outflow
 
+        self.tot_of_m3 = 0  # Overflow due to LF sat capacity reached
+
         self.tot_etp_m3 = 0
         self.tot_perc_z2_m3 = 0
         self.tot_runoff_m3 = 0
@@ -615,6 +623,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         lat_netflow_z0 = z0_moisture["lat_flow"]
         lat_inflow_z0 = z0_moisture["upstream_lat_inflow"]
         lat_outflow_z0 = z0_moisture["cell_lat_outflow"]
+        overflow_height_z0 = z0_moisture["overflow_height"]
 
         # self.obs_runoff_m3_tss.sample(runoff_z0*4/1000)
 
@@ -741,6 +750,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         lat_netflow_z1 = z1_moisture["lat_flow"]
         lat_outflow_z1 = z1_moisture["cell_lat_outflow"]
         lat_inflow_z1 = z1_moisture["upstream_lat_inflow"]
+        overflow_height_z1 = z1_moisture["overflow_height"]
         etp_z1 = z1_moisture["ETP"]
 
         if self.PEST:
@@ -816,6 +826,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         lat_netflow_z2 = z2_moisture["lat_flow"]
         lat_outflow_z2 = z2_moisture["cell_lat_outflow"]
         lat_inflow_z2 = z2_moisture["upstream_lat_inflow"]
+        overflow_height_z2 = z2_moisture["overflow_height"]
         etp_z2 = z2_moisture["ETP"]
 
         if self.PEST:
@@ -895,6 +906,15 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.out_accu_o_drain_m3_tss.sample(o_drain_z1_m3)
 
         # Discharge due to lateral flow
+
+        # Overflow
+        overflow_cellvol_z0 = overflow_height_z0 * cellarea() / 1000  # m3
+        overflow_cellvol_z1 = overflow_height_z1 * cellarea() / 1000  # m3
+        overflow_cellvol_z2 = overflow_height_z2 * cellarea() / 1000  # m3
+        column_overflow = overflow_cellvol_z2 + overflow_cellvol_z1 + overflow_cellvol_z0
+        of_latflow_m3 = accuflux(self.ldd_subs, column_overflow)
+        self.sat_accu_overflow_m3_tss.sample(of_latflow_m3)
+
         # In/Outflow
         in_latflow_z0_m3 = lat_inflow_z0 * cellarea() / 1000  # m3
         in_latflow_z1_m3 = lat_inflow_z1 * cellarea() / 1000
@@ -936,6 +956,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         out_ch_storage_m3 = accuflux(self.ldd_subs, ch_storage_m3)
         self.out_ch_storage_m3_tss.sample(out_ch_storage_m3)
 
+        # Need to subtract: of_latflow_m3
         global_mb_water = tot_rain_m3 - out_runoff_m3 - out_percol_m3 - out_etp_m3 + n_latflow_m3 - o_drain_z1_m3 - out_ch_storage_m3
         self.global_mb_water_tss.sample(global_mb_water)
 
@@ -946,10 +967,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         vol_tot_m3 = accuflux(self.ldd_subs, cell_vol_tot_m3)
         self.storage_m3_tss.sample(vol_tot_m3)
 
-        # Runoff + accu_latflow + accu_drainage
+        # Runoff + accu_latflow + accu_drainage + of_latflow_m3
         in_vol_disch_m3 = out_runoff_m3 + i_latflow_m3
         out_vol_disch_m3 = out_runoff_m3 + o_latflow_m3
-        net_vol_disch_m3 = out_runoff_m3 + n_latflow_m3 + o_drain_z1_m3
+        net_vol_disch_m3 = out_runoff_m3 + n_latflow_m3 + o_drain_z1_m3 + of_latflow_m3
 
         self.i_Q_m3_tss.sample(in_vol_disch_m3)
         self.o_Q_m3_tss.sample(out_vol_disch_m3)
@@ -1035,6 +1056,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.tot_accu_o_latflow_m3_tss.sample(self.tot_olf_m3)
         self.tot_nlf_m3 += ifthenelse(q_obs >= 0, n_latflow_m3, 0)
         self.tot_accu_n_latflow_m3_tss.sample(self.tot_nlf_m3)
+        self.tot_of_m3 += ifthenelse(q_obs >= 0, of_latflow_m3, 0)
+        self.tot_accu_of_latflow_m3_tss.sample(self.tot_of_m3)
 
 
         # Daily Maps
@@ -1068,7 +1091,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # aguila --quantiles=[0.25,0.75,0.25] --timesteps=[170,280,1] q
 
 
-nrOfSamples = 6  # Samples are each a MonteCarlo realization
+nrOfSamples = 2  # Samples are each a MonteCarlo realization
 firstTimeStep = 1
 nTimeSteps = 280
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
