@@ -272,34 +272,35 @@ where \(K_{sat}\) is the saturated hydraulic conductivity.
 
 Later flow occurs when the soil moisture content exceeds the field
 capacity and is represented as the difference between inflow and outflow
-of a downstream cell \(i\) at soil layer \(z\) according to Manfreda
+at a cell \(j\) for each soil layer \(z\) according to Manfreda
 \textit{et al.}, \citep{Manfreda2005}:
 
 \begin{equation}
-\Delta LF_{i,z} = \Big( \frac{W_{i,z} \sum^{N(t)}_{j=1}max[c_{j,z}(s_{j,z}-s_{fc,j,z}),~0] }{ \sum^{N(t)}_{j=1} W_{j,z} } \Big) - max[c_z(s_z-s_{fc,z}),~0]
+\Delta LF_{j(t)} = \Big( \frac{W_{j} \sum^{N(t)}_{i=1}max[c_{z}(SW_{i}-SW_{fc,i}),~0] }{ \sum^{N(t)}_{i=1} W_{i} } \Big) - max[c_z(SW_j-SW_{fc,j}),~0]
 \label{eq:LF}  
 \end{equation}
 
-were \(c\) is the subsurface flow coefficient (\(\approx\) 0.25
-\(d^{-1}\), if \(dt\) \(\leq\) \(1~d\), \citep{Manfreda2005}), \(s\) and
-\(s_{fc}\) are the soil moisture and the field capacity of the soil
-profile {[}mm{]}, respectively. \(N(t)\) is the number of cells
-exceeding field capacity and at steepest slope to cell \(i\).
-\(W_{(i,k)}\) and \(W_{(j,k)}\) are the topographic wetness indices (m)
-at cell \(i\) (downstream cell) and \(j\) (upstream cell(s)),
-respectively. The wetness index describes the tendency for water to
+were \(c_z\) is the subsurface flow coefficient (\(\approx\) 0.25
+\(d^{-1}\), if \(dt\) \(\leq\) \(1~d\), \citep{Manfreda2005}), \(SW\)
+and \(SW_{fc}\) are the soil water content at time \(t\) and at field
+capacity for the soil profile {[}mm{]}, respectively. \(N(t)\) is the
+number of cells \(i\) upstream exceeding field capacity and at steepest
+slope to cell \(j\). The topographical wetness index (TWI) \(W\),
+introduced by \cite{Beven1979}, describes the tendency for water to
 accumulate spatially in regions characterized by a relatively low local
-slope and a large upstream drainage area (cite: Kirby 1975). It is given
-by (cite Kirby 1975 or Beven and Kirk 1979):
+slope and a large upstream drainage area. \(W_j\) is the TWI at cell
+\(j\) and \(W_i\) the cumulative TWI from upstream cells \(i\). The TWI
+is given by:
 
 \begin{equation}
-W_j =ln\Big(\frac{a}{tan \beta} \Big)
+TWI =ln\Big(\frac{a}{tan \beta} \Big)
 \label{eq:Wz}  
 \end{equation}
 
-were \(a\) is the drainage area \((m^2)\) from upstream cells defined by
-the Local Drain Direction (LDD) network and tan \(\beta\) is the local
-slope in radians derived from the Digital Elevation Model (DEM).
+were \(a\) is the drainage area per unit contour length (defined by the
+Local Drain Direction (LDD) network and cell area) and tan \(\beta\),
+the local slope in radians derived from the Digital Elevation Model
+(DEM).
 
 \hypertarget{evapotranspiration}{%
 \subsubsection{Evapotranspiration}\label{evapotranspiration}}
