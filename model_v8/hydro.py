@@ -7,6 +7,7 @@ from pcraster.framework import *
 # import time
 # print(os.getcwd())
 
+DEBUG = False
 
 def getBiomassCover(model, frac_soil_cover):
     # biomass cover conversion (SWAT adaptation)
@@ -476,9 +477,19 @@ def getLayerTemp(model, layer,
     df_layer = zd_layer / (zd_layer + exp(-0.867 - 2.708 * zd_layer))
 
     # Need to define temp_soil_surf_fin, if layer > 0
-    if layer == 0:
-        # Define surface temperature when no cover is present:
-        temp_at_surf = bio_cover * model.temp_surf_fin + (1 - bio_cover) * temp_bare_soil
+    if DEBUG:
+        if layer == 0:
+            # Define surface temperature when no cover is present:
+            temp_at_surf = bio_cover * model.temp_surf_fin + (1 - bio_cover) * temp_bare_soil
+
+            # model.report(phi_layer, "phi")
+            # model.report(dd_layer, "ddTemp")
+            # model.report(dd_layer, "dfTemp")
+            model.report(temp_at_surf, "tempSrf")
+            model.report(bio_cover, "bioCV")
+            # model.report(temp_bare_soil, "bareTSo")
+
+
     else:
         temp_at_surf = model.temp_surf_fin
 
@@ -489,7 +500,7 @@ def getLayerTemp(model, layer,
     return {"temp_layer": temp_soil_layer, "temp_surface": temp_at_surf}
 
 
-def getPotET(sow_yy, sow_mm, sow_dd,
+def getPotET(model, sow_yy, sow_mm, sow_dd,
              jd_sim,
              wind, humid,
              # frac_soil_cover, # Replaced by method: Allen et al., 1998
@@ -515,7 +526,11 @@ def getPotET(sow_yy, sow_mm, sow_dd,
     jd_end = jd_late + len_end_stage
 
     # Basal crop coefficient (defined in crop.tbl)
-    kcb1 = ifthenelse(jd_sim < jd_plant, scalar(0),
+    # model.report(jd_sim, 'jd_sim')
+    # model.report(jd_plant, 'jd_plan')
+
+    kcb_ini = max(kcb_ini, scalar(0.15))  # Kcb_min
+    kcb1 = ifthenelse(jd_sim < jd_plant, kcb_ini,
                       ifthenelse(jd_sim < jd_dev, kcb_ini,
                                  ifthenelse(jd_sim < jd_mid,
                                             kcb_ini + (jd_sim - jd_dev) / len_dev_stage * (kcb_mid - kcb_ini),
@@ -523,14 +538,21 @@ def getPotET(sow_yy, sow_mm, sow_dd,
                                                        ifthenelse(jd_sim < jd_end,
                                                                   kcb_mid + (jd_sim - jd_late) / len_end_stage * (
                                                                       kcb_end - kcb_mid),
-                                                                  0)))))
+                                                                  kcb_ini)))))
     # Crop transpiration coefficient adjusted for climate condition, # eq. 72
     kcb = ifthenelse(kcb1 > 0.4, kcb1 + (0.04 * (wind - 2) - 0.004 * (humid - 45)) * (height / 3) ** 0.3, kcb1)
     kcmax = max((1.2 + (0.04 * (wind - 2) - 0.004 * (humid - 45)) * (height / float(3)) ** 0.3), kcb + 0.05)
 
     # Pot. Transpiration
     # Due to Allen et al., 1998
-    frac_soil_cover = ((kcb - kcb_ini) / (kcmax - kcb_ini)) ** (1 + 0.5 * height)
+    kcb_ratio = max((kcb - kcb_ini) / (kcmax - kcb_ini), scalar(0))
+    frac_soil_cover = min((kcb_ratio)**(height*0.5+1), scalar(0.99))
+    # frac_soil_cover = ifthenelse(kcmax > kcb_ini, ((kcb - kcb_ini) / (kcmax - kcb_ini)) ** (height*0.5 + 1), scalar(0))
+    # model.report(kcb, 'kcb')
+    # model.report(kcb_ini, 'kcb_ini')
+    # model.report(kcmax, 'kc_max')
+    # model.report(height, 'kheight')
+    # model.report(frac_soil_cover, 'fsoilCV')
     pot_transpir = kcb * et0
 
     # Pot. Evaporation

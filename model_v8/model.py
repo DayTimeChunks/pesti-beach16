@@ -4,7 +4,7 @@
 import time
 from datetime import datetime
 from hydro import *
-# from pesti import *
+from pesti import *
 
 from pcraster._pcraster import *
 from pcraster.framework import *
@@ -208,7 +208,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Volatilization parameters
         """
         # https://www.gsi-net.com
-        self.k_h = scalar(self.ini_param.get("k_h"))  # Henry's constant @ 20 C (dimensionless, Metolachlor)
+        self.k_h = max(scalar(self.ini_param.get("k_h")), scalar(3.13e-08))  # Henry's constant @ 20 C (dimensionless, Metolachlor)
 
         """
         Degradation parameters
@@ -221,6 +221,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # DT50 (water-sediment) = 365
         # DT50 (water phase only) = 88
         self.dt_50_ref = scalar(self.ini_param.get("dt_50_ref"))  # S-met (days)
+
 
         self.temp_ref = scalar(self.ini_param.get("temp_ref"))  # Temp.  reference
 
@@ -388,8 +389,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # simulation start time in JD (Julian Day)
         self.jd_start = 367 * yy - rounddown(7 * (yy + rounddown((mm + 9) / 12)) / 4) + rounddown(
             (275 * mm) / 9) + dd + 1721013.5 - 0.5 * date_factor
-        self.jd_cum = 0
-        self.jd_dt = 1  # Time step size (days)
+        self.jd_cum = scalar(0)
+        self.jd_dt = scalar(1)  # Time step size (days)
 
         # Analysis
         self.q_diff = 0
@@ -574,7 +575,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # self.fTss.sample(frac_soil_cover)
 
         # Get potential evapotranspiration for all layers
-        etp_dict = getPotET(sow_yy, sow_mm, sow_dd,
+        etp_dict = getPotET(self, sow_yy, sow_mm, sow_dd,
                             jd_sim,
                             wind, humid,
                             et0,
@@ -588,6 +589,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Not in use for water balance, but used to estimate surface temp due to bio-cover.
         frac_soil_cover = etp_dict["f"]
+
         bio_cover = getBiomassCover(self, frac_soil_cover)
 
         ######################################################################################
@@ -635,11 +637,13 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.pestmass_z0_ini = self.pestmass_z0  # mg
 
             # Applications
-            if self.jd_cum in self.app_days:
-                mass_applied = ifthenelse(self.jd_cum == self.app_days[0],
+            mass_applied = self.zero_map
+            # z0_mass_volatilized = self.zero_map
+            if self.currentTimeStep() in self.app_days:
+                mass_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
                                           self.app1 * cellarea(),
-                                          ifthenelse(self.jd_cum == self.app_days[1], self.app2 * cellarea(),
-                                                     ifthenelse(self.jd_cum == self.app_days[2], self.app3 * cellarea(),
+                                          ifthenelse(self.currentTimeStep() == self.app_days[1], self.app2 * cellarea(),
+                                                     ifthenelse(self.currentTimeStep() == self.app_days[2], self.app3 * cellarea(),
                                                                 scalar(0))))  # [mg]
                 self.cum_appl_mg += mass_applied
                 self.pestmass_z0 += mass_applied  # mg
@@ -648,9 +652,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
                 # Isotopes change due to applications
                 self.delta_z0_ini = self.delta_z0
-                delta_applied = ifthenelse(self.jd_cum == 177, self.app1delta,
-                                           ifthenelse(self.jd_cum == 197, self.app2delta,
-                                                      ifthenelse(self.jd_cum == 238, self.app3delta,
+                delta_applied = ifthenelse(self.currentTimeStep() == 177, self.app1delta,
+                                           ifthenelse(self.currentTimeStep() == 197, self.app2delta,
+                                                      ifthenelse(self.currentTimeStep() == 238, self.app3delta,
                                                                  scalar(0))))  # [delta permille]
                 # isotope mass balance (due to application only)
                 self.delta_z0 = scalar(1) / self.pestmass_z0 * (
@@ -681,6 +685,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                            transfer_model="d-mlm", sorption_model="linear")
             self.pestmass_z0 -= z0_mass_runoff["mass_runoff"]  # mg
             self.delta_z0 = update_layer_delta(self, 0, "runoff", z0_mass_runoff, mass_before_transport)
+            #self.report(self.pestmass_z0, 'z0ro_M')
+            #self.report(self.delta_z0, 'z0ro_dC')
 
             # Mass & delta leached (Deep Percolation - DP)
             z0_mass_leached = getLeachedMass(self, 0, theta_sat_z0z1,
@@ -692,6 +698,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
             mass_before_transport = self.pestmass_z0
             self.pestmass_z0 -= z0_mass_leached["mass_leached"]  # mg
             self.delta_z0 = update_layer_delta(self, 0, "leach", z0_mass_leached, mass_before_transport)
+            #self.report(self.pestmass_z0, 'z0lch_M')
+            #self.report(self.delta_z0, 'z0lch_dC')
 
             # Mass & delta latflux (LF)
             mass_before_transport = self.pestmass_z0
@@ -702,6 +710,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
             f1 = z0_mass_latflux["f1"]
             f2 = z0_mass_latflux["f2"]
             f3 = z0_mass_latflux["f3"]
+            self.report(f1, 'f1')
+            self.report(f2, 'f2')
+            self.report(f3, 'f3')
+            self.report(self.pestmass_z0, 'z0lf_M')
+            self.report(self.delta_z0, 'z0lf_dC')
 
             # Degradation
             mass_before_degradation = self.pestmass_z0
@@ -710,8 +723,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                   theta_fcap_z0z1, theta_wp,
                                   sor_deg_factor=1)
             self.pestmass_z0 = deg_z0_dict["mass_light_fin"] + deg_z0_dict["mass_heavy_fin"]
-            self.delta_z0 = (deg_z0_dict["mass_heavy_fin"] / deg_z0_dict[
-                "mass_light_fin"] - self.r_standard) / self.r_standard
+            self.delta_z0 = (deg_z0_dict["mass_heavy_fin"] / deg_z0_dict[ "mass_light_fin"] - self.r_standard) / self.r_standard
+            self.report(self.pestmass_z0, 'z0deg_M')
+            self.report(self.delta_z0, 'z0deg_dC')
+            self.report(self.r_standard, 'rstd')
 
             # # Testing
             # if self.jd_cum in {2, 5, 8}:
@@ -1001,8 +1016,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
             cum_out_runoff_mg = accuflux(self.ldd_subs, self.cum_runoff_mg)
 
             # Loss to air/volatilized
-            out_volat_mg = accuflux(self.ldd_subs, z0_mass_volatilized["mass_loss"])
-            # cum_out_volat_mg = accuflux(self.ldd, ...)
+            if self.currentTimeStep() in self.app_days:
+                m_vol = z0_mass_volatilized.get("mass_loss", self.zero_map)
+                out_volat_mg = accuflux(self.ldd_subs, m_vol)
+                # cum_out_volat_mg = accuflux(self.ldd, ...)
+            else:
+                out_volat_mg = self.zero_map
 
             # Loss to leaching
             out_leach_mg = accuflux(self.ldd_subs, z2_mass_leached["mass_leached"])
@@ -1107,8 +1126,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 
 nrOfSamples = 2  # Samples are each a MonteCarlo realization
-firstTimeStep = 1
-nTimeSteps = 280
+firstTimeStep = 175
+nTimeSteps = 180
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework

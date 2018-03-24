@@ -2,9 +2,14 @@
 
 from pcraster._pcraster import *
 from pcraster.framework import *
+
+
 # import os
 # import time
 
+
+DEBUG_pest = True
+global DEBUG_pest
 
 def get_conc_aq(model, layer, theta_sat, sorption_model="linear", gas=True):
     theta_layer = temp_layer = depth = mass_layer = None
@@ -115,19 +120,19 @@ def get_mass_from_aq(model, layer,
             # Leistra et al., 2001
             theta_gas = theta_sat - theta_aq_layer
             mass_layer = cellarea() * depth * (theta_gas * model.k_h * conc_aq  # gas
-                                                    + theta_aq_layer * conc_aq  # aqueous
-                                                    + model.p_b * model.k_d * conc_aq)  # sorbed
+                                               + theta_aq_layer * conc_aq  # aqueous
+                                               + model.p_b * model.k_d * conc_aq)  # sorbed
         else:
             # Leistra et al., 2001
-            theta_gas = theta_sat - theta_aq_layer
+            theta_gas = max(theta_sat - theta_aq_layer, scalar(0))
             mass_layer = cellarea() * depth * (theta_gas * model.k_h * conc_aq  # gas
-                                                    + theta_aq_layer * conc_aq  # aqueous
-                                                    + model.p_b * model.k_d * conc_aq)  # sorbed
+                                               + theta_aq_layer * conc_aq  # aqueous
+                                               + model.p_b * model.k_d * conc_aq)  # sorbed
     else:
         print("Running Linear Sorption, no Gas Phase")
         # Whelan, 1987 # No gas phase considered
         mass_layer = cellarea() * depth * (theta_aq_layer * conc_aq
-                                                + model.p_b * model.k_d * conc_aq)  # mg
+                                           + model.p_b * model.k_d * conc_aq)  # mg
     return mass_layer  # mg
 
 
@@ -155,21 +160,19 @@ def get_mass_from_ads(model, layer,
             print("Freundlich not implemented, running Linear Sorption")
             # Leistra et al., 2001
             mass_layer = cellarea() * depth * (theta_gas * model.k_h / model.k_d * conc_ads  # gas
-                                                    + theta_aq_layer * conc_ads / model.k_d  # aqueous
-                                                    + model.p_b * conc_ads)  # sorbed
+                                               + theta_aq_layer * conc_ads / model.k_d  # aqueous
+                                               + model.p_b * conc_ads)  # sorbed
         else:
             # Leistra et al., 2001
             mass_layer = cellarea() * depth * (theta_gas * model.k_h / model.k_d * conc_ads  # gas
-                                                    + theta_aq_layer * conc_ads / model.k_d  # aqueous
-                                                    + model.p_b * conc_ads)  # sorbed
+                                               + theta_aq_layer * conc_ads / model.k_d  # aqueous
+                                               + model.p_b * conc_ads)  # sorbed
     else:
         print("Running Linear Sorption, no Gas Phase")
         # Whelan, 1987 # No gas phase considered
         mass_layer = cellarea() * depth * (theta_aq_layer * conc_ads / model.k_d
-                                                + model.p_b * conc_ads)  # mg
+                                           + model.p_b * conc_ads)  # mg
     return mass_layer  # mg
-
-
 
 
 def getRsample(model, layer):
@@ -242,27 +245,37 @@ def degrade(model, layer,
 
     # Moisture factor in biodegradation
     # F_Theta_1
-    theta_factor = ifthenelse(theta_aq_layer <= 0.5 * theta_wp, 0,
+    theta_factor = ifthenelse(theta_aq_layer <= 0.5 * theta_wp, scalar(0),
                               ifthenelse(theta_aq_layer <= theta_fcap,
                                          (((theta_aq_layer - 0.5 * theta_wp) / (
-                                             theta_fcap - theta_wp)) ** model.beta_moisture),
-                                         1))
+                                             theta_fcap - theta_wp)) ** scalar(model.beta_moisture)),
+                                         scalar(1)))
     # Temperature factor in biodegradation
     # F_T_1
-    temp_factor = ifthenelse(temp_layer <= 0, 0,
-                             ifthenelse(temp_layer < 5,
-                                        (temp_layer / 5) * exp(model.alpha_temperature) * (5 - model.temp_ref),
-                                        exp(model.alpha_temperature * (5 - model.temp_ref))
-                                        )
-                             )
+    temp_factor = max(ifthenelse(temp_layer <= scalar(0), scalar(0),
+                                 ifthenelse(temp_layer < 5,
+                                            (temp_layer / 5) * exp(model.alpha_temperature) * (5 - model.temp_ref),
+                                            exp(model.alpha_temperature * (5 - model.temp_ref))
+                                            )
+                                 ), scalar(0))
+    if DEBUG_pest:
+        if layer == 0:
+            # model.report(model.alpha_temperature, 'alphT')
+            # model.report(model.beta_moisture, 'betaMoi')
+            # model.report(model.temp_ref, 'tempRef')
+            model.report(temp_layer, 'tempZ0')
+            model.report(theta_aq_layer, 'moistZ0')
+
+
     # Half-life as a function of temperature and moisture
-    dt_50 = max(model.dt_50_ref * theta_factor * temp_factor, 0)
+    dt_50 = max(model.dt_50_ref * theta_factor * temp_factor, scalar(0))
 
     # Convert to degradation constant
     # Deg in dissolved phase
-    k_b = ifthenelse(dt_50 > 0, ln(2) / dt_50, 0)  # Constant of degradation (-) is dynamic, based on Theta and Temp.
+    k_b = ifthenelse(dt_50 > 0, ln(2) / dt_50, scalar(0))  # Constant of degradation (-) is dynamic, based on Theta and Temp.
     # Deg in sorbed phase (now assumed equal)
     k_bs = k_b * sor_deg_factor
+
 
     # Step 0 - Obtain species concentration (aqueous phase)
     conc_layer_aq = get_conc_from_mass(model, layer,
@@ -275,8 +288,18 @@ def degrade(model, layer,
 
     # Step 1 - Degrade
     # First order degradation kinetics
-    conc_aq_light_new = conc_aq_light_ini * exp(-k_b * model.jd_dt)
-    conc_aq_heavy_new = conc_aq_heavy_ini * exp(- model.alpha_iso * k_b * model.jd_dt)
+    conc_aq_light_new = conc_aq_light_ini * exp(-k_b * scalar(model.jd_dt))
+    conc_aq_heavy_new = conc_aq_heavy_ini * exp(- model.alpha_iso * k_b * scalar(model.jd_dt))
+
+    if DEBUG_pest:
+        if layer == 0:
+            model.report(k_b, 'kbdeg')
+            model.report(theta_factor, 'thetF')
+            model.report(temp_factor, 'tempF')
+            model.report(conc_aq_light_ini, "lCini")
+            model.report(conc_aq_heavy_ini, "hCini")
+            model.report(conc_aq_light_new, "lCnew")
+            model.report(conc_aq_heavy_new, "hCnew")
 
     # Step 2 - Re-equilibrating sorbed pesticide, based on new total mass (i.e., after aqueous degradation)
     mass_light_new = get_mass_from_aq(model, layer,
@@ -285,6 +308,11 @@ def degrade(model, layer,
     mass_heavy_new = get_mass_from_aq(model, layer,
                                       theta_sat_z0z1, theta_sat_z2,
                                       conc_aq_heavy_new)  # mg
+    if DEBUG_pest:
+        if layer == 0:
+            model.report(mass_light_new, "lMaq")
+            model.report(mass_heavy_new, "hMaq")
+
     conc_ads_light = get_conc_from_mass(model, layer,
                                         theta_sat_z0z1, theta_sat_z2,
                                         return_phase="ads", gas=True, isotopes=True, mass=mass_light_new)
@@ -307,12 +335,18 @@ def degrade(model, layer,
                                            return_phase="aq", gas=True, isotopes=True, mass=mass_heavy_fin)
 
     # Change in mass due to aqueous & adsorbed degradation
+    # TODO: Check here!!
     mass_light_fin = get_mass_from_aq(model, layer,
                                       theta_sat_z0z1, theta_sat_z2,
                                       conc_aq_light_fin)
     mass_heavy_fin = get_mass_from_aq(model, layer,
                                       theta_sat_z0z1, theta_sat_z2,
                                       conc_aq_heavy_fin)
+
+    if DEBUG_pest:
+        if layer == 0:
+            model.report(mass_light_fin, "lMfin")
+            model.report(mass_heavy_fin, "hMfin")  # TODO: Strange values!!
 
     mass_deg_light = (mass_light_fin -
                       get_mass_from_aq(model, layer,
@@ -323,6 +357,11 @@ def degrade(model, layer,
                       get_mass_from_aq(model, layer,
                                        theta_sat_z0z1, theta_sat_z2,
                                        conc_aq_heavy_ini))
+
+    if DEBUG_pest:
+        if layer == 0:
+            model.report(mass_deg_light, "lMdgfin")  # TODO: Strange values!!
+            model.report(mass_deg_heavy, "hMdgfin")  # TODO: Strange values!!
 
     return {'mass_light_fin': mass_light_fin,
             'mass_heavy_fin': mass_heavy_fin,
@@ -335,7 +374,7 @@ def update_layer_delta(model, layer, process, mass_process,
                        mass_before_transport):
     if layer == 0:
         delta_layer = model.delta_z0
-        delta_layer_above = None
+        delta_layer_above = scalar(0)
         mass_layer = model.pestmass_z0
     elif layer == 1:
         delta_layer = model.delta_z1
@@ -348,18 +387,18 @@ def update_layer_delta(model, layer, process, mass_process,
 
     if process == "volat":
         mass_loss = mass_process["mass_loss"]
-        mass_gain = 0
-        delta_gain = 0
+        mass_gain = scalar(0)
+        delta_gain = scalar(0)
         delta_loss = delta_layer
     elif process == "runoff":
         mass_loss = mass_process["mass_runoff"]
-        mass_gain = 0
-        delta_gain = 0
+        mass_gain = scalar(0)
+        delta_gain = scalar(0)
         delta_loss = delta_layer
     elif process == "leach":
         mass_leached = mass_process["mass_leached"]  # mg
         mass_loss = mass_leached
-        mass_gain = 0
+        mass_gain = scalar(0)
         delta_gain = delta_layer_above
         delta_loss = delta_layer
     elif process == "latflux":
@@ -386,16 +425,16 @@ def update_layer_delta(model, layer, process, mass_process,
         # delta2_f2 = accuflux(model.ldd_subs, mass_gain*delta_layer)/accuflux(model.ldd_subs, mass_tot)
     else:
         mass_tot = mass_before_transport + mass_gain - mass_loss
-        delta_int = ((1/mass_tot) *
-                     (delta_layer * mass_before_transport +  # initial
-                      delta_gain * mass_gain -  # mass_in
-                      delta_loss * mass_loss))  # mass_out
+        delta_int = ((1 / mass_tot) *
+                     (delta_layer * mass_before_transport +
+                      delta_gain * mass_gain - delta_loss * mass_loss))  # mass_out
 
     # return {"delta_int": delta_int, "mass_layer": mass_layer}
     return delta_int
 
 
-def getLatMassDeltaFlux(model, layer, theta_sat, theta_fcap, mass_before_transport):
+def getLatMassDeltaFlux(model, layer, theta_sat, theta_fcap,
+                        mass_before_transport, sorption_model='linear', gas=True):
     if layer == 0:
         depth = model.z0
         delta_layer = model.delta_z0
@@ -432,11 +471,11 @@ def getLatMassDeltaFlux(model, layer, theta_sat, theta_fcap, mass_before_transpo
         conc_layer_aq = (mass_layer / cellarea()) / (theta_layer * retard_layer * depth)  # mg/L
 
     # W(j/i)
-    rel_wetness = model.wetness/accuflux(model.ldd_subs, model.wetness)
+    rel_wetness = model.wetness / accuflux(model.ldd_subs, model.wetness)
 
     # Cell mass loss/gain (to update only mass)
     mass_loss = max(conc_layer_aq * (c * (depth * theta_layer - depth * theta_fcap)), scalar(0))
-    mass_gain = rel_wetness * accuflux(model.ldd_subs, cell_mass_loss_downstream)
+    mass_gain = rel_wetness * accuflux(model.ldd_subs, mass_loss)
     net_mass_latflux = mass_gain - mass_loss
 
     # massDelta  loss/gain (to update only delta)
@@ -469,11 +508,11 @@ def getVolatileMass(model, app_days, temp_air, theta_sat, rel_diff_model="option
     if model.jd_cum in app_days:
         theta_layer = model.theta_z0
         mass_layer = model.pestmass_z0  # ug
-        depth_m = model.z0 * 1/10**3  # Convert to m (needed for final mass computation on cell basis)
+        depth_m = model.z0 * 1 / 10 ** 3  # Convert to m (needed for final mass computation on cell basis)
         # Air boundary layer, assumed equivalent to top soil thickness
         thickness_a = depth_m  # m (Thickness air boundary layer)
         # D_ar (metolachlor) = 0.03609052694; Diffusion coefficient in air (cm^2/s); https://www.gsi-net.com
-        diff_ar = 0.03609 * 86400 * 1/10**4  # m2/d (Diff. coeff in air at reference Temp., in Kelvin, D_a,r)
+        diff_ar = 0.03609 * 86400 * 1 / 10 ** 4  # m2/d (Diff. coeff in air at reference Temp., in Kelvin, D_a,r)
         # TODO: define actual temperature, the value here is temp_bare_soil, not temp_air
         diff_a = (temp_air / 293.15) ** 1.75 * diff_ar  # m2/d (Diff. coefficient adjusted to air Temp., D_a)
 
@@ -700,12 +739,12 @@ def getLateralMassFlux(model, layer, theta_sat, theta_fcap, sorption_model="line
 
     # Cell mass loss
     cell_mass_loss_downstream = max(c * (depth * theta_layer - depth * theta_fcap), scalar(0)) * conc_layer_aq
-    upstream_mass_inflow = (model.wetness * accuflux(model.ldd_subs, cell_mass_loss_downstream)) / accuflux(model.ldd_subs,
-                                                                                                       model.wetness)
+    upstream_mass_inflow = (model.wetness * accuflux(model.ldd_subs, cell_mass_loss_downstream)) / accuflux(
+        model.ldd_subs,
+        model.wetness)
     net_mass_latflux = upstream_mass_inflow - cell_mass_loss_downstream
-    deltaMass_latflux = delta_layer*net_mass_latflux
+    deltaMass_latflux = delta_layer * net_mass_latflux
     return {"net_mass_latflux": net_mass_latflux,
             "deltaMass_latflux": deltaMass_latflux,
             "upstream_mass_inflow": upstream_mass_inflow,
             "cell_mass_loss_downstream": cell_mass_loss_downstream}  # mg
-
