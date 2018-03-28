@@ -87,11 +87,9 @@
 \begin{document}
 \maketitle
 
-\hypertarget{methodology}{%
-\section{Methodology}\label{methodology}}
+\section{Methodology}\label{methodology}
 
-\hypertarget{hydrological-framework}{%
-\subsection{Hydrological Framework}\label{hydrological-framework}}
+\subsection{Hydrological Framework}\label{hydrological-framework}
 
 To determine the change in soil moisture content
 (\(\frac{d\theta_i}{dt}\)) in the unsaturated zone at each cell
@@ -110,8 +108,7 @@ inflow and outflow from a given cell (mm), \emph{Ea} is the actual
 evaporation (mm), \emph{Ta} actual transpiration (mm) and \emph{DP} is
 the deep percolation (mm).
 
-\hypertarget{infiltration-and-runoff}{%
-\subsubsection{Infiltration and Runoff}\label{infiltration-and-runoff}}
+\subsubsection{Infiltration and Runoff}\label{infiltration-and-runoff}
 
 To calculate infiltration \emph{I} and surface runoff \emph{R}, soil
 moisture conditions are determined by following the SCS curve number
@@ -245,8 +242,7 @@ is then added together and reported as actual runoff. The discharge at
 the outlet is calculated here as a function of time and spatial
 propagation (i.e.~LDD, Runoff).
 
-\hypertarget{deep-percolation}{%
-\subsubsection{Deep Percolation}\label{deep-percolation}}
+\subsubsection{Deep Percolation}\label{deep-percolation}
 
 Deep percolation (DP) is assumed to be negligible at moisture levels
 below field capacity. Above this moisture level percolation is given by
@@ -267,8 +263,7 @@ dimensionless drainage characteristic given by:
 
 where \(K_{sat}\) is the saturated hydraulic conductivity.
 
-\hypertarget{lateralsubsurface-flow}{%
-\subsubsection{Lateral/subsurface flow}\label{lateralsubsurface-flow}}
+\subsubsection{Lateral/subsurface flow}\label{lateralsubsurface-flow}
 
 Later flow occurs when the soil moisture content exceeds the field
 capacity and is represented as the difference between inflow and outflow
@@ -302,8 +297,7 @@ Local Drain Direction (LDD) network and cell area) and tan \(\beta\),
 the local slope in radians derived from the Digital Elevation Model
 (DEM).
 
-\hypertarget{evapotranspiration}{%
-\subsubsection{Evapotranspiration}\label{evapotranspiration}}
+\subsubsection{Evapotranspiration}\label{evapotranspiration}
 
 To account for evapotranspiration processes the FAO56 reference
 evaporation rate, \(ET_0\) (mm), has been considered and adjusted
@@ -357,8 +351,7 @@ K_{cmax}=max \Big[ \Big\{ K_{cb}+0.05 \Big\} , \Big\{ 1.2 + [0.04(U_2-2)-0.004(R
 When available soil moisture is limited potential evapotranspiration is
 reduced (i.e., \(ET_a < ET_p\)).
 
-\hypertarget{transpiration}{%
-\paragraph{Transpiration}\label{transpiration}}
+\paragraph{Transpiration}\label{transpiration}
 
 To account for potential transpiration processes, water uptake by roots
 is considered and regulated by atmospheric demand and soil water
@@ -416,8 +409,7 @@ the transition between unstressed and stressed transpiration rate. \(p\)
 depletion factor (-) for \(ET_p \approx 5\) \(mm/d\) \citep[Table no.
 22]{Allen1998}.
 
-\hypertarget{evaporation}{%
-\paragraph{Evaporation}\label{evaporation}}
+\paragraph{Evaporation}\label{evaporation}
 
 Evaporation is considered only on bare surfaces and assumed to be
 negligible under plant cover and regulated by atmospheric deman along
@@ -446,13 +438,11 @@ where \(\theta_t\) is soil moisture (\(m^3/m^3\)) and \(\theta_{dr}\) is
 the moisture (\(m^3/m^3\)) of air-dry
 soil\footnote{Note: In model, $\theta_{dr} = 0.33 \cdot \theta_{wp}$ (Sheikh et al., 2009)}.
 
-\hypertarget{crop-growth}{%
-\subsubsection{Crop Growth}\label{crop-growth}}
+\subsubsection{Crop Growth}\label{crop-growth}
 
 \ldots{}to document
 
-\hypertarget{pesticide-transfer}{%
-\subsection{Pesticide Transfer}\label{pesticide-transfer}}
+\subsection{Pesticide Transfer}\label{pesticide-transfer}
 
 The concentration of pesticide within the soil system (\(mg/L\)) along
 each layer \(z\) is given as a function of its partitioning across the
@@ -511,11 +501,9 @@ C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)K_H + \theta_{aq}(t)R_
 \label{eq:mass_tot_conc_aq2}  
 \end{equation}
 
-\hypertarget{sorption}{%
-\subsubsection{Sorption}\label{sorption}}
+\subsubsection{Sorption}\label{sorption}
 
-\hypertarget{linear-sorption}{%
-\paragraph{Linear sorption}\label{linear-sorption}}
+\paragraph{Linear sorption}\label{linear-sorption}
 
 The partition of pesticide concentrations into the dissolved \(C_{aq}\)
 (\(mg/m^3\)) and adsorbed phases \(C_{ads}\) (mg/Kg) is determined by
@@ -562,8 +550,7 @@ R_z(t) = 1 + \frac{ \rho_{b_z}(t) \cdot K_d }{ \theta_z(t) }
 where \(\rho_{b_z}\) is bulk density (Kg m\(^{-3}\)) and pesticide
 dissociation coefficient \(K_d\) (mL/g).
 
-\hypertarget{volatilization}{%
-\subsubsection{Volatilization}\label{volatilization}}
+\subsubsection{Volatilization}\label{volatilization}
 
 Pesticide volatilization follows Leistra \textit{et al.}
 \citeyearpar{Leistra2001}, where a boundary air layer is conceptualized
@@ -661,11 +648,9 @@ J_{v,air} = - \frac{C_{gas,z_0}}{(r_a + r_s)}
 \label{eq:Jva_final}
 \end{equation}
 
-\hypertarget{run-off-loss}{%
-\subsubsection{Run-off Loss}\label{run-off-loss}}
+\subsubsection{Run-off Loss}\label{run-off-loss}
 
-\hypertarget{section}{%
-\paragraph{\texorpdfstring{\textit{Non-uniform mixing-layer-model-runoff (nu-mlm-ro)}}{}}\label{section}}
+\paragraph{\texorpdfstring{\textit{Non-uniform mixing-layer-model-runoff (nu-mlm-ro)}}{}}\label{section}
 
 Multiple models are available to simulate mass transfer to overland
 flow. The first of these models, the
@@ -691,8 +676,7 @@ run-off (mm) and \(C_m\) is concentration in the mixing layer
 layer. In this model, \(\beta\) accounts for an exponential decrease in
 the ability of overland flow to mix with soil water as depth increases.
 
-\hypertarget{section-1}{%
-\paragraph{\texorpdfstring{\textit{Non-uniform mixing-layer (nu-mlm)}}{}}\label{section-1}}
+\paragraph{\texorpdfstring{\textit{Non-uniform mixing-layer (nu-mlm)}}{}}\label{section-1}
 
 The adaptation above of the original model by Ahuja and Lehman replaces
 precipitation by \(RO\), and thus considers the ability of rainfall
@@ -700,8 +684,7 @@ water to mix with soil water instead. To test the original formulation,
 this second model is also made available as
 \textit{Non-uniform mixing layer model} (nu-mlm).
 
-\hypertarget{section-2}{%
-\paragraph{\texorpdfstring{\textit{Distributed mixing-layer model (d-mlm)}}{}}\label{section-2}}
+\paragraph{\texorpdfstring{\textit{Distributed mixing-layer model (d-mlm)}}{}}\label{section-2}
 
 The \textit{Distributed mixing-layer model} considered is adapted from
 Havis \citeyearpar{Havis1992}, and mass transfer to overland flow based
@@ -747,9 +730,8 @@ at 25 \(^\circ C\), 8.9e-03 g/cm sec), the soil bulk density (\(\rho\),
 g/cm\(^3\)) and the runoff velocity (\(v\), mm/day) or amount of runoff
 generated in each cell per day.
 
-\hypertarget{vertical-mass-flux-i.e.-leaching}{%
 \subsubsection{Vertical mass flux (i.e.,
-leaching)}\label{vertical-mass-flux-i.e.-leaching}}
+leaching)}\label{vertical-mass-flux-i.e.-leaching}
 
 Vertical flux can be computed differently across soil layers. Under the
 first approach, and only for the uppermost layer, the model follows
@@ -777,8 +759,7 @@ M_{z,lch}(t) = DP_z(t) \cdot C_{z,aq }(t) \cdot A_i
 \label{eq:leached_prop}
 \end{equation}
 
-\hypertarget{lateral-mass-flux}{%
-\subsubsection{Lateral mass flux}\label{lateral-mass-flux}}
+\subsubsection{Lateral mass flux}\label{lateral-mass-flux}
 
 Later mass flux is proportional to the aqueous concentration in lateral
 water flow. The net mass flux is given by adapting eq. \ref{eq:LF}:
@@ -788,18 +769,15 @@ water flow. The net mass flux is given by adapting eq. \ref{eq:LF}:
 \label{eq:LMF}  
 \end{equation}
 
-\hypertarget{degradation}{%
-\subsection{Degradation}\label{degradation}}
+\subsection{Degradation}\label{degradation}
 
-\hypertarget{photodegradation-isotopes}{%
 \subsubsection{Photodegradation
-(isotopes!!!)}\label{photodegradation-isotopes}}
+(isotopes!!!)}\label{photodegradation-isotopes}
 
 \ldots{}to formalize and document.
 
-\hypertarget{biodegradation-isotopes}{%
 \subsubsection{Biodegradation
-(isotopes!!!)}\label{biodegradation-isotopes}}
+(isotopes!!!)}\label{biodegradation-isotopes}
 
 Biodegradation in the soil is assumed to occur only on the dissolved and
 sorbed fraction on equilibrium sites. Assuming a first-order rate law:
@@ -885,8 +863,7 @@ reported (i.e.~typically 20 \(^{\circ}\)C). \(E_a\) is the activation
 energy generally equal to 54,000 (KJ mol\(^{-1}\)) and R is the gas
 constant 8.314 (J mol\(^{-1}\) K\(^{-1}\)).
 
-\hypertarget{soil-temperature}{%
-\subsection{Soil Temperature}\label{soil-temperature}}
+\subsection{Soil Temperature}\label{soil-temperature}
 
 Temperture is an important parameter regulating chemical and biological
 processes. To simulate its evolution across time and space this model
@@ -911,6 +888,7 @@ df = \frac{zd}{zd+exp(-0.867-2.078 \cdot zd)}
 
 where \(zd\) is the ratio of the depth at the center of the soil layer
 \(D_{k_{mid}}\) (mm) to the damping depth \(dd\) (mm) such that:
+
 \begin{equation}
 zd = \frac{D_{k_{mid}}}{dd}
 \label{eq:zd} 

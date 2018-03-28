@@ -74,8 +74,6 @@ def update_layer_delta(model, layer, process, mass_process, mass_before_transpor
         pass
     elif process == "leach":
         pass
-    elif process == "latflux":
-        pass
     else:
         raise NotImplementedError
     
@@ -111,19 +109,15 @@ def update_layer_delta(model, layer, process, mass_process, mass_before_transpor
         pass
     elif process == "leach":
         pass
-    elif process == "latflux":
-        pass
     else:
         raise NotImplementedError
 
-    if process == "latflux":
-        pass
-    else:
-        mass_tot = mass_before_transport + mass_gain - mass_loss
-        delta_int = ((1/mass_tot) *
-                     (delta_layer * mass_before_transport +  # initial
-                      delta_gain * mass_gain -  # mass_in
-                      delta_loss * mass_loss))  # mass_out
+    mass_tot = mass_before_transport + mass_gain - mass_loss
+    delta_int = ((1/mass_tot) *
+                 (delta_layer * mass_before_transport +  # initial
+                  delta_gain * mass_gain -  # mass_in
+                  delta_loss * mass_loss))  # mass_out
+                  
     return delta_int
                        
 ```
@@ -157,114 +151,83 @@ W_{j/i} \sum^{N(t)}_{i=1}max[ \delta ^{13}C_{i} \cdot C_{i,aq}\cdot\Big(c_{z}(SW
 \delta ^{13}C_{j(t)} \cdot M_{loss,j(t)}  \Big)
 $$
 
-The *update_layer_delta* functions, takes process=**"latflux"** and implements the above equations as:
+The *getLatMassDeltaFlux* implements the above equation for lateral mass flux as:
 
 ```{python}
 
-def update_layer_delta(model, layer, process, mass_process, mass_before_transport):
+def getLatMassDeltaFlux(model, layer, theta_sat, theta_fcap,
+                        mass_before_transport, sorption_model='linear', gas=True):
     if layer == 0:
-      delta_layer = model.delta_z0
-      delta_layer_above = 0
-      mass_layer = model.pestmass_z0
+        depth = model.z0
+        delta_layer = model.delta_z0
+        theta_layer = model.theta_z0
+        mass_layer = model.pestmass_z0
+        c = model.c1
     elif layer == 1:
+        depth = model.z1
         delta_layer = model.delta_z1
-        delta_layer_above = model.delta_z0
+        theta_layer = model.theta_z1
         mass_layer = model.pestmass_z1
+        c = model.c1
     elif layer == 2:
+        store = False
+        depth = model.z2
         delta_layer = model.delta_z2
-        delta_layer_above = model.delta_z1
+        theta_layer = model.theta_z2
         mass_layer = model.pestmass_z2
-        
-    if process == "volat":
-        pass
-    elif process == "runoff":
-        pass
-    elif process == "leach":
-        pass
-    elif process == "latflux":
-        mass_latflux = mass_process["net_mass_latflux"]  # mg
-        mass_loss = mass_process["cell_mass_loss_downstream"]
-        mass_gain = mass_process["upstream_mass_inflow"]
-        mass_tot = mass_before_transport + mass_gain - mass_loss
-        # Proof of first fraction, i.e., f1 > 1
-        f1 = mass_before_transport / mass_tot
-        # Proof of 2nd (inflow) fraction, f2 < 1
-        # f2 = accuflux(model.ldd, mass_gain)/accuflux(model.ldd, mass_tot)
-        f3 = mass_loss / mass_tot  # Proof of third (leaving) mass fraction, f3 < 1
-    else:
-        raise NotImplementedError
+        c = model.c2
 
-    if process == "latflux":
-        delta2_f2 = accuflux(model.ldd_subs, mass_gain*delta_layer)/accuflux(model.ldd_subs, mass_tot)
-        delta_int = (delta_layer * f1) + delta2_f2 - (delta_layer * f3)
+    if sorption_model == "linear":
+        # Retardation factor
+        retard_layer = 1 + (model.p_b * model.k_d) / theta_layer
     else:
-        pass
-        
-    return delta_int
+        retard_layer = 1
+
+    if gas:
+        # Leistra et al., 2001
+        theta_gas = theta_sat - theta_layer
+        conc_layer_aq = mass_layer / ((cellarea() * depth) *
+                                      (theta_gas * model.k_h + theta_layer * retard_layer))  # mg/L
+    else:
+        # Whelan, 1987 # No gas phase considered
+        conc_layer_aq = (mass_layer / cellarea()) / (theta_layer * retard_layer * depth)  # mg/L
+
+    # W(j/i)
+    rel_wetness = model.wetness / accuflux(model.ldd_subs, model.wetness)
+
+    # Cell mass loss/gain (to update only mass)
+    mass_loss = max(conc_layer_aq * (c * (depth * theta_layer - depth * theta_fcap)), scalar(0))
+    mass_gain = rel_wetness * accuflux(model.ldd_subs, mass_loss)
+    net_mass_latflux = mass_gain - mass_loss
+
+    # massDelta  loss/gain (to update only delta)
+    massdC_loss = max(delta_layer * conc_layer_aq * (c * (depth * theta_layer - depth * theta_fcap)), scalar(0))
+    massdC_gain = rel_wetness * accuflux(model.ldd_subs, massdC_loss)
+
+    # Isotope mass balance update three terms:
+    mass_tot = mass_before_transport + mass_gain - mass_loss
+    # 1st fraction term (f1), must: f1 > 1, with net gain
+    f1 = (mass_before_transport / mass_tot) * delta_layer
+    f2 = massdC_gain / mass_tot
+    f3 = massdC_loss / mass_tot
+    delta_layer = f1 + f2 - f3
+
+    return {
+        'mass_loss': mass_loss,  # mg
+        'mass_gain': mass_gain,  # mg
+        'net_mass_latflux': net_mass_latflux,  # mg
+        'massdC_loss': massdC_loss,  # mg*dC
+        'massdC_gain': massdC_gain,  # mg*dC
+        'f1': f1,  # could be > 1  (if net gain)
+        'f2': f2,
+        'f3': f3,
+        'delta_layer': delta_layer
+    }
                        
 ```
 
-Full function
+# Converting $\delta ^{13}C_{i}$ to individual species
 
-This is my change.
-
-```{python}
-
-def update_layer_delta(model, layer, process, mass_process, mass_before_transport):
-    if layer == 0:
-      delta_layer = model.delta_z0
-      delta_layer_above = 0
-      mass_layer = model.pestmass_z0
-    elif layer == 1:
-        delta_layer = model.delta_z1
-        delta_layer_above = model.delta_z0
-        mass_layer = model.pestmass_z1
-    elif layer == 2:
-        delta_layer = model.delta_z2
-        delta_layer_above = model.delta_z1
-        mass_layer = model.pestmass_z2
-    if process == "volat":
-        mass_loss = mass_process["mass_loss"]
-        mass_gain = 0
-        delta_gain = 0
-        delta_loss = delta_layer
-    elif process == "runoff":
-        mass_loss = mass_process["mass_runoff"]
-        mass_gain = 0
-        delta_gain = 0
-        delta_loss = delta_layer
-    elif process == "leach":
-        mass_leached = mass_process["mass_leached"]  # mg
-        mass_loss = mass_leached
-        mass_gain = 0
-        delta_gain = delta_layer_above
-        delta_loss = delta_layer
-    elif process == "latflux":
-        mass_latflux = mass_process["net_mass_latflux"]  # mg
-        mass_loss = mass_process["cell_mass_loss_downstream"]
-        mass_gain = mass_process["upstream_mass_inflow"]
-        mass_tot = mass_before_transport + mass_gain - mass_loss
-        # Proof of first fraction, i.e., f1 > 1
-        f1 = mass_before_transport / mass_tot  
-        # Proof of 2nd (inflow) fraction, f2 < 1
-        # f2 = accuflux(
-        #   model.ldd, mass_gain)/accuflux(model.ldd, mass_tot)  
-        # Proof of third (leaving) mass fraction, f3 < 1
-        f3 = mass_loss / mass_tot  
-    else:
-        raise NotImplementedError
-
-    if process == "latflux":
-        delta2_f2 = accuflux(model.ldd_subs, mass_gain*delta_layer)/accuflux(model.ldd_subs, mass_tot)
-        delta_int = (delta_layer * f1) + delta2_f2 - (delta_layer * f3)
-    else:
-        mass_tot = mass_before_transport + mass_gain - mass_loss
-        delta_int = ((1/mass_tot) *
-                     (delta_layer * mass_before_transport +  # initial
-                      delta_gain * mass_gain -  # mass_in
-                      delta_loss * mass_loss))  # mass_out
-
-    # return {"delta_int": delta_int, "mass_layer": mass_layer}
-    return delta_int
-                       
-```
+$$
+\delta ^{13}C_{i} = \frac{R_s - R_{std}}{R_{std}}
+$$

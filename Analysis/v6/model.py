@@ -957,7 +957,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             appl_catch_mg = accuflux(self.ldd_subs, mass_applied)
             cum_appl_catch_mg = accuflux(self.ldd_subs, self.cum_appl_mg)
             # Todo: Check if below same result
-            # cum_appl_catch_mg = upstream(self.ldd_subs, self.cum_appl_mg)
+            # cum_appl_catch_mg = upstream(self.ldd_subs, self.cum_appl_ug)
 
             # Loss to run-off
             out_runoff_mg = accuflux(self.ldd_subs, z0_mass_runoff["mass_runoff"])
