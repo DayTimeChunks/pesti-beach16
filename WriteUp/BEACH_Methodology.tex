@@ -30,6 +30,46 @@
 \urlstyle{same}  % don't use monospace font for urls
 \usepackage{natbib}
 \bibliographystyle{plainnat}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{{#1}}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{{#1}}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{{#1}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{{#1}}}
+\newcommand{\ImportTok}[1]{{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{{#1}}}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{{#1}}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{{#1}}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{{#1}}}}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{{#1}}}}
+\newcommand{\BuiltInTok}[1]{{#1}}
+\newcommand{\ExtensionTok}[1]{{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{{#1}}}
+\newcommand{\RegionMarkerTok}[1]{{#1}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{{#1}}}}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{{#1}}}}
+\newcommand{\NormalTok}[1]{{#1}}
 \usepackage{graphicx,grffile}
 \makeatletter
 \def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
@@ -478,28 +518,70 @@ and substituting phase concentrations for their equivalent in \(C_{aq}\)
 according to eq. \ref{eq:kd} and eq. \ref{eq:henry} yields,
 
 \begin{equation}
-M_{tot_z} = V_{gas_z}K_H C_{aq_z}(t) + V_{aq}(t)C_{aq_z}(t) + V_{ads}(t)K_dC_{aq_z}(t)
+M_{tot_z} = V_{gas_z}C_{aq_z}(t)/K_H + V_{aq}(t)C_{aq_z}(t) + V_{ads}(t)K_dC_{aq_z}(t)
 \label{eq:mass_tot_sub}  
 \end{equation}
 
 Solving for \(C_{aq}\),
 
 \begin{equation}
-C_{aq} = \frac{M_{tot_z} }{  V_{gas_z}(t)K_H + V_{aq}(t) + V_{ads}(t)K_d }
+C_{aq} = \frac{M_{tot_z} }{  V_{gas_z}(t)/K_H + V_{aq}(t) + V_{ads}(t)K_d }
 \label{eq:mass_tot_conc_aq1}  
 \end{equation}
 
 \begin{equation}
-C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)K_H + \theta_{aq}(t) + \rho_{b_z}(t)K_d \Big)}
+C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)/K_H + \theta_{aq}(t) + \rho_{b_z}(t)K_d \Big)}
 \label{eq:mass_tot_conc_aq2}  
 \end{equation}
 
 and substituting the retardation factor from eq. \ref{eq:retard_linear},
 
 \begin{equation}
-C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)K_H + \theta_{aq}(t)R_z(t) \Big)}
+C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)/K_H + \theta_{aq}(t)R_z(t) \Big)}
 \label{eq:mass_tot_conc_aq2}  
 \end{equation}
+
+Aqueous concentration is obtained with the following function. Note that
+the input mass may total concentration or either heavy or light
+fractions, whichever output is required.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+
+\KeywordTok{def} \NormalTok{getConcAq(model, layer, theta_sat, mass,}
+              \NormalTok{sorption_model}\OperatorTok{=}\StringTok{"linear"}\NormalTok{, gas}\OperatorTok{=}\VariableTok{True}\NormalTok{, isotopes}\OperatorTok{=}\VariableTok{True}\NormalTok{):}
+    \ControlFlowTok{if} \NormalTok{layer }\OperatorTok{==} \DecValTok{0}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z0}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z0}
+    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{1}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z1}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z1}
+    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{2}\NormalTok{:}
+        \NormalTok{store }\OperatorTok{=} \VariableTok{False}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z2}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z2}
+
+    \NormalTok{theta_gas }\OperatorTok{=} \BuiltInTok{max}\NormalTok{(theta_sat }\OperatorTok{-} \NormalTok{theta_layer, scalar(}\DecValTok{0}\NormalTok{))}
+
+    \ControlFlowTok{if} \NormalTok{sorption_model }\OperatorTok{==} \StringTok{"linear"}\NormalTok{:}
+        \CommentTok{# Retardation factor}
+        \NormalTok{retard_layer }\OperatorTok{=} \DecValTok{1} \OperatorTok{+} \NormalTok{(model.p_b }\OperatorTok{*} \NormalTok{model.k_d) }\OperatorTok{/} \NormalTok{theta_layer}
+    \ControlFlowTok{else}\NormalTok{:}
+        \BuiltInTok{print}\NormalTok{(}\StringTok{"No sorption assumed, Ret. factor = 1"}\NormalTok{)}
+        \NormalTok{retard_layer }\OperatorTok{=} \DecValTok{1}  \CommentTok{# No retardation.}
+
+    \ControlFlowTok{if} \NormalTok{gas:}
+        \CommentTok{# Leistra et al., 2001}
+        \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{mass }\OperatorTok{/} \NormalTok{((cellarea() }\OperatorTok{*} \NormalTok{depth) }\OperatorTok{*}  \CommentTok{# m2 * mm = L}
+                          \NormalTok{(theta_gas }\OperatorTok{/} \NormalTok{model.k_h }\OperatorTok{+}
+                           \NormalTok{theta_layer }\OperatorTok{*} \NormalTok{retard_layer))  }\CommentTok{# ug/L}
+    \ControlFlowTok{else}\NormalTok{:  }\CommentTok{# No gas phase}
+        \CommentTok{# Whelan, 1987}
+        \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{(mass }\OperatorTok{/} \NormalTok{(cellarea() }\OperatorTok{*} \NormalTok{depth }\OperatorTok{*} \NormalTok{theta_layer }\OperatorTok{*} \NormalTok{retard_layer))  }\CommentTok{# ug/L}
+
+    \ControlFlowTok{return} \NormalTok{conc_aq}
+\end{Highlighting}
+\end{Shaded}
 
 \subsubsection{Sorption}\label{sorption}
 
@@ -947,7 +1029,7 @@ where \(\mu\) is light-use efficiency of the crop (kg ha\(^{-1}\)
 m\(^2\) MJ\(^{-1}\))
 
 \renewcommand\refname{References}
-\bibliography{library.bib}
+\bibliography{LargeFiles/library.bib}
 
 
 \end{document}

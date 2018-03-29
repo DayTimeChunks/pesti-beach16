@@ -6,7 +6,7 @@ output:
     citation_package: natbib
     keep_tex: yes
   word_document: default
-bibliography: library.bib
+bibliography: LargeFiles/library.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -317,28 +317,69 @@ M_{tot_z} = V_{gas_z}(t)C_{gas_z}(t) + V_{aq}(t)C_{aq_z}(t) + V_{ads}(t)C_{ads_z
 and substituting phase concentrations for their equivalent in $C_{aq}$ according to eq. \ref{eq:kd} and eq. \ref{eq:henry} yields,
 
 \begin{equation}
-M_{tot_z} = V_{gas_z}K_H C_{aq_z}(t) + V_{aq}(t)C_{aq_z}(t) + V_{ads}(t)K_dC_{aq_z}(t)
+M_{tot_z} = V_{gas_z}C_{aq_z}(t)/K_H + V_{aq}(t)C_{aq_z}(t) + V_{ads}(t)K_dC_{aq_z}(t)
 \label{eq:mass_tot_sub}  
 \end{equation}
 
 Solving for $C_{aq}$,
 
 \begin{equation}
-C_{aq} = \frac{M_{tot_z} }{  V_{gas_z}(t)K_H + V_{aq}(t) + V_{ads}(t)K_d }
+C_{aq} = \frac{M_{tot_z} }{  V_{gas_z}(t)/K_H + V_{aq}(t) + V_{ads}(t)K_d }
 \label{eq:mass_tot_conc_aq1}  
 \end{equation}
 
 \begin{equation}
-C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)K_H + \theta_{aq}(t) + \rho_{b_z}(t)K_d \Big)}
+C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)/K_H + \theta_{aq}(t) + \rho_{b_z}(t)K_d \Big)}
 \label{eq:mass_tot_conc_aq2}  
 \end{equation}
 
 and substituting the retardation factor from eq. \ref{eq:retard_linear},
 
 \begin{equation}
-C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)K_H + \theta_{aq}(t)R_z(t) \Big)}
+C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)/K_H + \theta_{aq}(t)R_z(t) \Big)}
 \label{eq:mass_tot_conc_aq2}  
 \end{equation}
+
+
+
+Aqueous concentration is obtained with the following function. Note that the input mass may total concentration or either heavy or light fractions, whichever output is required.
+
+
+```{python}
+
+def getConcAq(model, layer, theta_sat, mass,
+              sorption_model="linear", gas=True, isotopes=True):
+    if layer == 0:
+        depth = model.z0
+        theta_layer = model.theta_z0
+    elif layer == 1:
+        depth = model.z1
+        theta_layer = model.theta_z1
+    elif layer == 2:
+        store = False
+        depth = model.z2
+        theta_layer = model.theta_z2
+
+    if sorption_model == "linear":
+        # Retardation factor
+        retard_layer = 1 + (model.p_b * model.k_d) / theta_layer
+    else:
+        print("No sorption assumed, Ret. factor = 1")
+        retard_layer = 1  # No retardation.
+
+    if gas: # Leistra et al., 2001
+        theta_gas = max(theta_sat - theta_layer, scalar(0))
+        conc_aq = mass / ((cellarea() * depth) *  # m2 * mm = L
+                          (theta_gas / model.k_h +
+                           theta_layer * retard_layer))  # ug/L
+    else:  # No gas phase
+        # Whelan, 1987
+        conc_aq = (mass / (cellarea() * depth * theta_layer * retard_layer))  # ug/L
+
+    return conc_aq
+
+```
+
 
 
 ### Sorption

@@ -10,17 +10,47 @@ DEBUG_pest = False
 global DEBUG_pest
 
 
-def getVolatileMass(model, temp_air, theta_sat,
+def getConcAq(model, layer, theta_sat, mass,
+              sorption_model="linear", gas=True, isotopes=True):
+    if layer == 0:
+        depth = model.z0
+        theta_layer = model.theta_z0
+    elif layer == 1:
+        depth = model.z1
+        theta_layer = model.theta_z1
+    elif layer == 2:
+        store = False
+        depth = model.z2
+        theta_layer = model.theta_z2
+
+    if sorption_model == "linear":
+        # Retardation factor
+        retard_layer = 1 + (model.p_b * model.k_d) / theta_layer
+    else:
+        print("No sorption assumed, Ret. factor = 1")
+        retard_layer = 1  # No retardation.
+
+    if gas:  # Leistra et al., 2001
+        theta_gas = max(theta_sat - theta_layer, scalar(0))
+        conc_aq = mass / ((cellarea() * depth) *  # m2 * mm = L
+                          (theta_gas / model.k_h +
+                           theta_layer * retard_layer))  # ug/L
+    else:  # No gas phase
+        # Whelan, 1987
+        conc_aq = (mass / (cellarea() * depth * theta_layer * retard_layer))  # ug/L
+
+    return conc_aq
+
+
+def getVolatileMass(model, temp_air, theta_sat, mass, frac,
                     rel_diff_model="option-1", sorption_model="linear",
-                    gas=True, isotopes=True):
+                    gas=True, isotopes=True, ):
     # Volatilize only during peak volatilization time i.e., first 24 hrs, @Prueger2005.
     theta_layer = model.theta_z0
-    tot_mass = model.pestmass_z0  # ug
-    light_mass = model.lightmass_z0  # ug
-    heavy_mass = model.heavymass_z0  # ug
+    theta_gas = max(theta_sat - theta_layer, scalar(0))
     # Convert to m (needed for final mass computation on cell basis)
     depth_m = model.z0 * 1 / 10 ** 3
-    # Air boundary layer, assumed to 2m high
+    # Air boundary layer, assumed as 2m high
     thickness_a = scalar(2.0)  # m
     # Diffusion coefficient in air (cm^2/s); https://www.gsi-net.com
     #  D_ar (metolachlor) = 0.03609052694,  at reference Temp., in Kelvin, D_a,r)
@@ -31,12 +61,12 @@ def getVolatileMass(model, temp_air, theta_sat,
     if rel_diff_model == "option-1":
         # Millington and Quirk, 1960 (in Leistra, 2001, p.48)
         # a,b parameters: Jin and Jury, 1996 (in Leistra, 2001)
-        diff_relative_gas = (diff_a * (theta_sat - theta_layer) ** 2 /
+        diff_relative_gas = (diff_a * theta_gas ** 2 /
                              theta_sat ** (2 / 3))  # m2/d
     elif rel_diff_model == "option-2":
         # Currie 1960 (in Leistra, 2001)
         # a,b parameters: Baker, 1987 (in Leistra, 2001)
-        diff_relative_gas = diff_a * 2.5 * (theta_sat - theta_layer) ** 3  # m2/d
+        diff_relative_gas = diff_a * 2.5 * theta_gas ** 3  # m2/d
     else:
         print("No appropriate relative diffusion parameter chosen")
         diff_relative_gas = diff_a  # m2/d
@@ -44,55 +74,69 @@ def getVolatileMass(model, temp_air, theta_sat,
     r_a = thickness_a / diff_a  # d/m
     r_s = (0.5 * depth_m) / diff_relative_gas  # d/m
 
-    # Retardation factor
-    if sorption_model == "linear":
-        retard_layer = 1 + (model.p_b * model.k_d) / theta_layer
-    else:
-        retard_layer = 1
-    # Aqueous concentration
-    if gas:
-        # Leistra et al., 2001
-        theta_gas = max(theta_sat - theta_layer, scalar(0))
-        if isotopes:
-            conc_light_aq = light_mass / ((cellarea() * model.z0) *  # m2 * mm = L
-                                          (theta_gas * model.k_h +
-                                           theta_layer * retard_layer))  # ug/L
-            conc_heavy_aq = heavy_mass / ((cellarea() * model.z0) *
-                                          (theta_gas * model.k_h +
-                                           theta_layer * retard_layer))  # ug/L
-        else:
-            conc_layer_aq = tot_mass / ((cellarea() * model.z0) *
-                                        (theta_gas * model.k_h +
-                                         theta_layer * retard_layer))  # ug/L
-    else:  # No gas phase
-        if isotopes:
-            conc_light_aq = light_mass / ((cellarea() * model.z0) *
-                                          (theta_layer * retard_layer))  # ug/L
-            conc_heavy_aq = heavy_mass / ((cellarea() * model.z0) *
-                                          (theta_layer * retard_layer))  # ug/L
-        else:  # No gas phase, no isotopes considered
-            # Whelan, 1987
-            conc_layer_aq = ((tot_mass / cellarea()) /
-                             (theta_layer * retard_layer * model.z0))  # ug/L
-
+    conc_aq = getConcAq(model, 0, theta_sat, mass,
+                        sorption_model=sorption_model, gas=gas, isotopes=isotopes)
     # Convert ug/L to ug/m3, as will be multiplying by cell's area in m2
-    if isotopes:
-        conc_light_aq *= 10 ** 3  # ug/m3
-        conc_heavy_aq *= 10 ** 3  # ug/m3
-        model.report(conc_light_aq, "aCoLight")
-        conc_gas_light = conc_light_aq / model.k_h  # Henry's  ug/m3
-        conc_gas_heavy = conc_heavy_aq / model.k_h  # Henry's  ug/m3
-        volat_flux_light = (conc_gas_light / (r_a + r_s)) * cellarea()  # ug/day
-        volat_flux_heavy = (conc_gas_heavy / (r_a + r_s)) * cellarea()  # ug/day
-        volat_flux = volat_flux_light + volat_flux_heavy
+    conc_aq *= 10 ** 3  # ug/L * 10^3 L/m3
+    volat_flux = (conc_aq / (r_a + r_s)) * cellarea()  # ug/day
+    return volat_flux
+
+# Runoff
+
+def getKfilm(model, runoffvelocity):
+    """
+    Note: Model uses run-off (mm) per day (i.e. timestep) as runoff velocity.
+    Chemical parameter source:
+    http://www.gsi-net.com/en/publications/gsi-chemical-database/single/377.html
+    """
+    # Dynamic viscosity of water (\mu) @25 Celsius = 8.9e-04 [Pa s]
+    #   1 Pa = 1 N/(m s^2) = 1 Kg/(m s^2)
+    #   Convert to g/(cm s): dyn_visc = 8.9e-03 [g/cm s]
+    dyn_visc = 8.9e-03  # [g/cm s] @25 degrees, [@Shi2011]:\mu
+
+    # Solute diffusivity in water (D_w)
+    # Metolachlor = 5.0967719112e-006 (cm2 / s)
+    diff_solute = 5.0967719112e-006  # [cm2 / s], [@Shi2011]:D_w
+    Sc = dyn_visc / (model.p_b * diff_solute)  # (-) Schmidt number, [@Shi2011]:S_c
+
+    # Reynolds number (dimensionless), 86400s = 1 day
+    cell_length = 2 * 10 ** 3  # mm [@Shi2011]:L
+    re = (model.p_b * 1 / 10 ** 2 * runoffvelocity * cell_length) / (dyn_visc * 86400)  # [-]  [@Shi2011]:Re
+    kl = 0.664 * ((diff_solute * 86400 * 10 ** 2) / cell_length) * re ** (float(1) / 2) * Sc ** (float(1) / 3)  # mm/day
+    return kl  # mm/day
+
+
+def getRunOffMass(model, theta_sat, precip, runoff_mm,
+                  mass, frac,
+                  transfer_model="simple-mt", sorption_model="linear",
+                  gas=True, isotopes=True):
+    # Aqueous concentration
+    conc_aq = getConcAq(model, 0, theta_sat, mass,
+                        sorption_model=sorption_model, gas=gas, isotopes=isotopes)
+    model.report(conc_aq, 'aCo'+frac)
+    if transfer_model == "simple-mt":
+        mass_ro = conc_aq * runoff_mm * cellarea()  # ug
+        model.report(mass_ro, 'aMa' + frac)
+    elif transfer_model == "nu-mlm-ro":
+        # non-uniform-mixing-layer-model-runoff (nu-mlm-ro)
+        # Considers a decrease in effective transfer as mixing layer depth increases
+        # Adapted from Ahuja and Lehman, 1983 in @Shi2011,
+        # Adaptation replaces Precip by Runoff amount.
+        b = 1  # [mm] Calibration constant, 1 >= b > 0 (b-ranges appear reasonable).
+        # As b decreases, mass transfer increases, model.z0 in mm
+        mass_ro = (runoff_mm * cellarea()) * exp(-b * model.z0) * conc_aq  # ug
+    elif transfer_model == "nu-mlm":
+        # non-uniform-mixing-layer-model (nu-mlm)
+        # Original from Ahuja and Lehman, 1983 in @Shi2011
+        b = 1  # [mm] Calibration constant, 1 >= b > 0 (b-ranges appear reasonable).
+        # As b decreases, mass transfer increases, model.z0 in mm
+        mass_ro = (precip * cellarea()) * exp(-b * model.z0) * conc_aq  # ug
+    elif transfer_model == "d-mlm":
+        # distributed mixing-layer-model (d-mlm)
+        # Adapted from Havis et al., 1992, and
+        # taking the K_L definition for laminar flow from Bennett and Myers, 1982.
+        mass_ro = getKfilm(model, runoff_mm) * cellarea() * conc_aq  # ug
     else:
-        conc_layer_aq *= 10 ** 3  # ug/m3
-        conc_gas_layer = conc_layer_aq / model.k_h  # Henry's  ug/m3
-        volat_flux = (conc_gas_layer / (r_a + r_s)) * cellarea()  # ug/day
-        volat_flux_light = None
-        volat_flux_heavy = None
-
-    return {"mass_volat": volat_flux,
-            "light_volat": volat_flux_light,
-            "heavy_volat": volat_flux_heavy}  # ug/dt
-
+        print("Run-off transfer model not stated")
+        return None
+    return mass_ro

@@ -7,7 +7,6 @@ from hydro import *
 from pesti import *
 from pesti_v2 import *
 
-
 from pcraster._pcraster import *
 from pcraster.framework import *
 import os
@@ -92,27 +91,31 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.tot_runoff_m3_tss = TimeoutputTimeseries("res_totRunoff_m3", self, nominal("outlet_true"), noHeader=False)
         # Percolation
         # self.out_percol_m3_tss = TimeoutputTimeseries("res_outPercol_m3", self, nominal("outlet_true"), noHeader=False)
-        self.out_percol_z2_m3_tss = TimeoutputTimeseries("res_accuPercol_z2_m3", self, nominal("outlet_true"), noHeader=False)
-        self.tot_perc_z2_m3_tss = TimeoutputTimeseries("res_totPercol_z2_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_percol_z2_m3_tss = TimeoutputTimeseries("res_accuPercol_z2_m3", self, nominal("outlet_true"),
+                                                         noHeader=False)
+        self.tot_perc_z2_m3_tss = TimeoutputTimeseries("res_totPercol_z2_m3", self, nominal("outlet_true"),
+                                                       noHeader=False)
 
         # ETP
         self.out_etp_m3_tss = TimeoutputTimeseries("res_accuEtp_m3", self, nominal("outlet_true"), noHeader=False)
         self.tot_etp_m3_tss = TimeoutputTimeseries("res_totEtp_m3", self, nominal("outlet_true"), noHeader=False)
 
-        self.out_baseflow_m3_tss = TimeoutputTimeseries("res_accuBaseflow_m3", self, nominal("outlet_true"), noHeader=False)
-        self.tot_baseflow_m3_tss = TimeoutputTimeseries("res_totBaseflow_m3", self, nominal("outlet_true"), noHeader=False)
+        self.out_baseflow_m3_tss = TimeoutputTimeseries("res_accuBaseflow_m3", self, nominal("outlet_true"),
+                                                        noHeader=False)
+        self.tot_baseflow_m3_tss = TimeoutputTimeseries("res_totBaseflow_m3", self, nominal("outlet_true"),
+                                                        noHeader=False)
 
         # LF Drainage
         self.out_accu_o_drain_m3_tss = TimeoutputTimeseries("res_o_accuDrain_m3", self, nominal("outlet_true"),
-                                                              noHeader=False)
+                                                            noHeader=False)
         self.tot_accu_drain_m3_tss = TimeoutputTimeseries("res_o_totDrain_m3", self, nominal("outlet_true"),
-                                                              noHeader=False)
+                                                          noHeader=False)
         # LF options
         self.sat_accu_overflow_m3_tss = TimeoutputTimeseries("res_of_accuLatflow_m3", self, nominal("outlet_true"),
-                                                              noHeader=False)
+                                                             noHeader=False)
 
         self.tot_accu_of_latflow_m3_tss = TimeoutputTimeseries("res_of_totLatflow_m3", self, nominal("outlet_true"),
-                                                              noHeader=False)
+                                                               noHeader=False)
         # Inflow
         self.out_cell_i_latflow_m3_tss = TimeoutputTimeseries("res_i_cellLatflow_m3", self, nominal("outlet_true"),
                                                               noHeader=False)
@@ -146,9 +149,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.q_obs_tot_tss = TimeoutputTimeseries("res_q_obs_tot_m3", self, nominal("outlet_true"),
                                                   noHeader=False)  # Equivalent to net_Q
         self.rain_obs_tot_tss = TimeoutputTimeseries("res_rain_obs_tot_m3", self, nominal("outlet_true"),
-                                                  noHeader=False)  # Equivalent to net_Q
+                                                     noHeader=False)  # Equivalent to net_Q
         self.rest_obs_tss = TimeoutputTimeseries("res_restit_obs_m3", self, nominal("outlet_true"),
-                                                  noHeader=False)  # = rain/q_obs
+                                                 noHeader=False)  # = rain/q_obs
         self.q_sim_tot_tss = TimeoutputTimeseries("res_q_sim_tot_m3", self, nominal("outlet_true"),
                                                   noHeader=False)  # This is 'Nash_q' as time series.
         self.nash_q_tss = TimeoutputTimeseries("res_nash_q_m3", self, nominal("outlet_true"),
@@ -167,7 +170,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
     def initial(self):
         # coefficient to calibrate/test Ksat1
-        self.s1 = scalar(self.ini_param.get("s1"))# mm/day
+        self.s1 = scalar(self.ini_param.get("s1"))  # mm/day
         self.s2 = scalar(self.ini_param.get("s2"))  # coefficient to calibrate Ksat2
 
         # First-sensitivity:
@@ -198,8 +201,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         Volatilization parameters
         """
-        # https://www.gsi-net.com
-        self.k_h = max(scalar(self.ini_param.get("k_h")), scalar(3.13e-08))  # Henry's constant @ 20 C (dimensionless, Metolachlor)
+        #
+        # Henry's constant @ 20 C (Metolachlor, Feigenbrugel et al., 2004)
+        self.k_cp = max(scalar(self.ini_param.get("k_cp")), scalar(42600.00))  # mol/L atm
+        # Henry, dimensionless conversion Hcc = Hcp*R*T
+        self.k_h = self.k_cp * 0.0821 * 273.15  # scalar(self.ini_param.get("k_h"))
+        self.molar = scalar(self.ini_param.get("molar"))  # g S-met/mol
 
         """
         Degradation parameters
@@ -212,7 +219,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # DT50 (water-sediment) = 365
         # DT50 (water phase only) = 88
         self.dt_50_ref = scalar(self.ini_param.get("dt_50_ref"))  # S-met (days)
-
 
         self.temp_ref = scalar(self.ini_param.get("temp_ref"))  # Temp.  reference
 
@@ -254,7 +260,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Initial moisture (Final from model v1, Sept 30, 2016)
         self.theta_z0 = readmap('ini_theta_z0')  # map of initial soil moisture in top layer (-)
         self.theta_z1 = readmap('ini_theta_z1')
-        self.theta_z2 = max(readmap("ini_theta_z2"), scalar(0.1))*z2_factor + scalar(0.6)*self.gw_factor
+        self.theta_z2 = max(readmap("ini_theta_z2"), scalar(0.1)) * z2_factor + scalar(0.6) * self.gw_factor
 
         # Need initial states to compute change in storage after each run
         self.theta_z0_ini = self.theta_z0
@@ -272,7 +278,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.smback_z0 = (self.zero_map + 0.06) * self.p_b * scalar(
                 10 ** 6 / 10 ** 3) * self.z0 * cellarea()  # Based on detailed soils
             self.smback_z1 = (self.zero_map + 0.03) * self.p_b * scalar(
-                10 ** 6 / 10 ** 3) * self.z1 * cellarea() # Based on detailed soils
+                10 ** 6 / 10 ** 3) * self.z1 * cellarea()  # Based on detailed soils
             self.smback_z2 = (self.zero_map + 0.00001) * self.p_b * scalar(
                 10 ** 6 / 10 ** 3) * self.z2 * cellarea()  # Assumed
 
@@ -285,9 +291,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.delta_z2 = self.zero_map - 23.7
             self.delta_z2_ini = self.delta_z2
 
-            self.lightback_z0 = self.smback_z0/(1+self.r_standard*(self.delta_z0/1000+1))
-            self.lightback_z1 = self.smback_z1/(1+self.r_standard*(self.delta_z1/1000+1))
-            self.lightback_z2 = self.smback_z2/(1+self.r_standard*(self.delta_z2/1000+1))
+            self.lightback_z0 = self.smback_z0 / (1 + self.r_standard * (self.delta_z0 / 1000 + 1))
+            self.lightback_z1 = self.smback_z1 / (1 + self.r_standard * (self.delta_z1 / 1000 + 1))
+            self.lightback_z2 = self.smback_z2 / (1 + self.r_standard * (self.delta_z2 / 1000 + 1))
 
             self.heavyback_z0 = self.smback_z0 - self.lightback_z0
             self.heavyback_z1 = self.smback_z1 - self.lightback_z1
@@ -354,8 +360,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Note: Speich and Friess could be 1 week later.
             self.app3 = ifthenelse(fa_cr == 1112, 1 * app_conc * cellarea(),  # 1112 (Friess-Corn)
                                    ifthenelse(fa_cr == 1212, 1 * app_conc * cellarea(),  # 1212 (Speich-Corn),
-                                              ifthenelse(fa_cr == 1412, 1 * app_conc * cellarea(),  # 1412 (Schmitt-Corn),
-                                                         ifthenelse(fa_cr == 1312, 1 * app_conc * cellarea(),  # 1312 (Mahler-Corn)
+                                              ifthenelse(fa_cr == 1412, 1 * app_conc * cellarea(),
+                                                         # 1412 (Schmitt-Corn),
+                                                         ifthenelse(fa_cr == 1312, 1 * app_conc * cellarea(),
+                                                                    # 1312 (Mahler-Corn)
                                                                     0 * app_conc * cellarea()))))
 
             # Applications delta
@@ -455,7 +463,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.tot_perc_z2_m3 = 0
         self.tot_runoff_m3 = 0
 
-
         # Stochastic / test parameters
         print("state:", m_state)
         # self.report(self.c1, 'c1')
@@ -468,7 +475,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.report(self.delta_z0_ini, 'z0dCini')
             self.report(self.app1, 'z0app1')
             self.report(self.app1delta, 'z0app1dC')
-
 
     def dynamic(self):
         jd_sim = self.jd_start + self.jd_cum
@@ -703,7 +709,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                           1 + self.r_standard * (self.app2delta / 1000 + 1)),
                                                       ifthenelse(self.currentTimeStep() == self.app_days[2],
                                                                  mass_applied / (
-                                                                 1 + self.r_standard * (self.app3delta / 1000 + 1)),
+                                                                     1 + self.r_standard * (self.app3delta / 1000 + 1)),
                                                                  scalar(0))))
                 heavy_applied = mass_applied - light_applied
 
@@ -711,44 +717,53 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.heavymass_z0 += heavy_applied
 
                 # Isotopes change due to applications
-                self.delta_z0_ini = ((self.heavymass_z0/self.lightmass_z0 - self.r_standard) /
-                                     self.r_standard)*1000  # [permille]
+                self.delta_z0_ini = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
+                                     self.r_standard) * 1000  # [permille]
 
                 self.delta_z0 = self.delta_z0_ini
 
                 # Mass & delta volatilized
-                mass_before_transport = self.pestmass_z0
-                z0_mass_volatilized = getVolatileMass(self, self.temp_air, theta_sat_z0z1,
-                                                      rel_diff_model='option-1', sorption_model="linear",
-                                                      gas=True, isotopes=True)
-                pest_before = self.pestmass_z0
-                self.pestmass_z0 -= z0_mass_volatilized["mass_volat"]
-                pest_after = self.pestmass_z0
-                change = pest_before - pest_after
-                self.lightmass_z0 -= z0_mass_volatilized["light_volat"]
-                self.heavymass_z0 -= z0_mass_volatilized["heavy_volat"]
-                self.delta_z0 = ((self.heavymass_z0/self.lightmass_z0 - self.r_standard) /
-                                     self.r_standard)*1000  # [permille]
+                light_volat = getVolatileMass(self, self.temp_air, theta_sat_z0z1, self.lightmass_z0, "LL",
+                                              rel_diff_model='option-1', sorption_model="linear",
+                                              gas=True, isotopes=True)
+                heavy_volat = getVolatileMass(self, self.temp_air, theta_sat_z0z1, self.heavymass_z0, "HH",
+                                              rel_diff_model='option-1', sorption_model="linear",
+                                              gas=True, isotopes=True)
 
-                light_vol = z0_mass_volatilized["light_volat"]
-                self.report(light_vol, 'aL')
-                # self.report(self.heavymass_z0, 'aH')
-                self.report(self.delta_z0, 'adC')
-                self.report(pest_before, 'at0M')
-                self.report(pest_after, 'at1M')
+                self.lightmass_z0 -= light_volat
+                self.heavymass_z0 -= heavy_volat
 
-            # TODO: Mass loss due to plant uptake!
+                # delta_before = self.delta_z0
+                # self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
+                #                  self.r_standard) * 1000  # [permille]
+                # self.report(delta_before, 'at0dC')
+                # self.report(self.delta_z0, 'at1dC')
 
             # Mass & delta run-off (RO)
-            mass_before_transport = self.pestmass_z0
-            # transfer_model = "d-mlm"
-            z0_mass_runoff = getRunOffMass(self, theta_sat_z0z1,
-                                           precip, runoff_z0,
-                                           transfer_model="d-mlm", sorption_model="linear")
-            self.pestmass_z0 -= z0_mass_runoff["mass_runoff"]  # mg
-            self.delta_z0 = update_layer_delta(self, 0, "runoff", z0_mass_runoff, mass_before_transport)
-            #self.report(self.pestmass_z0, 'z0ro_M')
-            #self.report(self.delta_z0, 'z0ro_dC')
+            light_runoff = getRunOffMass(self, theta_sat_z0z1, precip, runoff_z0,
+                                         self.lightmass_z0, 'LL',
+                                         transfer_model="simple-mt", sorption_model="linear",
+                                         gas=True, isotopes=True)
+            heavy_runoff = getRunOffMass(self, theta_sat_z0z1, precip, runoff_z0,
+                                         self.heavymass_z0, 'HH',
+                                         transfer_model="simple-mt", sorption_model="linear",
+                                         gas=True, isotopes=True)
+
+            # self.lightmass_z0 -= light_runoff  # ug
+            # self.heavymass_z0 -= heavy_runoff
+
+
+
+            delta_before = self.delta_z0
+            self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
+                             self.r_standard) * 1000  # [permille]
+            self.report(delta_before, 'at0dC')
+            self.report(self.delta_z0, 'at1dC')
+            self.report(light_runoff, 'aRO')
+            # TODO: Negative mass runoff??? On a few cells (near ditch!)
+
+            # self.report(self.pestmass_z0, 'z0ro_M')
+            # self.report(self.delta_z0, 'z0ro_dC')
 
             # Mass & delta leached (Deep Percolation - DP)
             z0_mass_leached = getLeachedMass(self, 0, theta_sat_z0z1,
@@ -760,8 +775,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
             mass_before_transport = self.pestmass_z0
             self.pestmass_z0 -= z0_mass_leached["mass_leached"]  # mg
             self.delta_z0 = update_layer_delta(self, 0, "leach", z0_mass_leached, mass_before_transport)
-            #self.report(self.pestmass_z0, 'z0lch_M')
-            #self.report(self.delta_z0, 'z0lch_dC')
+            # self.report(self.pestmass_z0, 'z0lch_M')
+            # self.report(self.delta_z0, 'z0lch_dC')
 
             # Mass & delta latflux (LF)
             mass_before_transport = self.pestmass_z0
@@ -794,7 +809,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                   theta_fcap_z0z1, theta_wp,
                                   sor_deg_factor=1)
             self.pestmass_z0 = deg_z0_dict["mass_light_fin"] + deg_z0_dict["mass_heavy_fin"]
-            self.delta_z0 = (deg_z0_dict["mass_heavy_fin"] / deg_z0_dict[ "mass_light_fin"] - self.r_standard) / self.r_standard
+            self.delta_z0 = (deg_z0_dict["mass_heavy_fin"] / deg_z0_dict[
+                "mass_light_fin"] - self.r_standard) / self.r_standard
             self.report(self.pestmass_z0, 'z0deg_M')
             self.report(self.delta_z0, 'z0deg_dC')
             self.report(self.r_standard, 'rstd')
@@ -811,7 +827,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.pestmass_z0_ini = self.pestmass_z0
 
             # Cumulative
-            self.cum_runoff_ug += z0_mass_runoff["mass_runoff"]
+            tot_runoff = light_runoff + heavy_runoff
+            self.cum_runoff_ug += tot_runoff
             self.cum_latflux_ug_z0 += z0_mass_latflux["net_mass_latflux"]
 
         # Update state variables
@@ -925,7 +942,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         overflow_height_z2 = z2_moisture["overflow_height"]
         etp_z2 = z2_moisture["ETP"]
 
-
         if self.PEST:
             #########################
             # Mass Transfer, z2
@@ -974,8 +990,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Update state variables
         # Change in storage - Moisture
         self.theta_z2 = z2_moisture["theta_final"]
-        self.baseflow = (self.theta_z2*self.z2*self.gw_factor)/self.k_g  # [mm/d]
-        self.theta_z2 -= self.baseflow/self.z2
+        self.baseflow = (self.theta_z2 * self.z2 * self.gw_factor) / self.k_g  # [mm/d]
+        self.theta_z2 -= self.baseflow / self.z2
 
         ch_storage_z2_m3 = (self.theta_z2 * self.z2 * cellarea() / 1000) - \
                            (self.theta_z2_ini * self.z2 * cellarea() / 1000)
@@ -1110,12 +1126,13 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # cum_appl_catch_mg = upstream(self.ldd_subs, self.cum_appl_ug)
 
             # Loss to run-off
-            out_runoff_mg = accuflux(self.ldd_subs, z0_mass_runoff["mass_runoff"])
+            out_runoff_mg = accuflux(self.ldd_subs, tot_runoff)
             cum_out_runoff_mg = accuflux(self.ldd_subs, self.cum_runoff_ug)
 
             # Loss to air/volatilized
             if self.currentTimeStep() in self.app_days:
-                m_vol = z0_mass_volatilized.get("mass_loss", self.zero_map)
+                # TODO: correct!
+                m_vol = scalar(0)  # z0_mass_volatilized.get("mass_loss", self.zero_map)
                 out_volat_mg = accuflux(self.ldd_subs, m_vol)
                 # cum_out_volat_mg = accuflux(self.ldd, ...)
             else:
@@ -1151,7 +1168,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Analysis (NASH Discharge)
         q_obs = timeinputscalar('q_obs_m3day.tss', nominal("outlet_true"))
-        rest_obs = tot_rain_m3/q_obs
+        rest_obs = tot_rain_m3 / q_obs
         self.rest_obs_tss.sample(rest_obs)
 
         self.q_obs_tot += ifthenelse(q_obs >= 0, q_obs, 0)
@@ -1199,27 +1216,27 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.report(self.theta_z2, 'z2theta')
 
         if self.PEST:
-            if self.currentTimeStep() == self.app_days[0]+1:
+            if self.currentTimeStep() == self.app_days[0] + 1:
                 self.report(self.delta_z0, 'z0dC')
                 self.report(self.pestmass_z0, 'z0mss')
 
-        # Visualization
-        # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[1,10,1] cellIn cellOut out_multi_nom.map outlet_true.map
-        # aguila 1\at0M0000.177 1\at1M0000.177 1\aCoLight.177
+                # Visualization
+                # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[1,10,1] cellIn cellOut out_multi_nom.map outlet_true.map
+                # aguila 1\at0dC000.177 1\at1dC000.177
+                # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[176,179,1] at0dC at1dC aRO aCoLL aMaLL
 
-        # Nash
-        # aguila 1\res_nash_q_m3.tss 2\res_nash_q_m3.tss 3\res_nash_q_m3.tss
-        # aguila 6\res_nash_q_m3.tss 7\res_nash_q_m3.tss 8\res_nash_q_m3.tss
-        # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
-        # Tot discharge & Daily discharge
-        # aguila 4\res_q_obs_tot_m3.tss 4\res_q_sim_tot_m3.tss 8\res_accuVol_m3.tss q_obs_m3day.tss
-        # aguila 1\res_accuLatflow_m3.tss 1\res_accuVol_m3.tss q_obs_m3day.tss
-
+                # Nash
+                # aguila 1\res_nash_q_m3.tss 2\res_nash_q_m3.tss 3\res_nash_q_m3.tss
+                # aguila 6\res_nash_q_m3.tss 7\res_nash_q_m3.tss 8\res_nash_q_m3.tss
+                # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
+                # Tot discharge & Daily discharge
+                # aguila 4\res_q_obs_tot_m3.tss 4\res_q_sim_tot_m3.tss 8\res_accuVol_m3.tss q_obs_m3day.tss
+                # aguila 1\res_accuLatflow_m3.tss 1\res_accuVol_m3.tss q_obs_m3day.tss
 
     def postmcloop(self):
         pass
-        #names = ["q"]  # Discharge, Nash_Discharge
-        #mcaveragevariance(names, self.sampleNumbers(), self.timeSteps())
+        # names = ["q"]  # Discharge, Nash_Discharge
+        # mcaveragevariance(names, self.sampleNumbers(), self.timeSteps())
         # aguila --timesteps=[170,280,1] q-ave q-var outlet_true.map
         # percentiles = [0.25, 0.5, 0.75]
         # mcpercentiles(names, percentiles, self.sampleNumbers(), self.timeSteps())

@@ -1,0 +1,30 @@
+
+# Ideal Gas Law for Volatilization section
+
+To calculate the fraction volatilized into the atmosphere the partial pressure $p$ $(atm)$ of S-met in pore space is obtained from the aqueous concentration $C_{aq}$ $(\mu g~L^{-1})$ \textit{via} the physical Henry law constant $H^{cp} = 42.6 \pm 2.8 \cdot10^3$ $(mol~L^{-1} atm^{-1})$ \citep{Feigenbrugel2004}, where:
+
+$$
+p = \frac{C_{aq}}{H^{cp}}
+$$
+The partial pressure is then converted to moles \textit{via} the ideal gas law:
+
+$$
+pV = nRT
+$$
+where the volume $V$ $(L)$ considered is that of the total porespace of the first 10 mm top soil, the gas constant $R = 0.0821~atm~L~mol^{-1}K^{-1}$, and soil temperature $T$ (Kelvin). The concentrtion in gas pore space is obtained then as:
+
+```{python}
+
+def getGasHenry(model, conc_aq, theta_gas):
+    R = scalar(0.0821)  # atm L/mol Kelvin
+    T = model.temp_z0_fin + 273.15  # Kelvin
+    Vair = model.z0*cellarea()*theta_gas  # mm*m2 = L
+    # Convert to mol/L
+    # mol/L = ug/L * (1g/10**6 ug)* 1mol/283.7g
+    conc_M = conc_aq * 1/10**6 * 1/model.molar  # mol/L
+    p = conc_M / model.k_cp  # atm
+    n = p*Vair/(R*T)  # moles
+    conc_gas = n*model.molar*10**6/Vair
+    return conc_gas  # ug/L
+    
+```

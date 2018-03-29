@@ -566,7 +566,7 @@ def getVolatileMass_MB(model, app_days, temp_air, theta_sat, rel_diff_model="opt
     return {"mass_loss": volat_flux}  # ug / day
 
 
-def getKfilm(model, runoffvelocity):
+def getKfilm_MB(model, runoffvelocity):
     """
     Note: Model uses run-off (mm) per day (i.e. timestep) as runoff velocity.
     Chemical parameter source:
@@ -592,7 +592,7 @@ def getKfilm(model, runoffvelocity):
     # kin_visc = 1.004e-6 * 86400 * 10**6  # mm2/day
 
 
-def getRunOffMass(model, theta_sat, precip, runoff_mm,
+def getRunOffMass_MB(model, theta_sat, precip, runoff_mm,
                   transfer_model="simple-mt", sorption_model="linear",
                   gas=True):
     depth, theta_layer, delta_layer = model.z0, model.theta_z0, model.delta_z0
