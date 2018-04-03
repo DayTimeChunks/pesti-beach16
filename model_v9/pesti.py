@@ -645,7 +645,7 @@ def getRunOffMass_MB(model, theta_sat, precip, runoff_mm,
     return {"mass_runoff": mass_ro, "deltaMass_runoff": deltaMass_ro}
 
 
-def getLeachedMass(model, layer, theta_sat,
+def getLeachedMass_MB(model, layer, theta_sat,
                    precip,
                    tot_percolation,
                    theta_after_percolate,

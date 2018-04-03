@@ -397,7 +397,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.heavymass_z2_ini = self.heavymass_z2
 
             # Cumulative maps
-            self.pest_ini_storage_ug = self.pestmass_z0_ini + self.pestmass_z1_ini + self.pestmass_z2_ini
+            self.light_ini_storage_ug = self.lightmass_z0_ini + self.lightmass_z1_ini + self.lightmass_z2_ini
             self.cum_appl_ug = self.zero_map
             self.cum_runoff_ug = self.zero_map
             self.cum_leached_ug_z0 = self.zero_map
@@ -685,7 +685,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             mass_gain_dt_z0 = scalar(0)
 
             # Background
-            self.pestmass_z0_ini = self.pestmass_z0  # ug
+            self.lightmass_z0_ini = self.lightmass_z0  # ug
 
             # Applications
             mass_applied = self.zero_map
@@ -734,8 +734,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.heavymass_z0 -= heavy_volat
 
                 # delta_before = self.delta_z0
-                # self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
-                #                  self.r_standard) * 1000  # [permille]
+                self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
+                                 self.r_standard) * 1000  # [permille]
                 # self.report(delta_before, 'at0dC')
                 # self.report(self.delta_z0, 'at1dC')
 
@@ -752,84 +752,71 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # self.lightmass_z0 -= light_runoff  # ug
             # self.heavymass_z0 -= heavy_runoff
 
-
-
             delta_before = self.delta_z0
             self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
                              self.r_standard) * 1000  # [permille]
-            self.report(delta_before, 'at0dC')
-            self.report(self.delta_z0, 'at1dC')
-            self.report(light_runoff, 'aRO')
+            # self.report(delta_before, 'at0dC')
+            # self.report(self.delta_z0, 'at1dC')
             # TODO: Negative mass runoff??? On a few cells (near ditch!)
 
-            # self.report(self.pestmass_z0, 'z0ro_M')
-            # self.report(self.delta_z0, 'z0ro_dC')
-
             # Mass & delta leached (Deep Percolation - DP)
-            z0_mass_leached = getLeachedMass(self, 0, theta_sat_z0z1,
-                                             precip,
-                                             tot_percolation_z0,
-                                             z0_moisture["theta_after_percolate"],
-                                             sorption_model="linear",
-                                             leach_model="mcgrath")
-            mass_before_transport = self.pestmass_z0
-            self.pestmass_z0 -= z0_mass_leached["mass_leached"]  # mg
-            self.delta_z0 = update_layer_delta(self, 0, "leach", z0_mass_leached, mass_before_transport)
-            # self.report(self.pestmass_z0, 'z0lch_M')
-            # self.report(self.delta_z0, 'z0lch_dC')
+            z0_light_leached = getLeachedMass(self, 0, theta_sat_z0z1,
+                                              precip,
+                                              z0_moisture["theta_after_percolate"],
+                                              self.lightmass_z0,
+                                              sorption_model="linear",
+                                              leach_model="mcgrath", gas=True, isotopes=True)
+            z0_heavy_leached = getLeachedMass(self, 0, theta_sat_z0z1,
+                                              precip,
+                                              z0_moisture["theta_after_percolate"],
+                                              self.heavymass_z0,
+                                              sorption_model="linear",
+                                              leach_model="mcgrath", gas=True, isotopes=True)
+
+            self.report(z0_light_leached, 'aLEACH')
+
+            self.lightmass_z0 -= z0_light_leached
+            self.heavymass_z0 -= z0_heavy_leached
+
+            self.report(self.lightmass_z0, 'aLEACHz')
+
+            self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
+                             self.r_standard) * 1000  # [permille]
 
             # Mass & delta latflux (LF)
-            mass_before_transport = self.pestmass_z0
-            z0_mass_latflux = getLatMassDeltaFlux(self, 0, theta_sat_z0z1, theta_fcap_z0z1, mass_before_transport)
+            z0_light_latflux = getLatMassFlux(self, 0, theta_sat_z0z1, theta_fcap_z0z1,
+                                              self.lightmass_z0,
+                                              sorption_model="linear", gas=True, isotopes=True)
+            z0_heavy_latflux = getLatMassFlux(self, 0, theta_sat_z0z1, theta_fcap_z0z1,
+                                              self.heavymass_z0,
+                                              sorption_model="linear", gas=True, isotopes=True)
 
-            self.pestmass_z0 += z0_mass_latflux["net_mass_latflux"]  # mg
-            self.delta_z0 = z0_mass_latflux["delta_layer"]
-            wat_lossLF = z0_mass_latflux['wat_loss']
-            wat_gainLF = z0_mass_latflux['wat_gain']
-            mass_lossLF = z0_mass_latflux['mass_loss']
-            mass_gainLF = z0_mass_latflux['mass_gain']
-            self.report(mass_lossLF, 'f2loss')
-            self.report(mass_gainLF, 'f2gain')
-            self.report(wat_lossLF, 'f2wloss')
-            self.report(wat_gainLF, 'f2wgain')
+            net_latflux = z0_light_latflux['net_mass_latflux']
+            self.report(net_latflux, 'aLF')
 
-            f1 = z0_mass_latflux["f1"]
-            f2 = z0_mass_latflux["f2"]
-            f3 = z0_mass_latflux["f3"]
-            self.report(f1, 'f1')
-            self.report(f2, 'f2')
-            self.report(f3, 'f3')
-            self.report(self.pestmass_z0, 'z0lf_M')
-            self.report(self.delta_z0, 'z0lf_dC')
+            self.lightmass_z0 += z0_light_latflux['net_mass_latflux']
+            self.heavymass_z0 += z0_heavy_latflux['net_mass_latflux']
+
+            self.report(self.lightmass_z0, 'aLFz')
+
+            self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
+                             self.r_standard) * 1000  # [permille]
 
             # Degradation
-            mass_before_degradation = self.pestmass_z0
-            deg_z0_dict = degrade(self, 0,
-                                  theta_sat_z0z1, theta_sat_z2,
-                                  theta_fcap_z0z1, theta_wp,
-                                  sor_deg_factor=1)
-            self.pestmass_z0 = deg_z0_dict["mass_light_fin"] + deg_z0_dict["mass_heavy_fin"]
-            self.delta_z0 = (deg_z0_dict["mass_heavy_fin"] / deg_z0_dict[
-                "mass_light_fin"] - self.r_standard) / self.r_standard
-            self.report(self.pestmass_z0, 'z0deg_M')
-            self.report(self.delta_z0, 'z0deg_dC')
-            self.report(self.r_standard, 'rstd')
-
-            # # Testing
-            # if self.jd_cum in {2, 5, 8}:
-            #     t0 = time.time()
-            #     self.report(self.delta_z1, "dz0_" + str(self.jd_cum))
-            #     t1 = time.time()
-            #     print("Total:", t1 - t0)
+            # mass_before_degradation = self.pestmass_z0
+            # deg_z0_dict = degrade(self, 0,
+            #                       theta_sat_z0z1, theta_sat_z2,
+            #                       theta_fcap_z0z1, theta_wp,
+            #                       sor_deg_factor=1)
 
             # Change in mass storage after degradation - Pesticide Mass
-            ch_storage_z0_mg = self.pestmass_z0 - self.pestmass_z0_ini
-            self.pestmass_z0_ini = self.pestmass_z0
+            ch_storage_z0_light = self.lightmass_z0 - self.lightmass_z0_ini
+            self.pestmass_z0_ini = self.lightmass_z0
 
             # Cumulative
-            tot_runoff = light_runoff + heavy_runoff
-            self.cum_runoff_ug += tot_runoff
-            self.cum_latflux_ug_z0 += z0_mass_latflux["net_mass_latflux"]
+            # tot_runoff = light_runoff + heavy_runoff
+            # self.cum_runoff_ug += tot_runoff
+            # self.cum_latflux_ug_z0 += z0_light_latflux["net_mass_latflux"]
 
         # Update state variables
         # Change in storage - Moisture
@@ -872,40 +859,63 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Mass volatilized = not relevant @z1!
             # Mass runoff = not relevant @z1!
             # Mass & delta leached (Deep Percolation - DP, z1)
-            self.pestmass_z1 += z0_mass_leached["mass_leached"]
-            z1_mass_leached = getLeachedMass(self, 1, theta_sat_z0z1,
-                                             precip,
-                                             percolation_z1,
-                                             z1_moisture["theta_after_percolate"],
-                                             sorption_model="linear")
-            mass_before_transport = self.pestmass_z1
-            self.pestmass_z1 -= z1_mass_leached["mass_leached"]
-            self.delta_z1 = update_layer_delta(self, 1, "leach", z1_mass_leached, mass_before_transport)
+            self.lightmass_z1 += z0_light_leached
+            self.heavymass_z1 += z0_heavy_leached
+            # z1_mass_leached = getLeachedMass(self, 1, theta_sat_z0z1,
+            #                                  precip,
+            #                                  percolation_z1,
+            #                                  z1_moisture["theta_after_percolate"],
+            #                                  sorption_model="linear")
+
+            # Mass & delta leached (Deep Percolation - DP)
+            z1_light_leached = getLeachedMass(self, 1, theta_sat_z0z1,
+                                              percolation_z1,
+                                              z1_moisture["theta_after_percolate"],
+                                              self.lightmass_z1,
+                                              sorption_model="linear",
+                                              leach_model="mcgrath", gas=True, isotopes=True)
+            z1_heavy_leached = getLeachedMass(self, 1, theta_sat_z0z1,
+                                              percolation_z1,
+                                              z1_moisture["theta_after_percolate"],
+                                              self.heavymass_z1,
+                                              sorption_model="linear",
+                                              leach_model="mcgrath", gas=True, isotopes=True)
+
+            self.lightmass_z1 -= z1_light_leached
+            self.heavymass_z1 -= z1_heavy_leached
+
+            self.delta_z1 = ((self.heavymass_z1 / self.lightmass_z1 - self.r_standard) /
+                             self.r_standard) * 1000  # [permille]
 
             # Mass & delta latflux (LF), z1
-            mass_before_transport = self.pestmass_z1
-            z1_mass_latflux = getLatMassDeltaFlux(self, 1, theta_sat_z0z1, theta_fcap_z0z1, mass_before_transport)
-            self.pestmass_z1 += z1_mass_latflux["net_mass_latflux"]
-            self.delta_z1 = z1_mass_latflux["delta_layer"]
+            z1_light_latflux = getLatMassFlux(self, 1, theta_sat_z0z1, theta_fcap_z0z1,
+                                              self.lightmass_z1,
+                                              sorption_model="linear", gas=True, isotopes=True)
+            z1_heavy_latflux = getLatMassFlux(self, 1, theta_sat_z0z1, theta_fcap_z0z1,
+                                              self.heavymass_z1,
+                                              sorption_model="linear", gas=True, isotopes=True)
+
+            self.lightmass_z1 += z1_light_latflux['net_mass_latflux']
+            self.heavymass_z1 += z1_heavy_latflux['net_mass_latflux']
+
+            self.delta_z1 = ((self.heavymass_z1 / self.lightmass_z1 - self.r_standard) /
+                             self.r_standard) * 1000  # [permille]
 
             # Degradation
-            mass_before_degradation = self.pestmass_z1
-            deg_z1_dict = degrade(self, 1,
-                                  theta_sat_z0z1, theta_sat_z2,
-                                  theta_fcap_z0z1, theta_wp,
-                                  sor_deg_factor=1)
-            self.pestmass_z1 = deg_z1_dict["mass_light_fin"] + deg_z1_dict["mass_heavy_fin"]
-            self.delta_z1 = (deg_z1_dict["mass_heavy_fin"] / deg_z1_dict[
-                "mass_light_fin"] - self.r_standard) / self.r_standard
+            # mass_before_degradation = self.pestmass_z1
+            # deg_z1_dict = degrade(self, 1,
+            #                       theta_sat_z0z1, theta_sat_z2,
+            #                       theta_fcap_z0z1, theta_wp,
+            #                       sor_deg_factor=1)
 
             # Change in storage - Pesticide Mass
-            self.conc_z1 = self.pestmass_z1 / (self.theta_z1 * self.z1)  # mg/mm
-            ch_storage_z1_mg = self.pestmass_z1 - self.pestmass_z1_ini
-            self.pestmass_z1_ini = self.pestmass_z1
+            # self.conc_z1 = self.lightmass_z1 / (self.theta_z1 * self.z1)  # mg/mm
+            ch_storage_z1_light = self.lightmass_z1 - self.lightmass_z1_ini
+            self.lightmass_z1_ini = self.lightmass_z1
 
             #######################
             # Cumulative counters
-            self.cum_latflux_ug_z1 += z1_mass_latflux["net_mass_latflux"]
+            # self.cum_latflux_ug_z1 += z1_light_latflux['net_mass_latflux']
 
         # Update state variables
         # Change in storage - Moisture
@@ -913,10 +923,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         ch_storage_z1_m3 = (self.theta_z1 * self.z1 * cellarea() / 1000) - \
                            (self.theta_z1_ini * self.z1 * cellarea() / 1000)
         self.theta_z1_ini = self.theta_z1
-
-        # SAVE
-        # self.theta_z1tss.sample(self.theta_z1)
-        # self.water_balance_z1tss.sample(z1_moisture["balance"])
 
         #######################################################################################
         # Layer z = 2
@@ -948,44 +954,55 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Mass volatilized = not relevant @z2!
             # Mass runoff = not relevant @z2!
             # Mass & delta leached (Deep Percolation - DP, z2)
-            self.pestmass_z2 += z1_mass_leached["mass_leached"]
-            z2_mass_leached = getLeachedMass(self, 2, theta_sat_z2,
-                                             precip,
-                                             percolation_z2,
-                                             z2_moisture["theta_after_percolate"],
-                                             sorption_model="linear")
-            mass_before_transport = self.pestmass_z2
-            self.pestmass_z2 -= z2_mass_leached["mass_leached"]
-            self.delta_z2 = update_layer_delta(self, 2, "leach", z2_mass_leached, mass_before_transport)
+            z2_light_leached = getLeachedMass(self, 2, theta_sat_z2,
+                                              percolation_z2,
+                                              z2_moisture["theta_after_percolate"],
+                                              self.lightmass_z2,
+                                              sorption_model="linear",
+                                              leach_model="mcgrath", gas=True, isotopes=True)
+            z2_heavy_leached = getLeachedMass(self, 1, theta_sat_z2,
+                                              percolation_z2,
+                                              z2_moisture["theta_after_percolate"],
+                                              self.heavymass_z2,
+                                              sorption_model="linear",
+                                              leach_model="mcgrath", gas=True, isotopes=True)
+
+            self.lightmass_z2 -= z2_light_leached
+            self.heavymass_z2 -= z2_heavy_leached
+
+            self.delta_z2 = ((self.heavymass_z2 / self.lightmass_z2 - self.r_standard) /
+                             self.r_standard) * 1000  # [permille]
 
             # Mass & delta latflux (LF), z2
-            mass_before_transport = self.pestmass_z2
-            z2_mass_latflux = getLatMassDeltaFlux(self, 0, theta_sat_z0z1, theta_fcap_z0z1, mass_before_transport)
-            self.pestmass_z2 += z2_mass_latflux["net_mass_latflux"]
-            self.delta_z2 = z2_mass_latflux["delta_layer"]
+            z2_light_latflux = getLatMassFlux(self, 2, theta_sat_z2, theta_fcap_z2,
+                                              self.lightmass_z2,
+                                              sorption_model="linear", gas=True, isotopes=True)
+            z2_heavy_latflux = getLatMassFlux(self, 2, theta_sat_z2, theta_fcap_z2,
+                                              self.heavymass_z2,
+                                              sorption_model="linear", gas=True, isotopes=True)
+
+            self.lightmass_z2 += z2_light_latflux['net_mass_latflux']
+            self.heavymass_z2 += z2_heavy_latflux['net_mass_latflux']
+
+            self.delta_z2 = ((self.heavymass_z2 / self.lightmass_z2 - self.r_standard) /
+                             self.r_standard) * 1000  # [permille]
 
             # Degradation
-            mass_before_degradation = self.pestmass_z2
-            deg_z2_dict = degrade(self, 2,
-                                  theta_sat_z0z1, theta_sat_z2,
-                                  theta_fcap_z0z1, theta_wp,
-                                  sor_deg_factor=1)
-            self.pestmass_z2 = deg_z2_dict["mass_light_fin"] + deg_z2_dict["mass_heavy_fin"]
-            self.delta_z2 = (deg_z2_dict["mass_heavy_fin"] / deg_z2_dict[
-                "mass_light_fin"] - self.r_standard) / self.r_standard
-
-            # self.theta_z2tss.sample(self.theta_z2)
-            # self.water_balance_z2tss.sample(z2_moisture["balance"])
+            # mass_before_degradation = self.pestmass_z2
+            # deg_z2_dict = degrade(self, 2,
+            #                       theta_sat_z0z1, theta_sat_z2,
+            #                       theta_fcap_z0z1, theta_wp,
+            #                       sor_deg_factor=1)
 
             # Change in storage - Pesticide Mass
-            self.conc_z2 = self.pestmass_z2 / (self.theta_z2 * self.z2)  # mg/mm
-            ch_storage_z2_mg = self.pestmass_z2 - self.pestmass_z2_ini
-            self.pestmass_z2_ini = self.pestmass_z2
+            # self.conc_z2 = self.pestmass_z2 / (self.theta_z2 * self.z2)  # mg/mm
+            ch_storage_z2_light = self.lightmass_z2 - self.lightmass_z2_ini
+            self.lightmass_z2_ini = self.lightmass_z2
 
             #################
             # Cumulative counters
-            self.cum_leached_ug_z2 += z2_mass_leached["mass_leached"]
-            self.cum_latflux_ug_z2 += z2_mass_latflux["net_mass_latflux"]
+            # self.cum_leached_ug_z2 += z2_mass_leached["mass_leached"]
+            # self.cum_latflux_ug_z2 += z2_mass_latflux["net_mass_latflux"]
 
         # Update state variables
         # Change in storage - Moisture
@@ -1120,48 +1137,48 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Pesticide Balance
             ######################
             # Applied mg on catchment
-            appl_catch_mg = accuflux(self.ldd_subs, mass_applied)
-            cum_appl_catch_mg = accuflux(self.ldd_subs, self.cum_appl_ug)
+            appl_catch_light = accuflux(self.ldd_subs, mass_applied)
+            cum_appl_catch_light = accuflux(self.ldd_subs, self.cum_appl_ug)
             # Todo: Check if below same result
             # cum_appl_catch_mg = upstream(self.ldd_subs, self.cum_appl_ug)
 
             # Loss to run-off
-            out_runoff_mg = accuflux(self.ldd_subs, tot_runoff)
-            cum_out_runoff_mg = accuflux(self.ldd_subs, self.cum_runoff_ug)
+            out_runoff_light = accuflux(self.ldd_subs, light_runoff)
+            cum_out_runoff_light = accuflux(self.ldd_subs, self.cum_runoff_ug)
 
             # Loss to air/volatilized
             if self.currentTimeStep() in self.app_days:
                 # TODO: correct!
                 m_vol = scalar(0)  # z0_mass_volatilized.get("mass_loss", self.zero_map)
-                out_volat_mg = accuflux(self.ldd_subs, m_vol)
+                out_volat_light = accuflux(self.ldd_subs, m_vol)
                 # cum_out_volat_mg = accuflux(self.ldd, ...)
             else:
-                out_volat_mg = self.zero_map
+                out_volat_light = self.zero_map
 
             # Loss to leaching
-            out_leach_mg = accuflux(self.ldd_subs, z2_mass_leached["mass_leached"])
-            cum_out_leach_mg = accuflux(self.ldd_subs, self.cum_leached_ug_z2)
+            out_leach_light = accuflux(self.ldd_subs, z2_light_leached)
+            # cum_out_leach_light = accuflux(self.ldd_subs, self.cum_leached_ug_z2)
 
             # Loss to lateral flux
             # ... per time step
-            mass_latflux_mg = (z0_mass_latflux["net_mass_latflux"] +
-                               z1_mass_latflux["net_mass_latflux"] +
-                               z2_mass_latflux["net_mass_latflux"])
-            out_latflux_mg = accuflux(self.ldd_subs, mass_latflux_mg)
+            mass_latflux_light = (z0_light_latflux["net_mass_latflux"] +
+                                  z1_light_latflux["net_mass_latflux"] +
+                                  z2_light_latflux["net_mass_latflux"])
+            out_latflux_light = accuflux(self.ldd_subs, mass_latflux_light)
             # ... to date (cumulative)
             tot_latflux_mg = self.cum_latflux_ug_z0 + self.cum_latflux_ug_z1 + self.cum_latflux_ug_z2
-            cum_out_latflux_mg = accuflux(self.ldd_subs, tot_latflux_mg)
+            # cum_out_latflux_light = accuflux(self.ldd_subs, tot_latflux_mg)
 
             # Change in mass storage
             # ... per time step
-            ch_storage_mg = ch_storage_z0_mg + ch_storage_z1_mg + ch_storage_z2_mg
-            tot_ch_storage_mg = accuflux(self.ldd_subs, ch_storage_mg)
+            ch_storage_light = ch_storage_z0_light + ch_storage_z1_light + ch_storage_z2_light
+            tot_ch_storage_light = accuflux(self.ldd_subs, ch_storage_light)
             # ... to date (cumulative)
-            cum_ch_storage_mg = ch_storage_mg - self.pest_ini_storage_ug
-            cum_tot_ch_storage_mg = accuflux(self.ldd_subs, cum_ch_storage_mg)
+            cum_ch_storage_light = ch_storage_light - self.light_ini_storage_ug
+            cum_tot_ch_storage_light = accuflux(self.ldd_subs, cum_ch_storage_light)
 
-            global_mb_pest = appl_catch_mg - out_runoff_mg - out_leach_mg + out_latflux_mg - tot_ch_storage_mg - out_volat_mg
-            global_mb_pest_cum = cum_appl_catch_mg - cum_out_runoff_mg - cum_out_leach_mg + cum_out_latflux_mg - cum_tot_ch_storage_mg  # - cum_out_volat_mg
+            global_mb_pest = appl_catch_light - out_runoff_light - out_leach_light + out_latflux_light - tot_ch_storage_light - out_volat_light
+            # global_mb_pest_cum = cum_appl_catch_light - cum_out_runoff_light - cum_out_leach_light + cum_out_latflux_light - cum_tot_ch_storage_light  # - cum_out_volat_mg
             self.global_mb_pest_tss.sample(global_mb_pest)
 
         self.jd_cum += self.jd_dt  # updating JDcum, currently dt = 1 day
@@ -1223,7 +1240,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 # Visualization
                 # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[1,10,1] cellIn cellOut out_multi_nom.map outlet_true.map
                 # aguila 1\at0dC000.177 1\at1dC000.177
-                # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[176,179,1] at0dC at1dC aRO aCoLL aMaLL
+                # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[176,179,1] aLEACH aLEACHz aLF aLFz
 
                 # Nash
                 # aguila 1\res_nash_q_m3.tss 2\res_nash_q_m3.tss 3\res_nash_q_m3.tss
