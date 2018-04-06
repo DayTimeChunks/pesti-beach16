@@ -1,4 +1,4 @@
-\begin{thebibliography}{16}
+\begin{thebibliography}{15}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -123,13 +123,5 @@ X~N Shi, L~S Wu, W~P Chen, and Q~J Wang.
   (4):\penalty0 1214--1225, 2011.
 \newblock ISSN 0361-5995.
 \newblock \doi{DOI 10.2136/sssaj2010.0433}.
-
-\bibitem[Whelan et~al.(1987)Whelan, Strenge, Droppo, Steelman, and
-  Buck]{Whelan1987}
-G.~Whelan, D.~L. Strenge, Jr. J.~G. Droppo, B.~L. Steelman, and J.~W. Buck.
-\newblock {The Remedial Action Priority System (RAPS): Mathematical
-  Formulations. PNL-6200}.
-\newblock Technical report, Pacific Northwest Laboratory, Richland, Washington,
-  1987.
 
 \end{thebibliography}

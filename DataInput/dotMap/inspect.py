@@ -34,13 +34,28 @@ if create_outlet:
 # slope_deg = slope_rad/0.0174533  # 1 deg = 0.0174533 rad
 # aguila(slope_deg)
 
-create_weekly = False
+
+create_weekly = True
 if create_weekly:
     weekly = readmap("weekly_smp")
     weekly = order(weekly)
     result = boolean(weekly)
-    report(weekly, 'weekly_ord.map')  # stores a ".map" file
+    # report(weekly, 'weekly_ord.map')  # stores a ".map" file
 
+    word = readmap("weekly_ord")
+    north = ifthen(word < 31, word)
+    north = order(north)
+    # Talweg and South
+    ts = ifthen(word > 30, word)
+    south = ifthen(ts > 55, ts)
+    south = order(south)
+    valley = ifthen(ts < 56, ts)
+    valley = order(valley)
+    # valley -= 30
+    # aguila(valley, landuse)
+    report(north, 'north_wk.map')
+    report(south, 'south_wk.map')
+    report(valley, 'valley_wk.map')
     # detail = readmap("detailed_smp")
 
 

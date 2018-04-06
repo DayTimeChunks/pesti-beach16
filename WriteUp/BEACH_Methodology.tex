@@ -482,9 +482,94 @@ soil\footnote{Note: In model, $\theta_{dr} = 0.33 \cdot \theta_{wp}$ (Sheikh et 
 
 \ldots{}to document
 
-\subsection{Pesticide Transfer}\label{pesticide-transfer}
+\subsubsection{Soil Temperature}\label{soil-temperature}
 
-The concentration of pesticide within the soil system (\(mg/L\)) along
+Temperture is an important parameter regulating chemical and biological
+processes. To simulate its evolution across time and space this model
+follows \citep{Neitsch2009}, where the average daily soil temperature
+(\(^{\circ}\)C) at the center of each soil layer \(k\) is given by:
+
+\begin{equation}
+T_{soil, k, t} = l \cdot T_{soil, k, t-1} + (1.0 - l) \cdot \big[df \cdot [\overline{T}_{AAir} - T_{ssurf}]+T_{ssurf}]
+\label{eq:tempSoil} 
+\end{equation}
+
+where \(l\) is a lag coefficient (0 - 1.0) regulating the influence of
+the previous day's temperature, the subscript \(t-1\), refers to the
+previous day, \(\overline{T}_{AAir}\) is the average annual air
+temperature and \(T_{ssurf}\) is the soil surface temperature at time
+\(t\). The depth factor \(df\) is given by,
+
+\begin{equation}
+df = \frac{zd}{zd+exp(-0.867-2.078 \cdot zd)}
+\label{eq:df} 
+\end{equation}
+
+where \(zd\) is the ratio of the depth at the center of the soil layer
+\(D_{k_{mid}}\) (mm) to the damping depth \(dd\) (mm) such that:
+
+\begin{equation}
+zd = \frac{D_{k_{mid}}}{dd}
+\label{eq:zd} 
+\end{equation}
+
+The damping depth \(dd\) is a function of the maximum damping depth
+\(dd_{max}\) (mm) and a soil water scaling factor \(\varphi\) (-).
+
+\begin{equation}
+dd = dd_{max} \cdot exp \Big[ln\Big(\frac{500}{dd_{max}} \Big) \cdot \Big(\frac{1-\varphi}{1+\varphi}\Big)^2\Big]
+\label{eq:dd} 
+\end{equation}
+
+\begin{equation} 
+dd_{max} = 1000 + \frac{2500\rho_b}{\rho_b+686 \cdot exp(-5.63\rho_b)}
+\label{eq:ddmax} 
+\end{equation}
+
+\begin{equation} 
+\varphi = \frac{SW}{(0.356-0.144\rho_b) \cdot D_{k}}
+\label{eq:varphi} 
+\end{equation}
+
+where \(\rho_b\) is the soil bulk density (mg m\(^{-3}\)) and SW is
+water content (mm \(H_2O\)) in the soil profile \(D_k\) (mm).
+
+The soil surface temperature \(T_{ssurf}\) in eq. \refeq{tempSoil}, is a
+fucntion of the previous day's soil temperature, amount of ground cover
+captured by a crop factor \(bcv\) and the temperature of bare soil
+\(T_{bare}\), such that:
+
+\begin{equation} 
+T_{ssurf} = bcv \cdot  T_{soil, k, t-1} + (1-bcv) \cdot T_{bare}
+\label{eq:Tssurf} 
+\end{equation}
+
+\begin{equation} 
+bcv = \frac{CV}{(CV+exp(7.563-1.297 \cdot 10^{-4} \cdot CV))}
+\label{eq:Tssurf} 
+\end{equation}
+
+\begin{equation} 
+    CV = 
+\begin{dcases}
+     ~~~~~0~,                                     & f \leq 0 \\
+    \frac{lnf}{-5\cdot10^{-5}},              & f > 0 
+\end{dcases}
+\end{equation}
+
+\begin{equation} 
+f=1-exp(-\mu*LAI)
+\label{eq:f} 
+\end{equation}
+
+where \(\mu\) is light-use efficiency of the crop (kg ha\(^{-1}\)
+m\(^2\) MJ\(^{-1}\))
+
+\subsection{Pesticide Fate}\label{pesticide-fate}
+
+\subsubsection{Pesticide distribution}\label{pesticide-distribution}
+
+The concentration of pesticide within the soil system (\(g/L\)) along
 each layer \(z\) is given as a function of its partitioning across the
 soil's gaseous, aqueous and adsorbed phases by:
 
@@ -494,23 +579,23 @@ C_{tot_z} = \theta_{gas_z}(t)C_{gas_z}(t) + \theta_z(t)C_{aq_z}(t) + \rho_{b_z}(
 \end{equation}
 
 where \(\theta_{gas_z}(t) = \theta_{sat_z}(t) - \theta_{z}(t)\),
-\(C_{gas_z}\) is the concentration in the gas phase (\(mg/L\)),
-\(C_{aq_z}\) the concentration in aqueous phase (\(mg/L\)) and
-\(C_{ads_z}\) the concentration in adsorbed phase (\(mg/g\)) with the
-bulk soil density \(\rho_{b_z}\) in \(g/L\).
+\(C_{gas_z}\) is the concentration in the gas phase \((g/L)\),
+\(C_{aq_z}\) the concentration in aqueous phase (\(g/L\)) and
+\(C_{ads_z}\) the concentration in adsorbed phase (\(g/Kg~soil\)) with
+the bulk soil density \(\rho_{b_z}\) in \(Kg/L\).
 
-Converting to mass base don the cell area (\(A_i\), \(m^2\)) and model
-layer depth (\(D_z\), \(mm\)):
+Converting to mass \((g)\) based on the cell area (\(A_i\), \(m^2\)) and
+model layer depth (\(D_z\), \(mm\)):
 
 \begin{equation}
 M_{tot_z} = A_iD_z\theta_{gas_z}(t)C_{gas_z}(t) + A_iD_z\theta_z(t)C_{aq_z}(t) + A_iD_z\rho_{b_z}(t)C_{ads_z}
 \label{eq:mass_tot}  
 \end{equation}
 
-simplifying,
+simplifying to the respective fractions,
 
 \begin{equation}
-M_{tot_z} = V_{gas_z}(t)C_{gas_z}(t) + V_{aq}(t)C_{aq_z}(t) + V_{ads}(t)C_{ads_z}
+M_{tot_z} = V_{gas_z}(t)C_{gas_z}(t) + V_{H_2O}(t)C_{aq_z}(t) + M_{soil}(t)C_{ads_z}
 \label{eq:mass_tot_simple}  
 \end{equation}
 
@@ -518,14 +603,14 @@ and substituting phase concentrations for their equivalent in \(C_{aq}\)
 according to eq. \ref{eq:kd} and eq. \ref{eq:henry} yields,
 
 \begin{equation}
-M_{tot_z} = V_{gas_z}C_{aq_z}(t)/K_H + V_{aq}(t)C_{aq_z}(t) + V_{ads}(t)K_dC_{aq_z}(t)
+M_{tot_z} = V_{gas_z}C_{aq_z}(t)/K_H + V_{H_2O}(t)C_{aq_z}(t) + M_{soil}(t)K_dC_{aq_z}(t)
 \label{eq:mass_tot_sub}  
 \end{equation}
 
-Solving for \(C_{aq}\),
+Solving for \(C_{aq}\) \((g/L~H_2O)\) with \(K_d\) units in \((L/Kg)\),
 
 \begin{equation}
-C_{aq} = \frac{M_{tot_z} }{  V_{gas_z}(t)/K_H + V_{aq}(t) + V_{ads}(t)K_d }
+C_{aq} = \frac{M_{tot_z} }{  V_{gas_z}(t)/K_H + V_{H_2O}(t) + M_{soil}(t)K_d }
 \label{eq:mass_tot_conc_aq1}  
 \end{equation}
 
@@ -542,14 +627,16 @@ C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)/K_H + \theta_{aq}(t)R
 \end{equation}
 
 Aqueous concentration is obtained with the following function. Note that
-the input mass may total concentration or either heavy or light
-fractions, whichever output is required.
+the input parameter, \texttt{mass}, may be equal to the total
+concentration or either the heavy or light fractions, whichever output
+is required by the user.
 
 \begin{Shaded}
 \begin{Highlighting}[]
 
 \KeywordTok{def} \NormalTok{getConcAq(model, layer, theta_sat, mass,}
-              \NormalTok{sorption_model}\OperatorTok{=}\StringTok{"linear"}\NormalTok{, gas}\OperatorTok{=}\VariableTok{True}\NormalTok{, isotopes}\OperatorTok{=}\VariableTok{True}\NormalTok{):}
+              \NormalTok{sorption_model}\OperatorTok{=}\StringTok{"linear"}\NormalTok{, gas}\OperatorTok{=}\VariableTok{True}\NormalTok{):}
+    \CommentTok{# Note that p_b (g/cm3) x k_d (L/Kg) -> unit-less}
     \ControlFlowTok{if} \NormalTok{layer }\OperatorTok{==} \DecValTok{0}\NormalTok{:}
         \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z0}
         \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z0}
@@ -557,11 +644,8 @@ fractions, whichever output is required.
         \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z1}
         \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z1}
     \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{2}\NormalTok{:}
-        \NormalTok{store }\OperatorTok{=} \VariableTok{False}
         \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z2}
         \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z2}
-
-    \NormalTok{theta_gas }\OperatorTok{=} \BuiltInTok{max}\NormalTok{(theta_sat }\OperatorTok{-} \NormalTok{theta_layer, scalar(}\DecValTok{0}\NormalTok{))}
 
     \ControlFlowTok{if} \NormalTok{sorption_model }\OperatorTok{==} \StringTok{"linear"}\NormalTok{:}
         \CommentTok{# Retardation factor}
@@ -570,16 +654,62 @@ fractions, whichever output is required.
         \BuiltInTok{print}\NormalTok{(}\StringTok{"No sorption assumed, Ret. factor = 1"}\NormalTok{)}
         \NormalTok{retard_layer }\OperatorTok{=} \DecValTok{1}  \CommentTok{# No retardation.}
 
-    \ControlFlowTok{if} \NormalTok{gas:}
-        \CommentTok{# Leistra et al., 2001}
+    \ControlFlowTok{if} \NormalTok{gas:  }\CommentTok{# Leistra et al., 2001}
+        \NormalTok{theta_gas }\OperatorTok{=} \BuiltInTok{max}\NormalTok{(theta_sat }\OperatorTok{-} \NormalTok{theta_layer, scalar(}\DecValTok{0}\NormalTok{))}
         \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{mass }\OperatorTok{/} \NormalTok{((cellarea() }\OperatorTok{*} \NormalTok{depth) }\OperatorTok{*}  \CommentTok{# m2 * mm = L}
                           \NormalTok{(theta_gas }\OperatorTok{/} \NormalTok{model.k_h }\OperatorTok{+}
-                           \NormalTok{theta_layer }\OperatorTok{*} \NormalTok{retard_layer))  }\CommentTok{# ug/L}
+                           \NormalTok{theta_layer }\OperatorTok{*} \NormalTok{retard_layer))  }\CommentTok{# ug/L cell volume}
     \ControlFlowTok{else}\NormalTok{:  }\CommentTok{# No gas phase}
         \CommentTok{# Whelan, 1987}
-        \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{(mass }\OperatorTok{/} \NormalTok{(cellarea() }\OperatorTok{*} \NormalTok{depth }\OperatorTok{*} \NormalTok{theta_layer }\OperatorTok{*} \NormalTok{retard_layer))  }\CommentTok{# ug/L}
+        \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{(mass }\OperatorTok{/} \NormalTok{(cellarea() }\OperatorTok{*} \NormalTok{depth }\OperatorTok{*} \NormalTok{theta_layer }\OperatorTok{*} \NormalTok{retard_layer)) }
 
     \ControlFlowTok{return} \NormalTok{conc_aq}
+\end{Highlighting}
+\end{Shaded}
+
+An analogous re-arrangement is applied to obtained the concentration in
+gas \(C_{gas}\) \((g/L~air)\) and solid (adsorbed) \(C_{ads}\)
+\((g/Kg~soil)\) phases:
+
+\begin{equation}
+C_{g} = \frac{C_{aq}}{K_H} 
+\label{eq:conc_gas}  
+\end{equation}
+
+\begin{equation}
+C_{ads} = \frac{M_{tot_z} }{ A_i\cdot D_z \Big( \theta_{gas_z}(t)/(K_H \cdot K_d) + \theta_{aq}(t)/K_d + \rho_{b_z}(t)\Big)}
+\label{eq:mass_tot_conc_aq2}  
+\end{equation}
+
+To obtain the adsorbed concentration \(C_{ads}\) \((g/Kg~soil)\), the
+following function is used:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def} \NormalTok{getConcAds(model, layer, theta_sat, mass, gas}\OperatorTok{=}\VariableTok{True}\NormalTok{):}
+    \CommentTok{# mass / Kg soil}
+    \ControlFlowTok{if} \NormalTok{layer }\OperatorTok{==} \DecValTok{0}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z0}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z0}
+    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{1}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z1}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z1}
+    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{2}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z2}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z2}
+
+    \ControlFlowTok{if} \NormalTok{gas:}
+        \NormalTok{theta_gas }\OperatorTok{=} \BuiltInTok{max}\NormalTok{(theta_sat }\OperatorTok{-} \NormalTok{theta_layer, scalar(}\DecValTok{0}\NormalTok{))}
+        \CommentTok{# [mass pest/Kg soil]}
+        \NormalTok{conc_ads }\OperatorTok{=} \NormalTok{mass }\OperatorTok{/} \NormalTok{((cellarea() }\OperatorTok{*} \NormalTok{depth) }\OperatorTok{*}
+                           \NormalTok{(theta_gas }\OperatorTok{/} \NormalTok{(model.k_h }\OperatorTok{*} \NormalTok{model.k_d) }\OperatorTok{+}
+                            \NormalTok{theta_layer }\OperatorTok{/} \NormalTok{model.k_d }\OperatorTok{+}
+                            \NormalTok{model.p_b))}
+    \ControlFlowTok{else}\NormalTok{:}
+        \BuiltInTok{print}\NormalTok{(}\StringTok{"No implementation without gas available"}\NormalTok{)}
+        \ControlFlowTok{raise} \PreprocessorTok{NotImplementedError}
+
+    \ControlFlowTok{return} \NormalTok{conc_ads}
 \end{Highlighting}
 \end{Shaded}
 
@@ -588,8 +718,8 @@ fractions, whichever output is required.
 \paragraph{Linear sorption}\label{linear-sorption}
 
 The partition of pesticide concentrations into the dissolved \(C_{aq}\)
-(\(mg/m^3\)) and adsorbed phases \(C_{ads}\) (mg/Kg) is determined by
-the pesticide dissociation coefficient \(K_d\) (L/Kg):
+(\(g/L\)) and adsorbed phases \(C_{ads}\) \((g/Kg)\) is determined by
+the pesticide dissociation coefficient \(K_d\) \((L/Kg)\):
 
 \begin{equation}
 K_d = \frac{ C_{ads} }{ C_{aq}  }
@@ -601,36 +731,14 @@ K_d = K_{oc} \cdot f_{oc}
 \label{eq:kd}
 \end{equation}
 
-where \(K_{oc}\) is the pesticide octanol partition coefficient (mL/g)
-and \(f_{oc}\) is the fraction of organic carbon (-) in soil.
-
-The dissolved concentration (\(mg/L\)) is given by \citep{Whelan1987}:
-
-\begin{equation}
-C_{aq_z}(t) = \frac{ M_{p_z}(t) }{\theta_z(t) \cdot R_z{(t)} \cdot D_{z} }
-\label{eq:conc_aq}
-\end{equation}
-
-and the adsorbed contaminant concentration (\(mg/Kg~dry~soil\)):
-
-\begin{equation}
-C_{ads_z}(t) = \frac{ M_{p_z}(t) K_d}{\theta_z(t) \cdot R_z{(t)} \cdot D_{z} }
-\label{eq:conc_ads}
-\end{equation}
-
-where the pesticide mass \(M_p\) (\(mg/m^2\)) is assumed to be perfectly
-mixed within the soil profile's water content \(\theta\) (-) of a soil
-layer \(z\) with depth \(D\) (mm).
-
-The retardation factor \(R_z\) (-) is given by:
+where \(K_{oc}\) \((L/Kg)\) is the pesticide octanol partition
+coefficient and \(f_{oc}\) is the fraction of organic carbon (-) in
+soil. The retardation factor \(R_z\) (-) is given by:
 
 \begin{equation}
 R_z(t) = 1 + \frac{ \rho_{b_z}(t) \cdot K_d }{ \theta_z(t) }
 \label{eq:retard_linear}
 \end{equation}
-
-where \(\rho_{b_z}\) is bulk density (Kg m\(^{-3}\)) and pesticide
-dissociation coefficient \(K_d\) (mL/g).
 
 \subsubsection{Volatilization}\label{volatilization}
 
@@ -723,12 +831,59 @@ C_{gas,z_0}(t) = C_{aq,z_0}(t) K_H
 \end{equation}
 
 Substituting eq. \ref{eq:conc_gas_top} into eq. \ref{eq:Jva} yields the
-mass flux lost to the atmosphere (\(mg/m^2d\)):
+mass flux lost to the atmosphere (\(g/m^2d\)):
 
 \begin{equation}
 J_{v,air} = - \frac{C_{gas,z_0}}{(r_a + r_s)}
 \label{eq:Jva_final}
 \end{equation}
+
+To obtain the pesticide mass volatilized at each time step, the
+following function is defined:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def} \NormalTok{getVolatileMass(model, temp_air, theta_sat, mass, frac,}
+                    \NormalTok{rel_diff_model}\OperatorTok{=}\StringTok{"option-1"}\NormalTok{, sorption_model}\OperatorTok{=}\StringTok{"linear"}\NormalTok{,}
+                    \NormalTok{gas}\OperatorTok{=}\VariableTok{True}\NormalTok{, isotopes}\OperatorTok{=}\VariableTok{True}\NormalTok{, ):}
+    \CommentTok{# Volatilize only during peak volatilization time i.e., first 24 hrs, @Prueger2005.}
+    \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z0}
+    \NormalTok{theta_gas }\OperatorTok{=} \BuiltInTok{max}\NormalTok{(theta_sat }\OperatorTok{-} \NormalTok{theta_layer, scalar(}\DecValTok{0}\NormalTok{))}
+    \CommentTok{# Convert to m (needed for final mass computation on cell basis)}
+    \NormalTok{depth_m }\OperatorTok{=} \NormalTok{model.z0 }\OperatorTok{*} \DecValTok{1} \OperatorTok{/} \DecValTok{10} \OperatorTok{**} \DecValTok{3}
+    \CommentTok{# Air boundary layer, assumed as 2m high}
+    \NormalTok{thickness_a }\OperatorTok{=} \NormalTok{scalar(}\FloatTok{1.0}\NormalTok{)  }\CommentTok{# m}
+    \CommentTok{# Diffusion coefficient in air (cm^2/s); https://www.gsi-net.com}
+    \CommentTok{#  D_ar (metolachlor) = 0.03609052694,  at reference Temp., in Kelvin, D_a,r)}
+    \NormalTok{diff_ar }\OperatorTok{=} \FloatTok{0.03609052694} \OperatorTok{*} \FloatTok{86400.0} \OperatorTok{*} \FloatTok{1.0} \OperatorTok{/} \DecValTok{10} \OperatorTok{**} \DecValTok{4}  \CommentTok{# m2/d}
+    \CommentTok{# Diffusion coefficient adjusted to air Temp. in Kelvin, D_a}
+    \NormalTok{diff_a }\OperatorTok{=} \NormalTok{((temp_air }\OperatorTok{+} \FloatTok{273.15}\NormalTok{) }\OperatorTok{/} \FloatTok{293.15}\NormalTok{) }\OperatorTok{**} \FloatTok{1.75} \OperatorTok{*} \NormalTok{diff_ar  }\CommentTok{# m2/d}
+
+    \ControlFlowTok{if} \NormalTok{rel_diff_model }\OperatorTok{==} \StringTok{"option-1"}\NormalTok{:}
+        \CommentTok{# Millington and Quirk, 1960 (in Leistra, 2001, p.48)}
+        \CommentTok{# a,b parameters: Jin and Jury, 1996 (in Leistra, 2001)}
+        \NormalTok{diff_relative_gas }\OperatorTok{=} \NormalTok{(diff_a }\OperatorTok{*} \NormalTok{theta_gas }\OperatorTok{**} \DecValTok{2} \OperatorTok{/}
+                             \NormalTok{theta_sat }\OperatorTok{**} \NormalTok{(}\DecValTok{2} \OperatorTok{/} \DecValTok{3}\NormalTok{))  }\CommentTok{# m2/d}
+    \ControlFlowTok{elif} \NormalTok{rel_diff_model }\OperatorTok{==} \StringTok{"option-2"}\NormalTok{:}
+        \CommentTok{# Currie 1960 (in Leistra, 2001)}
+        \CommentTok{# a,b parameters: Baker, 1987 (in Leistra, 2001)}
+        \NormalTok{diff_relative_gas }\OperatorTok{=} \NormalTok{diff_a }\OperatorTok{*} \FloatTok{2.5} \OperatorTok{*} \NormalTok{theta_gas }\OperatorTok{**} \DecValTok{3}  \CommentTok{# m2/d}
+    \ControlFlowTok{else}\NormalTok{:}
+        \BuiltInTok{print}\NormalTok{(}\StringTok{"No appropriate relative diffusion parameter chosen"}\NormalTok{)}
+        \NormalTok{diff_relative_gas }\OperatorTok{=} \NormalTok{diff_a  }\CommentTok{# m2/d}
+    \CommentTok{# Transport resistance through air (r_a) and soil (r_s) layer}
+    \NormalTok{r_a }\OperatorTok{=} \NormalTok{thickness_a }\OperatorTok{/} \NormalTok{diff_a  }\CommentTok{# d/m}
+    \NormalTok{r_s }\OperatorTok{=} \NormalTok{(}\FloatTok{0.5} \OperatorTok{*} \NormalTok{depth_m) }\OperatorTok{/} \NormalTok{diff_relative_gas  }\CommentTok{# d/m}
+
+    \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{getConcAq(model, }\DecValTok{0}\NormalTok{, theta_sat, mass,}
+                        \NormalTok{sorption_model}\OperatorTok{=}\NormalTok{sorption_model, gas}\OperatorTok{=}\NormalTok{gas, isotopes}\OperatorTok{=}\NormalTok{isotopes)}
+    \CommentTok{# Convert ug/L to ug/m3, as will be multiplying by cell's area in m2}
+    \NormalTok{conc_aq }\OperatorTok{*=} \DecValTok{10} \OperatorTok{**} \DecValTok{3}  \CommentTok{# ug/L * 10^3 L/m3}
+    \NormalTok{conc_gas }\OperatorTok{=} \NormalTok{conc_aq }\OperatorTok{/} \NormalTok{model.k_h  }\CommentTok{# ug/L air}
+    \NormalTok{volat_flux }\OperatorTok{=} \NormalTok{(conc_gas }\OperatorTok{/} \NormalTok{(r_a }\OperatorTok{+} \NormalTok{r_s)) }\OperatorTok{*} \NormalTok{cellarea()  }\CommentTok{# ug/day}
+    \ControlFlowTok{return} \NormalTok{volat_flux}
+\end{Highlighting}
+\end{Shaded}
 
 \subsubsection{Run-off Loss}\label{run-off-loss}
 
@@ -751,9 +906,9 @@ given by:
 \end{equation}
 
 where the Effective Depth of Interaction (EDI) refers to the mixing
-layer depth (mm), \(\theta\) is soil moisture \((m^3/m^3)\), RO is
-run-off (mm) and \(C_m\) is concentration in the mixing layer
-(mg/mm\(^3\)). The paramater \(b\) is a calibration constant (assuming,
+layer depth \((mm)\), \(\theta\) is soil moisture \((L/L)\), RO is
+run-off \((mm)\) and \(C_m\) is concentration in the mixing layer
+\((g/L)\). The paramater \(b\) is a calibration constant (assuming,
 \(1 \ge b > 0\)) and where \(z\) is the depth of the simulated top-soil
 layer. In this model, \(\beta\) accounts for an exponential decrease in
 the ability of overland flow to mix with soil water as depth increases.
@@ -770,8 +925,8 @@ this second model is also made available as
 
 The \textit{Distributed mixing-layer model} considered is adapted from
 Havis \citeyearpar{Havis1992}, and mass transfer to overland flow based
-on a mass flux coefficient (\(K_L\), mm/day). The change in mass in the
-overland flow (and consequently in the mixing layer) is given by:
+on a mass flux coefficient \((K_L\), \(mm/day)\). The change in mass in
+the overland flow (and consequently in the mixing layer) is given by:
 
 \begin{equation}
 \frac{\partial (h_{runoff} C_{runoff}) }{\partial t} + \frac{\partial(qC_{runoff}) }{\partial x} = K_L (C_m - C_{runoff})
@@ -812,6 +967,79 @@ at 25 \(^\circ C\), 8.9e-03 g/cm sec), the soil bulk density (\(\rho\),
 g/cm\(^3\)) and the runoff velocity (\(v\), mm/day) or amount of runoff
 generated in each cell per day.
 
+To obtain the mass lost to run-off the following function is defined:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def} \NormalTok{getRunOffMass(model, theta_sat, precip, runoff_mm,}
+                  \NormalTok{mass, frac,}
+                  \NormalTok{transfer_model}\OperatorTok{=}\StringTok{"simple-mt"}\NormalTok{, sorption_model}\OperatorTok{=}\StringTok{"linear"}\NormalTok{,}
+                  \NormalTok{gas}\OperatorTok{=}\VariableTok{True}\NormalTok{, isotopes}\OperatorTok{=}\VariableTok{True}\NormalTok{):}
+    \CommentTok{# Aqueous concentration}
+    \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{getConcAq(model, }\DecValTok{0}\NormalTok{, theta_sat, mass,}
+                        \NormalTok{sorption_model}\OperatorTok{=}\NormalTok{sorption_model, gas}\OperatorTok{=}\NormalTok{gas, isotopes}\OperatorTok{=}\NormalTok{isotopes)}
+
+    \ControlFlowTok{if} \NormalTok{transfer_model }\OperatorTok{==} \StringTok{"simple-mt"}\NormalTok{:}
+        \NormalTok{mass_ro }\OperatorTok{=} \NormalTok{conc_aq }\OperatorTok{*} \NormalTok{runoff_mm }\OperatorTok{*} \NormalTok{cellarea()}
+    \ControlFlowTok{elif} \NormalTok{transfer_model }\OperatorTok{==} \StringTok{"nu-mlm-ro"}\NormalTok{:}
+        \CommentTok{# non-uniform-mixing-layer-model-runoff (nu-mlm-ro)}
+        \CommentTok{# Considers a decrease in effective transfer as mixing layer depth increases}
+        \CommentTok{# Adapted from Ahuja and Lehman, 1983 in @Shi2011,}
+        \CommentTok{# Adaptation replaces Precip by Runoff amount.}
+        \NormalTok{b }\OperatorTok{=} \DecValTok{1}  \CommentTok{# [mm] Calibration constant, 1 >= b > 0 (b-ranges appear reasonable).}
+        \CommentTok{# As b decreases, mass transfer increases, model.z0 in mm}
+        \NormalTok{mass_ro }\OperatorTok{=} \NormalTok{(runoff_mm }\OperatorTok{*} \NormalTok{cellarea()) }\OperatorTok{*} \NormalTok{exp(}\OperatorTok{-}\NormalTok{b }\OperatorTok{*} \NormalTok{model.z0) }\OperatorTok{*} \NormalTok{conc_aq }
+    \ControlFlowTok{elif} \NormalTok{transfer_model }\OperatorTok{==} \StringTok{"nu-mlm"}\NormalTok{:}
+        \CommentTok{# non-uniform-mixing-layer-model (nu-mlm)}
+        \CommentTok{# Original from Ahuja and Lehman, 1983 in @Shi2011}
+        \NormalTok{b }\OperatorTok{=} \DecValTok{1}  \CommentTok{# [mm] Calibration constant, 1 >= b > 0 (b-ranges appear reasonable).}
+        \CommentTok{# As b decreases, mass transfer increases, model.z0 in mm}
+        \NormalTok{mass_ro }\OperatorTok{=} \NormalTok{(precip }\OperatorTok{*} \NormalTok{cellarea()) }\OperatorTok{*} \NormalTok{exp(}\OperatorTok{-}\NormalTok{b }\OperatorTok{*} \NormalTok{model.z0) }\OperatorTok{*} \NormalTok{conc_aq}
+    \ControlFlowTok{elif} \NormalTok{transfer_model }\OperatorTok{==} \StringTok{"d-mlm"}\NormalTok{:}
+        \CommentTok{# distributed mixing-layer-model (d-mlm)}
+        \CommentTok{# Adapted from Havis et al., 1992, and}
+        \CommentTok{# taking the K_L definition for laminar flow from Bennett and Myers, 1982.}
+        \NormalTok{mass_ro }\OperatorTok{=} \NormalTok{getKfilm(model, runoff_mm) }\OperatorTok{*} \NormalTok{cellarea() }\OperatorTok{*} \NormalTok{conc_aq  }
+    \ControlFlowTok{else}\NormalTok{:}
+        \BuiltInTok{print}\NormalTok{(}\StringTok{"Run-off transfer model not stated"}\NormalTok{)}
+        \ControlFlowTok{return} \VariableTok{None}
+
+    \ControlFlowTok{return} \NormalTok{mass_ro}
+\end{Highlighting}
+\end{Shaded}
+
+To obtain \(K_L\) the following function is defined and implemented when
+\texttt{transfer\_model\ =\ \textquotesingle{}d-mlm\textquotesingle{}}
+is declared in \texttt{getRunOffMass()} above:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def} \NormalTok{getKfilm(model, runoffvelocity):}
+    \CommentTok{"""}
+\CommentTok{    Note: Model uses run-off (mm) per day (i.e. timestep) as runoff velocity.}
+\CommentTok{    Chemical parameter source:}
+\CommentTok{    http://www.gsi-net.com/en/publications/gsi-chemical-database/single/377.html}
+\CommentTok{    """}
+    \CommentTok{# Dynamic viscosity of water (\textbackslash{}mu) @25 Celsius = 8.9e-04 [Pa s]}
+    \CommentTok{#   1 Pa = 1 N/(m s^2) = 1 Kg/(m s^2)}
+    \CommentTok{#   Convert to g/(cm s): dyn_visc = 8.9e-03 [g/cm s]}
+    \NormalTok{dyn_visc }\OperatorTok{=} \FloatTok{8.9e-03}  \CommentTok{# [g/cm s] @25 degrees, [@Shi2011]:\textbackslash{}mu}
+
+    \CommentTok{# Solute diffusivity in water (D_w)}
+    \CommentTok{# Metolachlor = 5.0967719112e-006 (cm2 / s)}
+    \NormalTok{diff_solute }\OperatorTok{=} \FloatTok{5.0967719112e-006}  \CommentTok{# [cm2 / s], [@Shi2011]:D_w}
+    \NormalTok{Sc }\OperatorTok{=} \NormalTok{dyn_visc }\OperatorTok{/} \NormalTok{(model.p_b }\OperatorTok{*} \NormalTok{diff_solute)  }\CommentTok{# (-) Schmidt number, [@Shi2011]:S_c}
+
+    \CommentTok{# Reynolds number (dimensionless), 86400s = 1 day}
+    \NormalTok{cell_length }\OperatorTok{=} \DecValTok{2} \OperatorTok{*} \DecValTok{10} \OperatorTok{**} \DecValTok{3}  \CommentTok{# mm}
+    \CommentTok{# Reynolds (Re), [-] (Shi et al., 2011)}
+    \NormalTok{re }\OperatorTok{=} \NormalTok{(model.p_b }\OperatorTok{*} \DecValTok{1} \OperatorTok{/} \DecValTok{10} \OperatorTok{**} \DecValTok{2} \OperatorTok{*} \NormalTok{runoffvelocity }\OperatorTok{*} \NormalTok{cell_length) }\OperatorTok{/} \NormalTok{(dyn_visc }\OperatorTok{*} \DecValTok{86400}\NormalTok{)}
+    \NormalTok{kl }\OperatorTok{=} \NormalTok{(}\FloatTok{0.664} \OperatorTok{*} \NormalTok{((diff_solute }\OperatorTok{*} \DecValTok{86400} \OperatorTok{*} \DecValTok{10} \OperatorTok{**} \DecValTok{2}\NormalTok{) }\OperatorTok{/} \NormalTok{cell_length) }\OperatorTok{*}
+          \NormalTok{re }\OperatorTok{**} \NormalTok{(}\BuiltInTok{float}\NormalTok{(}\DecValTok{1}\NormalTok{) }\OperatorTok{/} \DecValTok{2}\NormalTok{) }\OperatorTok{*} \NormalTok{Sc }\OperatorTok{**} \NormalTok{(}\BuiltInTok{float}\NormalTok{(}\DecValTok{1}\NormalTok{) }\OperatorTok{/} \DecValTok{3}\NormalTok{)) }
+    \ControlFlowTok{return} \NormalTok{kl  }\CommentTok{# mm/day}
+\end{Highlighting}
+\end{Shaded}
+
 \subsubsection{Vertical mass flux (i.e.,
 leaching)}\label{vertical-mass-flux-i.e.-leaching}
 
@@ -824,7 +1052,7 @@ C_{z_0,aq}(t+1) = C_{z_0,aq}(t) exp \Big( \frac{ -P(t) }{ \theta_{z_0}(t) \cdot 
 \label{eq:conc_mcgrath}
 \end{equation}
 
-The mass leached (\(mg\)) is thus given by:
+The mass leached (\(g\)) is thus given by:
 
 \begin{equation}
 M_{z_0,lch}(t) =  D_{z_0} \cdot A_i  \Big(\theta_{z_0}(t)C_{z_0,aq}(t)- \theta_{z_0}(t+1) C_{z_0,aq}(t+1) \Big) 
@@ -841,74 +1069,174 @@ M_{z,lch}(t) = DP_z(t) \cdot C_{z,aq }(t) \cdot A_i
 \label{eq:leached_prop}
 \end{equation}
 
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def} \NormalTok{getLeachedMass(model, layer, theta_sat,}
+                   \NormalTok{water_flux,}
+                   \NormalTok{theta_after_percolate,}
+                   \NormalTok{mass,}
+                   \NormalTok{sorption_model}\OperatorTok{=}\VariableTok{None}\NormalTok{,}
+                   \NormalTok{leach_model}\OperatorTok{=}\VariableTok{None}\NormalTok{, gas}\OperatorTok{=}\VariableTok{True}\NormalTok{, isotopes}\OperatorTok{=}\VariableTok{True}\NormalTok{):}
+    \ControlFlowTok{if} \NormalTok{layer }\OperatorTok{==} \DecValTok{0}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z0}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z0}
+    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{1}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z1}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z1}
+    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{2}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z2}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z2}
+
+    \CommentTok{# Aqueous concentration}
+    \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{getConcAq(model, layer, theta_sat, mass,}
+                        \NormalTok{sorption_model}\OperatorTok{=}\NormalTok{sorption_model, gas}\OperatorTok{=}\NormalTok{gas, isotopes}\OperatorTok{=}\NormalTok{isotopes)}
+
+    \ControlFlowTok{if} \NormalTok{sorption_model }\OperatorTok{==} \StringTok{"linear"}\NormalTok{:}
+        \CommentTok{# Retardation factor}
+        \NormalTok{retard_layer }\OperatorTok{=} \NormalTok{scalar(}\DecValTok{1}\NormalTok{) }\OperatorTok{+} \NormalTok{(model.p_b }\OperatorTok{*} \NormalTok{model.k_d) }\OperatorTok{/} \NormalTok{theta_layer}
+    \ControlFlowTok{else}\NormalTok{:}
+        \BuiltInTok{print}\NormalTok{(}\StringTok{"No sorption assumed, Ret. factor = 1"}\NormalTok{)}
+        \NormalTok{retard_layer }\OperatorTok{=} \NormalTok{scalar(}\DecValTok{1}\NormalTok{)  }\CommentTok{# No retardation.}
+
+    \ControlFlowTok{if} \NormalTok{leach_model }\OperatorTok{==} \StringTok{"mcgrath"}\NormalTok{:}
+        \ControlFlowTok{if} \NormalTok{layer }\OperatorTok{==} \DecValTok{0}\NormalTok{:}
+            \NormalTok{conc_aq_new }\OperatorTok{=} \NormalTok{conc_aq }\OperatorTok{*} \NormalTok{exp(}\OperatorTok{-}\NormalTok{water_flux }\OperatorTok{/} \NormalTok{(theta_layer }\OperatorTok{*} \NormalTok{retard_layer }\OperatorTok{*} \NormalTok{depth))}
+            \NormalTok{mass_aq }\OperatorTok{=} \NormalTok{conc_aq }\OperatorTok{*} \NormalTok{(theta_layer }\OperatorTok{*} \NormalTok{depth }\OperatorTok{*} \NormalTok{cellarea())}
+            \NormalTok{mass_aq_new }\OperatorTok{=} \NormalTok{conc_aq_new }\OperatorTok{*} \NormalTok{(theta_after_percolate }\OperatorTok{*} \NormalTok{depth }\OperatorTok{*} \NormalTok{cellarea())}
+            \NormalTok{mass_leached }\OperatorTok{=} \NormalTok{mass_aq }\OperatorTok{-} \NormalTok{mass_aq_new}
+            \ControlFlowTok{if} \NormalTok{mapminimum(mass_aq_new) }\OperatorTok{<} \DecValTok{0}\NormalTok{:}
+                \BuiltInTok{print}\NormalTok{(}\StringTok{"Error in Leached Model"}\NormalTok{)}
+        \ControlFlowTok{else}\NormalTok{:}
+            \CommentTok{# McGrath not used in lower layers,}
+            \CommentTok{# as formulation accounts for rainfall impact}
+            \NormalTok{mass_leached }\OperatorTok{=} \NormalTok{conc_aq }\OperatorTok{*} \NormalTok{water_flux }\OperatorTok{*} \NormalTok{cellarea()}
+            \NormalTok{mass_aq }\OperatorTok{=} \NormalTok{conc_aq }\OperatorTok{*} \NormalTok{(theta_layer }\OperatorTok{*} \NormalTok{depth }\OperatorTok{*} \NormalTok{cellarea())}
+            \NormalTok{mass_aq_new }\OperatorTok{=} \NormalTok{mass_aq }\OperatorTok{-} \NormalTok{mass_leached}
+            \ControlFlowTok{if} \NormalTok{mapminimum(mass_aq_new) }\OperatorTok{<} \DecValTok{0}\NormalTok{:}
+                \BuiltInTok{print}\NormalTok{(}\StringTok{"Error in Leached Model"}\NormalTok{)}
+    \ControlFlowTok{else}\NormalTok{:}
+        \NormalTok{mass_leached }\OperatorTok{=} \NormalTok{conc_aq }\OperatorTok{*} \NormalTok{water_flux }\OperatorTok{*} \NormalTok{cellarea()}
+        \NormalTok{mass_aq }\OperatorTok{=} \NormalTok{conc_aq }\OperatorTok{*} \NormalTok{(theta_layer }\OperatorTok{*} \NormalTok{depth) }\OperatorTok{*} \NormalTok{cellarea()}
+        \NormalTok{mass_aq_new }\OperatorTok{=} \NormalTok{mass_aq }\OperatorTok{-} \NormalTok{mass_leached}
+        \ControlFlowTok{if} \NormalTok{mapminimum(mass_aq_new) }\OperatorTok{<} \DecValTok{0}\NormalTok{:}
+            \BuiltInTok{print}\NormalTok{(}\StringTok{"Error in Leached Model"}\NormalTok{)}
+
+    \ControlFlowTok{return} \NormalTok{mass_leached}
+\end{Highlighting}
+\end{Shaded}
+
 \subsubsection{Lateral mass flux}\label{lateral-mass-flux}
 
 Later mass flux is proportional to the aqueous concentration in lateral
-water flow. The net mass flux is given by adapting eq. \ref{eq:LF}:
+water flow. It is obtained by adapting eq. \ref{eq:LF}, where the
+difference between mass loss in upstream cells \(i\) and mass loss at
+cell \(j\) is:
 
 \begin{equation}
-\Delta LMF_{i,z} = \Big( \frac{W_{i,z} \sum^{N(t)}_{j=1}max[c_{j,z}(s_{j,z}-s_{fc,j,z}),~0]}{ \sum^{N(t)}_{j=1} W_{j,z} } \cdot C_{j,z,aq} \Big) - max[ c_z(s_z-s_{fc,z}),~0]  \cdot C_{z,aq}
+\Delta LMF_{j,z} = \sum^{N(t)}_{i=1} M_{loss, i(t)} - M_{loss,j(t)}
 \label{eq:LMF}  
 \end{equation}
 
+The mass gain at cell \(j\) is given by the mass loss from upstream
+cells \(i\) contributing to downstream cells and given by:
+
+\begin{equation}
+\sum^{N(t)}_{i=1} M_{loss, i(t)} = \frac{W_{j} \sum^{N(t)}_{i=1}max[ C_{i,aq}\cdot\Big(c_{z}(SW_{i}-SW_{fc,i})\Big),~0] }{ \sum^{N(t)}_{i=1} W_{i} }
+\label{eq:LFMgain} 
+\end{equation}
+
+Loss at cell \(j\) is then given by:
+
+\begin{equation}
+M_{loss,j(t)} = C_{j,aq}\cdot\Big(c_{z}(SW_{j}-SW_{fc,j})\Big)
+\end{equation}
+
+Simplfying for the relative wetness index at cell \(j\) in eq.
+\ref{eq:LFMgain}, we obtain:
+
+\begin{equation}
+W_{j/i} = \frac{W_{j}}{\sum^{N(t)}_{i=1} W_{i} } 
+\end{equation}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{def} \NormalTok{getLatMassFlux(model, layer, theta_sat, theta_fcap,}
+                   \NormalTok{mass, sorption_model}\OperatorTok{=}\StringTok{'linear'}\NormalTok{, gas}\OperatorTok{=}\VariableTok{True}\NormalTok{, isotopes}\OperatorTok{=}\VariableTok{True}\NormalTok{):}
+    \ControlFlowTok{if} \NormalTok{layer }\OperatorTok{==} \DecValTok{0}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z0}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z0}
+        \NormalTok{c }\OperatorTok{=} \NormalTok{model.c1}
+    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{1}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z1}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z1}
+        \NormalTok{c }\OperatorTok{=} \NormalTok{model.c1}
+    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{2}\NormalTok{:}
+        \NormalTok{depth }\OperatorTok{=} \NormalTok{model.z2}
+        \NormalTok{theta_layer }\OperatorTok{=} \NormalTok{model.theta_z2}
+        \NormalTok{c }\OperatorTok{=} \NormalTok{model.c2}
+
+    \CommentTok{# Aqueous concentration}
+    \NormalTok{conc_aq }\OperatorTok{=} \NormalTok{getConcAq(model, layer, theta_sat, mass,}
+                        \NormalTok{sorption_model}\OperatorTok{=}\NormalTok{sorption_model, gas}\OperatorTok{=}\NormalTok{gas, isotopes}\OperatorTok{=}\NormalTok{isotopes)}
+
+    \CommentTok{# W(j/i)}
+    \NormalTok{rel_wetness }\OperatorTok{=} \NormalTok{model.wetness }\OperatorTok{/} \NormalTok{accuflux(model.ldd_subs, model.wetness)}
+
+    \CommentTok{# Cell mass loss/gain (to update only mass)}
+    \NormalTok{mass_loss }\OperatorTok{=} \BuiltInTok{max}\NormalTok{(conc_aq }\OperatorTok{*} \NormalTok{(c }\OperatorTok{*} \NormalTok{(depth }\OperatorTok{*} \NormalTok{theta_layer }\OperatorTok{-} \NormalTok{depth }\OperatorTok{*} \NormalTok{theta_fcap)), scalar(}\DecValTok{0}\NormalTok{))}
+    \NormalTok{mass_gain }\OperatorTok{=} \NormalTok{rel_wetness }\OperatorTok{*} \NormalTok{accuflux(model.ldd_subs, mass_loss)}
+    \NormalTok{net_mass_latflux }\OperatorTok{=} \NormalTok{mass_gain }\OperatorTok{-} \NormalTok{mass_loss}
+
+    \ControlFlowTok{return} \NormalTok{\{}
+        \StringTok{'mass_loss'}\NormalTok{: mass_loss,}
+        \CommentTok{'mass_gain'}\NormalTok{: mass_gain,}
+        \CommentTok{'net_mass_latflux'}\NormalTok{: net_mass_latflux}
+    \NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
 \subsection{Degradation}\label{degradation}
 
-\subsubsection{Photodegradation
-(isotopes!!!)}\label{photodegradation-isotopes}
+\subsubsection{Photodegradation}\label{photodegradation}
 
-\ldots{}to formalize and document.
+\ldots{}to code and document.
 
-\subsubsection{Biodegradation
-(isotopes!!!)}\label{biodegradation-isotopes}
+\subsubsection{Biodegradation}\label{biodegradation}
 
 Biodegradation in the soil is assumed to occur only on the dissolved and
-sorbed fraction on equilibrium sites. Assuming a first-order rate law:
-
-\begin{equation} 
-\frac{dM_{p(i,k)}}{dt} = -k_{b,L}(V_{L(t,i,k)}C_{L(t,i,k)})-k_{b,eq}(M_{s(i,k)}X_{eq(t,i,k)})
-\label{eq:dMdt}
-\end{equation}
-
-where liquid phase in the pore volume
-\(V_L = A_i \cdot D_k\cdot \theta_{(t,i,k)}\) and \(k_{b}\) (d\(^{-1}\))
-is the biodegradation rate constant for the liquid (\(L\)) and
-equilibrium-sorbed sites (\(eq\)), respectively.
-
-Alternatively equation \eqref{dMdt} can subdivided and written in
-integrated form:
+sorbed fractions. Assuming a first-order rate law, the change in mass
+due to degradation is given by:
 
 \begin{equation}
-M_{L(t+1,i,k)} = (V_{L(t,i,k)}C_{L(t,i,k)})e^{-k_{b} \Delta t} 
-\label{eq:ML_t1}
+\frac{dM_{tot_z}}{dt} = -k_{b,aq}(V_{H_2O_z(t)}C_{aq_z}(t))-k_{b,ads}(M_{soil_z}C_{ads_z}(t))
+\label{eq:dM_bio}
+\end{equation}
+
+where \(k_{b}\) \((d^{-1})\) is the biodegradation rate constant in the
+aquoeous \((aq)\) and sorbed soil sites \((ads)\). Considering
+degradation on each phase respectively equation \ref{eq:dM_bio} can
+subdivided and written in integrated for concentrations as:
+
+\begin{equation}
+C_{aq_z}(t+1) = C_{aq_z}e^{-k_{b,aq} \Delta t} 
+\label{eq:Maq_t1}
 \end{equation}
 
 \begin{equation}
-M_{eq(t+1,i,k)} = (M_{s(i,k)}X_{eq(t,i,k)})e^{-k_{b} \Delta t}
-\label{eq:Meq_t1}
+C_{ads_z}(t+1) = C_{ads_z}e^{-k_{b,ads} \Delta t}
+\label{eq:Mads_t1}
 \end{equation}
 
-where \(M_{L}\) and \(M_{eq}\) are the contamimant masses in liquid
-phase and equilibrium-sorbed sites,
-respectively.\footnote{A mass balance check should compute the equivalence of equation \eqref{dMdt} and $\Delta M_{L,eq}(t)$, equation \eqref{DeltaM}.}
-Updating for total contaminant mass using equations \eqref{MassNe_t1},
-\eqref{ML_t1} and \eqref{Meq_t1}:
+where \(C_{aq}\) and \(C_{ads}\) are the contamimant concentrations in
+liquid and sorbed sites, respectively. Updating for total contaminant
+mass for all fractions:
 
 \begin{equation}
-M_{p(t+1,i,k)} = M_{L(t+1,i,k)} + M_{eq(t+1,i,k)} + M_{s(i,k)}X_{ne(t+1,i,k)}
-\label{eq:totmass_t1}
+M_{tot_z}(t+1) = V_{gas_z}(t)C_{gas_z}(t) + V_{H_2O}(t)C_{aq_z}(t+1) + M_{soil}(t)C_{ads_z}(t+1)
+\label{eq:Mtot_t1}
 \end{equation}
 
-Before proceeding onto the following time step in the simulation, the
-mass in liquid phase from equation \eqref{ML_t1}, after mass transport
-processes, is used to compute a new iterative loop (i.e.~equations
-\eqref{iterStep1} and \eqref{iterStep2}). Namely,
-
-\begin{equation}
-C_{L(i,k)} = \frac{M_{L(t+1,i,k)}}{A_i \cdot D_k \cdot \theta_{(t,i,k)}} 
-\label{eq:C_Lnew}
-\end{equation}
-
-The biodegradation rate constant \(k_{b(L,eq)}\) is given by:
+The biodegradation rate constant \(k_{b}\) is given by:
 
 \begin{equation}
 k_b = \frac{ln(2)}{t_\frac{1}{2}} 
@@ -945,88 +1273,36 @@ reported (i.e.~typically 20 \(^{\circ}\)C). \(E_a\) is the activation
 energy generally equal to 54,000 (KJ mol\(^{-1}\)) and R is the gas
 constant 8.314 (J mol\(^{-1}\) K\(^{-1}\)).
 
-\subsection{Soil Temperature}\label{soil-temperature}
+\subsubsection{Isotope treatment}\label{isotope-treatment}
 
-Temperture is an important parameter regulating chemical and biological
-processes. To simulate its evolution across time and space this model
-follows \citep{Neitsch2009}, where the average daily soil temperature
-(\(^{\circ}\)C) at the center of each soil layer \(k\) is given by:
+To obtain the masses of heavy \(M^h\) and light isotopes \(M^l\), the
+isotope signature \(\delta ^{13}C\) is used where:
 
-\begin{equation}
-T_{soil, k, t} = l \cdot T_{soil, k, t-1} + (1.0 - l) \cdot \big[df \cdot [\overline{T}_{AAir} - T_{ssurf}]+T_{ssurf}]
-\label{eq:tempSoil} 
-\end{equation}
-
-where \(l\) is a lag coefficient (0 - 1.0) regulating the influence of
-the previous day's temperature, the subscript \(t-1\), refers to the
-previous day, \(\overline{T}_{AAir}\) is the average annual air
-temperature and \(T_{ssurf}\) is the soil surface temperature at time
-\(t\). The depth factor \(df\) is given by,
-
-\begin{equation}
-df = \frac{zd}{zd+exp(-0.867-2.078 \cdot zd)}
-\label{eq:df} 
-\end{equation}
-
-where \(zd\) is the ratio of the depth at the center of the soil layer
-\(D_{k_{mid}}\) (mm) to the damping depth \(dd\) (mm) such that:
-
-\begin{equation}
-zd = \frac{D_{k_{mid}}}{dd}
-\label{eq:zd} 
-\end{equation}
-
-The damping depth \(dd\) is a function of the maximum damping depth
-\(dd_{max}\) (mm) and a soil water scaling factor \(\varphi\) (-).
-
-\begin{equation}
-dd = dd_{max} \cdot exp \Big[ln\Big(\frac{500}{dd_{max}} \Big) \cdot \Big(\frac{1-\varphi}{1+\varphi}\Big)^2\Big]
-\label{eq:dd} 
+\begin{equation} 
+\delta ^{13}C [???] = \Big(\frac{R_{smp} - R_{std}}{R_{std}}\Big)\cdot 1000
 \end{equation}
 
 \begin{equation} 
-dd_{max} = 1000 + \frac{2500\rho_b}{\rho_b+686 \cdot exp(-5.63\rho_b)}
-\label{eq:ddmax} 
+R_{smp} = \frac{M^h}{M^l} 
 \end{equation}
 
 \begin{equation} 
-\varphi = \frac{SW}{(0.356-0.144\rho_b) \cdot D_{k}}
-\label{eq:varphi} 
+R_{std} = 11237.2 \cdot 10^{-6}
 \end{equation}
 
-where \(\rho_b\) is the soil bulk density (mg m\(^{-3}\)) and SW is
-water content (mm \(H_2O\)) in the soil profile \(D_k\) (mm).
-
-The soil surface temperature \(T_{ssurf}\) in eq. \refeq{tempSoil}, is a
-fucntion of the previous day's soil temperature, amount of ground cover
-captured by a crop factor \(bcv\) and the temperature of bare soil
-\(T_{bare}\), such that:
+and where the total mass \(M_{tot} = M^h + M^l\), we obtain:
 
 \begin{equation} 
-T_{ssurf} = bcv \cdot  T_{soil, k, t-1} + (1-bcv) \cdot T_{bare}
-\label{eq:Tssurf} 
+R_{std}\Big(\delta ^{13}C/1000+1 \Big)= \frac{M_{tot}-M^l}{M^l}
 \end{equation}
 
 \begin{equation} 
-bcv = \frac{CV}{(CV+exp(7.563-1.297 \cdot 10^{-4} \cdot CV))}
-\label{eq:Tssurf} 
+M^l = \frac{M_{tot}}{1+R_{std}(\delta ^{13}C/1000+1)}
 \end{equation}
 
 \begin{equation} 
-    CV = 
-\begin{dcases}
-     ~~~~~0~,                                     & f \leq 0 \\
-    \frac{lnf}{-5\cdot10^{-5}},              & f > 0 
-\end{dcases}
+M^h = M_{tot} - M^l 
 \end{equation}
-
-\begin{equation} 
-f=1-exp(-\mu*LAI)
-\label{eq:f} 
-\end{equation}
-
-where \(\mu\) is light-use efficiency of the crop (kg ha\(^{-1}\)
-m\(^2\) MJ\(^{-1}\))
 
 \renewcommand\refname{References}
 \bibliography{LargeFiles/library.bib}

@@ -71,10 +71,10 @@ def get_conc_from_mass(model, layer,
         theta_gas = max(theta_sat - theta_aq, scalar(0))
         if return_phase == "aq":  # [mg pest/L water]
             conc_phase = mass / (cellarea() * depth *
-                                 (theta_gas * model.k_h + theta_aq + model.p_b * model.k_d))
+                                 (theta_gas / model.k_h + theta_aq + model.p_b * model.k_d))
         elif return_phase == "ads":  # [mg pest/Kg soil]
             conc_phase = (mass * model.k_d) / (cellarea() * depth *
-                                               (theta_gas * model.k_h + theta_aq + model.p_b * model.k_d))
+                                               (theta_gas / model.k_h + theta_aq + model.p_b * model.k_d))
         else:
             print("No phase model chosen from: ('aq' or 'ads')")
             raise NotImplementedError
@@ -85,54 +85,54 @@ def get_conc_from_mass(model, layer,
     return conc_phase
 
 
-def get_mass_from_aq(model, layer,
-                     theta_sat_z0z1, theta_sat_z2,
-                     conc_aq, gas=True, sorption_model="linear"):
-    """
-    Used to update mass due to equilibrium conditions after degradation
-    :param model:
-    :param layer:
-    :param conc_aq:
-    :param gas:
-    :param sorption_model:
-    :return:
-    """
-    if layer == 0:
-        theta_aq_layer = model.theta_z0
-        theta_sat = theta_sat_z0z1
-        depth = model.z0  # mm
-    elif layer == 1:
-        theta_aq_layer = model.theta_z1
-        theta_sat = theta_sat_z0z1
-        depth = model.z1  # mm
-    elif layer == 2:
-        theta_aq_layer = model.theta_z2
-        theta_sat = theta_sat_z2
-        depth = model.z2  # mm
-    else:
-        print("incorrect number of layers, raising error")
-        raise NotImplementedError
-
-    if gas:
-        if sorption_model == "freundlich":
-            print("Freundlich not implemented, running Linear Sorption")
-            # Leistra et al., 2001
-            theta_gas = max(theta_sat - theta_aq_layer, scalar(0))
-            mass_layer = cellarea() * depth * (theta_gas * model.k_h * conc_aq  # gas
-                                               + theta_aq_layer * conc_aq  # aqueous
-                                               + model.p_b * model.k_d * conc_aq)  # sorbed
-        else:
-            # Leistra et al., 2001
-            theta_gas = max(theta_sat - theta_aq_layer, scalar(0))
-            mass_layer = cellarea() * depth * (theta_gas * model.k_h * conc_aq  # gas
-                                               + theta_aq_layer * conc_aq  # aqueous
-                                               + model.p_b * model.k_d * conc_aq)  # sorbed
-    else:
-        print("Running Linear Sorption, no Gas Phase")
-        # Whelan, 1987 # No gas phase considered
-        mass_layer = cellarea() * depth * (theta_aq_layer * conc_aq
-                                           + model.p_b * model.k_d * conc_aq)  # mg
-    return mass_layer  # mg
+# def get_mass_from_aq(model, layer,
+#                      theta_sat_z0z1, theta_sat_z2,
+#                      conc_aq, gas=True, sorption_model="linear"):
+#     """
+#     Used to update mass due to equilibrium conditions after degradation
+#     :param model:
+#     :param layer:
+#     :param conc_aq:
+#     :param gas:
+#     :param sorption_model:
+#     :return:
+#     """
+#     if layer == 0:
+#         theta_aq_layer = model.theta_z0
+#         theta_sat = theta_sat_z0z1
+#         depth = model.z0  # mm
+#     elif layer == 1:
+#         theta_aq_layer = model.theta_z1
+#         theta_sat = theta_sat_z0z1
+#         depth = model.z1  # mm
+#     elif layer == 2:
+#         theta_aq_layer = model.theta_z2
+#         theta_sat = theta_sat_z2
+#         depth = model.z2  # mm
+#     else:
+#         print("incorrect number of layers, raising error")
+#         raise NotImplementedError
+#
+#     if gas:
+#         if sorption_model == "freundlich":
+#             print("Freundlich not implemented, running Linear Sorption")
+#             # Leistra et al., 2001
+#             theta_gas = max(theta_sat - theta_aq_layer, scalar(0))
+#             mass_layer = cellarea() * depth * ((theta_gas / model.k_h) * conc_aq  # gas
+#                                                + theta_aq_layer * conc_aq  # aqueous
+#                                                + model.p_b * model.k_d * conc_aq)  # sorbed
+#         else:
+#             # Leistra et al., 2001
+#             theta_gas = max(theta_sat - theta_aq_layer, scalar(0))
+#             mass_layer = cellarea() * depth * ((theta_gas / model.k_h) * conc_aq  # gas
+#                                                + theta_aq_layer * conc_aq  # aqueous
+#                                                + model.p_b * model.k_d * conc_aq)  # sorbed
+#     else:
+#         print("Running Linear Sorption, no Gas Phase")
+#         # Whelan, 1987 # No gas phase considered
+#         mass_layer = cellarea() * depth * (theta_aq_layer * conc_aq
+#                                            + model.p_b * model.k_d * conc_aq)
+#     return mass_layer
 
 
 def get_mass_from_ads(model, layer,
@@ -197,7 +197,7 @@ def get_species(model, r_sample, conc_aq_tot):
     return {"light": conc_aq_light, "heavy": conc_aq_heavy}
 
 
-def degrade(model, layer,
+def degrade_MB(model, layer,
             theta_sat_z0z1, theta_sat_z2, theta_fcap, theta_wp,
             sor_deg_factor=1,
             units='m'):
@@ -326,8 +326,6 @@ def degrade(model, layer,
     # Step 3 - Degrade sorbed fraction (currently same rate as in aqueous)
     conc_ads_light_new = conc_ads_light * exp(-k_bs * model.jd_dt)
     conc_ads_heavy_new = conc_ads_heavy * exp(- model.alpha_iso * k_bs * model.jd_dt)
-
-
 
     # Step 4 - Re-equilibrating aqueous pesticide, based on new total mass (i.e., after sorbed degradation)
     mass_light_fin = get_mass_from_ads(model, layer, theta_sat_z0z1, theta_sat_z2, conc_ads_light_new)

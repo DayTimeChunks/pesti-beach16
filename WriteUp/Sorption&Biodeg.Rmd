@@ -16,7 +16,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 Sorption is described by a two-site model, composed of a Freundlich equilibrium component and a long-term kinetic component. Two-site models provide a reasonable compromise between detailed modelling of non-equilibirum sorption processes and experimental effort required to constrain model parameters [@TerHorst2013]. The two-site model is described by [@Leistra2001] where the concentration in liquid phase $C_L$ (mg m$^{-3}$) is:  
 
-$$ C_{L(t,i,k)} = \frac{M_{p(t,i,k)} - M_{s(i,k)}(X_{eq(t,i,k)} + X_{ne(t,i,k)})}{A_i \cdot D_k \cdot \theta_{(t,i,k)}} \stepcounter{equation}\tag{\theequation}\label{totalConc} $$
+$$ 
+C_{L(t,i,k)} = \frac{M_{p(t,i,k)} - M_{s(i,k)}(X_{eq(t,i,k)} + X_{ne(t,i,k)})}{A_i \cdot D_k \cdot \theta_{(t,i,k)}} \stepcounter{equation}\tag{\theequation}\label{totalConc} 
+$$
 
 where the pesticide mass $M_p$ (mg) is assumed to be perfectly mixed within the soil profile water content $\theta$ (-) of a soil layer $k$ with depth $D$ (m) and area $A_i$ (m$^{2}$). $X_{eq}$ and $X_{ne}$ are respectively, the pesticide masses sorbed in the equilibrium and non-equilibrium phases divided by the mass of dry soil (mg pesticide Kg$^{-1}$ soil). $M_s$ (Kg) is the mass of dry soil with bulk density $\rho_b$ (Kg m$^{-3}$) such that:
 
