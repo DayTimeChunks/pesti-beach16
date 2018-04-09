@@ -782,13 +782,13 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.heavymass_z0 -= heavy_runoff
 
                 # Mass & delta leached (Deep Percolation - DP)
-                z0_light_leached = getLeachedMass(self, 0, theta_sat_z0z1,
+                z0_light_leached = getLeachedMass(self, 0, theta_sat_z0z1, theta_fcap_z0z1,
                                                   precip,
                                                   z0_moisture["theta_after_percolate"],
                                                   self.lightmass_z0,
                                                   sorption_model="linear",
                                                   leach_model="mcgrath", gas=True)
-                z0_heavy_leached = getLeachedMass(self, 0, theta_sat_z0z1,
+                z0_heavy_leached = getLeachedMass(self, 0, theta_sat_z0z1, theta_fcap_z0z1,
                                                   precip,
                                                   z0_moisture["theta_after_percolate"],
                                                   self.heavymass_z0,
@@ -926,13 +926,13 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 #                                  sorption_model="linear")
 
                 # Mass & delta leached (Deep Percolation - DP)
-                z1_light_leached = getLeachedMass(self, 1, theta_sat_z0z1,
+                z1_light_leached = getLeachedMass(self, 1, theta_sat_z0z1, theta_fcap_z0z1,
                                                   percolation_z1,
                                                   z1_moisture["theta_after_percolate"],
                                                   self.lightmass_z1,
                                                   sorption_model="linear",
                                                   leach_model="mcgrath", gas=True)
-                z1_heavy_leached = getLeachedMass(self, 1, theta_sat_z0z1,
+                z1_heavy_leached = getLeachedMass(self, 1, theta_sat_z0z1, theta_fcap_z0z1,
                                                   percolation_z1,
                                                   z1_moisture["theta_after_percolate"],
                                                   self.heavymass_z1,
@@ -1035,13 +1035,13 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.lightmass_z2 += z1_light_leached
                 self.heavymass_z2 += z1_heavy_leached
 
-                z2_light_leached = getLeachedMass(self, 2, theta_sat_z2,
+                z2_light_leached = getLeachedMass(self, 2, theta_sat_z2, theta_fcap_z2,
                                                   percolation_z2,
                                                   z2_moisture["theta_after_percolate"],
                                                   self.lightmass_z2,
                                                   sorption_model="linear",
                                                   leach_model="mcgrath", gas=True)
-                z2_heavy_leached = getLeachedMass(self, 1, theta_sat_z2,
+                z2_heavy_leached = getLeachedMass(self, 1, theta_sat_z2, theta_fcap_z2,
                                                   percolation_z2,
                                                   z2_moisture["theta_after_percolate"],
                                                   self.heavymass_z2,
@@ -1391,7 +1391,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila 1\at0dC000.177 1\at1dC000.177
 # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[175,179,1] aLEACH aLEACHz aLF aLFz
 # aguila --scenarios='{1}'  --timesteps=[100,280,1] az0dC az1dC az2dC
-# aguila --scenarios='{1}'  --timesteps=[175,280,1] adt0M adt1M az0dC
+# aguila --scenarios='{1}'  --timesteps=[1,280,1] aZ1LCH
 
 # Time series
 # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss

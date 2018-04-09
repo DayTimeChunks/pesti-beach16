@@ -225,7 +225,7 @@ def getRunOffMass(model, theta_sat, precip, runoff_mm,
     return mass_ro
 
 
-def getLeachedMass(model, layer, theta_sat,
+def getLeachedMass(model, layer, theta_sat, theta_fc,
                    water_flux,
                    theta_after_percolate,
                    mass,
@@ -264,12 +264,16 @@ def getLeachedMass(model, layer, theta_sat,
         else:
             # McGrath not used in lower layers,
             # as formulation accounts for rainfall impact
-            mass_leached = conc_aq * water_flux * cellarea()
+            max_flux = max(min(water_flux, (theta_layer - theta_fc) * depth), scalar(0))
+            mass_leached = conc_aq * max_flux * cellarea()
             mass_aq = conc_aq * (theta_layer * depth * cellarea())
             mass_aq_new = mass_aq - mass_leached
-            if mapminimum(mass_aq_new) < 0:
+            if mapminimum(mass_aq_new) < -1e10-6:
                 print("Error in Leached Model, layer: ", str(layer))
                 model.report(mass_leached, 'aZ' + str(layer) + 'LCH')
+            if mapminimum(mass_aq_new) < 0:
+                mass_leached = max(mass_leached, scalar(0))
+                # mass_aq_new = mass_aq - mass_leached
     else:
         mass_leached = conc_aq * water_flux * cellarea()
         mass_aq = conc_aq * (theta_layer * depth) * cellarea()
