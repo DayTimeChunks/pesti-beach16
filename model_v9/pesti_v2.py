@@ -150,7 +150,7 @@ def getVolatileMass(model, temp_air, theta_sat, mass, frac,
     r_s = (0.5 * depth_m) / diff_relative_gas  # d/m
 
     conc_aq = getConcAq(model, 0, theta_sat, mass,
-                        sorption_model=sorption_model, gas=gas, isotopes=isotopes)
+                        sorption_model=sorption_model, gas=gas)
     # Convert ug/L to ug/m3, as will be multiplying by cell's area in m2
     conc_aq *= 10 ** 3  # ug/L * 10^3 L/m3
     conc_gas = conc_aq / model.k_h  # ug/L air
@@ -185,12 +185,12 @@ def getKfilm(model, runoffvelocity):
 
 
 def getRunOffMass(model, theta_sat, precip, runoff_mm,
-                  mass, frac,
+                  mass,
                   transfer_model="simple-mt", sorption_model="linear",
-                  gas=True, isotopes=True):
+                  gas=True, debug=False):
     # Aqueous concentration
     conc_aq = getConcAq(model, 0, theta_sat, mass,
-                        sorption_model=sorption_model, gas=gas, isotopes=isotopes)
+                        sorption_model=sorption_model, gas=gas)
 
     if transfer_model == "simple-mt":
         mass_ro = conc_aq * runoff_mm * cellarea()
@@ -217,7 +217,7 @@ def getRunOffMass(model, theta_sat, precip, runoff_mm,
         print("Run-off transfer model not stated")
         return None
 
-    if frac == 'LL':
+    if debug:
         pass
         # model.report(conc_aq, 'aCo')
         # model.report(mass_ro, 'aMROa')
@@ -230,7 +230,7 @@ def getLeachedMass(model, layer, theta_sat,
                    theta_after_percolate,
                    mass,
                    sorption_model=None,
-                   leach_model=None, gas=True, isotopes=True):
+                   leach_model=None, gas=True, debug=False):
     if layer == 0:
         depth = model.z0
         theta_layer = model.theta_z0
@@ -243,7 +243,7 @@ def getLeachedMass(model, layer, theta_sat,
 
     # Aqueous concentration
     conc_aq = getConcAq(model, layer, theta_sat, mass,
-                        sorption_model=sorption_model, gas=gas, isotopes=isotopes)
+                        sorption_model=sorption_model, gas=gas)
 
     if sorption_model == "linear":
         # Retardation factor
@@ -259,7 +259,8 @@ def getLeachedMass(model, layer, theta_sat,
             mass_aq_new = conc_aq_new * (theta_after_percolate * depth * cellarea())
             mass_leached = mass_aq - mass_aq_new
             if mapminimum(mass_aq_new) < 0:
-                print("Error in Leached Model")
+                print("Error in Leached Model, layer: ", str(layer))
+                model.report(mass_leached, 'aZ' + str(layer) + 'LCH')
         else:
             # McGrath not used in lower layers,
             # as formulation accounts for rainfall impact
@@ -267,7 +268,8 @@ def getLeachedMass(model, layer, theta_sat,
             mass_aq = conc_aq * (theta_layer * depth * cellarea())
             mass_aq_new = mass_aq - mass_leached
             if mapminimum(mass_aq_new) < 0:
-                print("Error in Leached Model")
+                print("Error in Leached Model, layer: ", str(layer))
+                model.report(mass_leached, 'aZ' + str(layer) + 'LCH')
     else:
         mass_leached = conc_aq * water_flux * cellarea()
         mass_aq = conc_aq * (theta_layer * depth) * cellarea()
@@ -279,7 +281,7 @@ def getLeachedMass(model, layer, theta_sat,
 
 
 def getLatMassFlux(model, layer, theta_sat, theta_fcap,
-                   mass, sorption_model='linear', gas=True, isotopes=True):
+                   mass, sorption_model='linear', gas=True, debug=False):
     if layer == 0:
         depth = model.z0
         theta_layer = model.theta_z0
@@ -295,7 +297,7 @@ def getLatMassFlux(model, layer, theta_sat, theta_fcap,
 
     # Aqueous concentration
     conc_aq = getConcAq(model, layer, theta_sat, mass,
-                        sorption_model=sorption_model, gas=gas, isotopes=isotopes)
+                        sorption_model=sorption_model, gas=gas)
 
     # W(j/i)
     rel_wetness = model.wetness / accuflux(model.ldd_subs, model.wetness)
@@ -313,7 +315,7 @@ def getLatMassFlux(model, layer, theta_sat, theta_fcap,
 
 
 def getDrainMassFlux(model, layer, theta_sat, theta_fcap, mass,
-                     sorption_model='linear', gas=True, isotopes=True):
+                     sorption_model='linear', gas=True, debug=False):
     if layer == 0:
         depth = model.z0
         theta_layer = model.theta_z0
@@ -321,17 +323,17 @@ def getDrainMassFlux(model, layer, theta_sat, theta_fcap, mass,
     elif layer == 1:
         depth = model.z1
         theta_layer = model.theta_z1
-        c = model.model.c_adr
+        c = model.c_adr
     elif layer == 2:
         depth = model.z2
         theta_layer = model.theta_z2
-        c = model.model.c_adr
+        c = model.c_adr
 
     # TODO: Conc. and mass loss are being computed with initial theta
     # but water loss potential accounts for intermediate updates to water content.
     # Aqueous concentration
     conc_aq = getConcAq(model, layer, theta_sat, mass,
-                        sorption_model=sorption_model, gas=gas, isotopes=isotopes)
+                        sorption_model=sorption_model, gas=gas)
     # TODO: water loss here is not equivalent to water loss in hydro.py module for lateral flow
     # due to intermediate updates to water content
     # -> Thus likely leads to overestimation of mass transport.
@@ -410,10 +412,10 @@ def getMassDegradation(model, layer,
     mass_tot_new = mass_aq_new + mass_ads_new + mass_gas
     mass_deg_aq = mass_aq - mass_aq_new
     mass_deg_ads = mass_ads - mass_ads_new
-    if frac == "L" and layer == 0:
-        model.report(mass, 'adt0M')
-        model.report(mass_tot_new, 'adt1M')
-        # model.report(mass_aq_new, 'adt1M')
+    # if frac == "L" and layer == 0:
+    #     model.report(mass, 'adt0M')
+    #     model.report(mass_tot_new, 'adt1M')
+    #   # model.report(mass_aq_new, 'adt1M')
     return {"mass_tot_new": mass_tot_new,
             "mass_deg_aq": mass_deg_aq,
             "mass_deg_ads": mass_deg_ads}
