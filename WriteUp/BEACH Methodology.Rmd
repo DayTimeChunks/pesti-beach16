@@ -1,12 +1,12 @@
 ---
 title: "BEACH Formalisms"
-header-includes: \usepackage{mathtools} \usepackage{natbib}
+header-includes: \usepackage{natbib} \usepackage{mathtools}
 output:
   pdf_document:
     citation_package: natbib
     keep_tex: yes
   word_document: default
-bibliography: LargeFiles/library.bib
+bibliography: ../../../library.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r include=FALSE}
 # automatically create a bib database for R packages
-knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
+# knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
 ```
 
 
@@ -70,7 +70,7 @@ CN_{1} = CN_{2s} - \frac{20 \cdot (100 - CN_{2s}}{\Big(100 - CN_{2s} + \exp [2.5
 
 Finally, adjustment to $CN_3$ values are calculated by using the original equation and replacing $CN_{2s}$ by $CN_2$.
 
-The run-off equation is given by [@Neitsch2009]:
+The run-off equation is given by \cite{Neitsch2009}:
 
 \[
     R = 
@@ -82,7 +82,7 @@ The run-off equation is given by [@Neitsch2009]:
 \]
 
 
-where $I_a$ (mm) is the initial abstraction capacity  of the surface layer, which includes surface storage, interception and infiltration prior to runoff, and typically ranges from 0.05S to 0.2S [@Lim2006]. The model adopts the latter of these values as it has provided reliable results for previous rainfall-runoff events. S is the retention parameter after run-off (mm) given as a function of the soil profile water content:
+where $I_a$ (mm) is the initial abstraction capacity  of the surface layer, which includes surface storage, interception and infiltration prior to runoff, and typically ranges from 0.05S to 0.2S \citep{Lim2006}. The model adopts the latter of these values as it has provided reliable results for previous rainfall-runoff events. S is the retention parameter after run-off (mm) given as a function of the soil profile water content:
 
 \begin{equation}
 S = S_{max} \cdot \Big(1-\frac{SW}{(SW+ \exp[w_1-w_2 \cdot SW]  )} \Big) 
@@ -146,7 +146,7 @@ The water content exceeding saturation capacity plus calculated runoff is then a
 
 ### Deep Percolation
 
-Deep percolation (DP) is assumed to be negligible at moisture levels below field capacity. Above this moisture level percolation is given by Raes \textit{et al.}, [@Raes:2002}:
+Deep percolation (DP) is assumed to be negligible at moisture levels below field capacity. Above this moisture level percolation is given by \cite{Raes2002}:
 
 \begin{equation}
 DP_z = D_z \tau_z (\theta_{sat, z} - \theta_{fc, z}) \frac{e^{\theta_z-\theta_{fc,z}}-1}{e^{\theta_{sat, z}-\theta_{fc,z}}-1},~~if~ \theta_z > \theta_{fc, z} 
@@ -165,14 +165,14 @@ where $K_{sat}$ is the saturated hydraulic conductivity.
 
 ### Lateral/subsurface flow
 
-Later flow occurs when the soil moisture content exceeds the field capacity and is represented as the difference between inflow and outflow at a cell $j$ for each soil layer $z$ according to Manfreda \textit{et al.}, [@Manfreda2005]:
+Later flow occurs when the soil moisture content exceeds the field capacity and is represented as the difference between inflow and outflow at a cell $j$ for each soil layer $z$ according to \cite{Manfreda2005}:
 
 \begin{equation}
 \Delta LF_{j(t)} = \Big( \frac{W_{j} \sum^{N(t)}_{i=1}max[c_{z}(SW_{i}-SW_{fc,i}),~0] }{ \sum^{N(t)}_{i=1} W_{i} } \Big) - max[c_z(SW_j-SW_{fc,j}),~0]
 \label{eq:LF}  
 \end{equation}
 
-were $c_z$ is the subsurface flow coefficient ($\approx$ 0.25 $d^{-1}$, if $dt$ $\leq$ $1~d$, [@Manfreda2005]), $SW$ and $SW_{fc}$ are the soil water content at time $t$ and at field capacity for the soil profile [mm], respectively. $N(t)$ is the number of cells $i$ upstream exceeding field capacity and at steepest slope to cell $j$. The topographical wetness index (TWI) $W$, introduced by \cite{Beven1979}, describes the tendency for water to accumulate spatially in regions characterized by a relatively low local slope and a large upstream drainage area. $W_j$ is the TWI at cell $j$ and $W_i$ the cumulative TWI from upstream cells $i$. The TWI is given by:    
+were $c_z$ is the subsurface flow coefficient ($\approx$ 0.25 $d^{-1}$, if $dt$ $\leq$ $1~d$), $SW$ and $SW_{fc}$ are the soil water content at time $t$ and at field capacity for the soil profile [mm], respectively. $N(t)$ is the number of cells $i$ upstream exceeding field capacity and at steepest slope to cell $j$. The topographical wetness index (TWI) $W$, introduced by \cite{Beven1979}, describes the tendency for water to accumulate spatially in regions characterized by a relatively low local slope and a large upstream drainage area. $W_j$ is the TWI at cell $j$ and $W_i$ the cumulative TWI from upstream cells $i$. The TWI is given by:    
 
 \begin{equation}
 TWI =ln\Big(\frac{a}{tan \beta} \Big)
@@ -232,11 +232,11 @@ T_p=K_{cb} \cdot ET_0
 Potential transpiration is further subject to root water uptake capacity where the maximum daily uptake $T_{p(z)}$ (mm) at each layer $z$ is given by [@Prasad1988]:
 
 \begin{equation}
-T_{p(z)} = 2 \Big( 1- \frac{RD_{z,0.5} }{RD} \Big) \Big( \frac{RD_z}{RD} \Big) T_p
+T_{p(z)} = 2 \Big( 1- \frac{RD_{z/2} }{RD} \Big) \Big( \frac{RD_z}{RD} \Big) T_p
 \label{eq:Tpz}  
 \end{equation}
 
-where $RD$ (m) is the total or individual soil layer's rooting depth and $RD_{z, 0.5}$ is the soil depth at the middle of the root extension for layer $z$.    
+where $RD$ (m) is the total or individual soil layer's rooting depth and $RD_{z/2}$ is the soil depth at the middle of the root extension for layer $z$.    
 
 When soil water is insufficient to meet atmospheric demand, actual transpiration is lower than potential transpiration and given by [@Sheikh2009]:
 
@@ -292,23 +292,23 @@ where $\theta_t$ is soil moisture ($m^3/m^3$) and $\theta_{dr}$ is the moisture 
 
 ### Soil Temperature
 
-Temperture is an important parameter regulating chemical and biological processes. To simulate its evolution across time and space this model follows [@Neitsch2009], where the average daily soil temperature ($^{\circ}$C) at the center of each soil layer $k$ is given by:
+Temperture is an important parameter regulating chemical and biological processes. To simulate its evolution across time and space this model follows [@Neitsch2009], where the average daily soil temperature ($^{\circ}$C) at the center of each soil layer $z$ is given by:
 
 \begin{equation}
-T_{soil, k, t} = l \cdot T_{soil, k, t-1} + (1.0 - l) \cdot \big[df \cdot [\overline{T}_{AAir} - T_{ssurf}]+T_{ssurf}]
+T_{soil_z}(t) = l \cdot T_{soil_, k,_z}(t-1) + (1.0 - l) \cdot \big[df \cdot [\overline{T}_{AAir} - T_{ssurf}]+T_{ssurf}]
 \label{eq:tempSoil} 
 \end{equation}
 
-where $l$ is a lag coefficient (0 - 1.0) regulating the influence of the previous day's temperature, the subscript $t-1$, refers to the previous day, $\overline{T}_{AAir}$ is the average annual air temperature and $T_{ssurf}$ is the soil surface temperature at time $t$. The depth factor $df$ is given by,
+where $l$ is a lag coefficient (0 - 1.0) regulating the influence of the previous day's $(t-1)$ temperature, $\overline{T}_{AAir}$ is the average annual air temperature and $T_{ssurf}$ is the soil surface temperature at time $t$. The depth factor $df$ is given by,
 
 \begin{equation}
 df = \frac{zd}{zd+exp(-0.867-2.078 \cdot zd)}
 \label{eq:df} 
 \end{equation}
 
-where $zd$ is the ratio of the depth at the center of the soil layer $D_{k_{mid}}$ (mm) to the damping depth $dd$ (mm) such that:
+where $zd$ is the ratio of the depth at the center of the soil layer $D_{z/2}$ (mm) to the damping depth $dd$ (mm) such that:
 \begin{equation}
-zd = \frac{D_{k_{mid}}}{dd}
+zd = \frac{D_{z/2}}{dd}
 \label{eq:zd} 
 \end{equation}
 
@@ -329,9 +329,9 @@ dd_{max} = 1000 + \frac{2500\rho_b}{\rho_b+686 \cdot exp(-5.63\rho_b)}
 \label{eq:varphi} 
 \end{equation}
 
-where $\rho_b$ is the soil bulk density (mg m$^{-3}$) and SW is water content (mm $H_2O$) in the soil profile $D_k$ (mm). 
+where $\rho_b$ is the soil bulk density $(mg~m^{-3})$ and SW is water content $(mm~H_2O)$ in the soil profile $D_z~(mm)$. 
 
-The soil surface temperature $T_{ssurf}$ in eq. \refeq{tempSoil}, is a fucntion of the previous day's soil temperature, amount of ground cover captured by a crop factor $bcv$ and the temperature of bare soil $T_{bare}$, such that:
+The soil surface temperature $T_{ssurf}$ in eq. \ref{eq:tempSoil}, is a fucntion of the previous day's soil temperature, amount of ground cover captured by a crop factor $bcv$ and the temperature of bare soil $T_{bare}$, such that:
 
 \begin{equation} 
 T_{ssurf} = bcv \cdot  T_{soil, k, t-1} + (1-bcv) \cdot T_{bare}
@@ -359,7 +359,7 @@ f=1-exp(-\mu*LAI)
 \label{eq:f} 
 \end{equation}
 
-where $\mu$ is light-use efficiency of the crop (kg ha$^{-1}$ m$^2$ MJ$^{-1}$)
+where $\mu$ is light-use efficiency of the crop $(kg~ha^{-1}~m^2~MJ^{-1})$.
 
 ## Pesticide Fate 
 
@@ -948,46 +948,138 @@ M_{tot_z}(t+1) = V_{gas_z}(t)C_{gas_z}(t) + V_{H_2O}(t)C_{aq_z}(t+1) + M_{soil}(
 \label{eq:Mtot_t1}
 \end{equation}
 
-
-
-
-
-
-
-The biodegradation rate constant $k_{b}$ is given by:
+The biodegradation rate constant for the aqueous phase $k_{b,aq}$ is given by:
 
 \begin{equation}
-k_b = \frac{ln(2)}{t_\frac{1}{2}} 
+k_{b,aq} = \frac{ln(2)}{t_\frac{1}{2}} 
 \label{eq:k_b}
 \end{equation} 
 
-where $t_\frac{1}{2}$ is the half-life (d) of the contaminant considered. Adapting the reference half-life to temperature and moisture changes following Dairon (cite: Dairon , 2015) the half-life becomes:
+where $t_\frac{1}{2}$ is the reference half-life (d) of the contaminant considered. The degradation in the sorbed fraction is assumed to be a fraction of that in the aqueous phase such that:
+
+\begin{equation}
+k_{b,ads} = s_f \cdot k_{b,aq}   
+\label{eq:k_bads}
+\end{equation} 
+
+where $0 \leq s_f \leq 1$ $(-)$ is an adjustment parameter for degradation rate. Although a decrease in degradation rates with increasing depth reltive to top soils may be associated to a decrease in microbial activity **(Rodríguez-Cruz et al., 2006; Si et al., 2009)**, currently no depth variation is considered. However, this could be easily implemented by assuming an exponential decrease in the degradation rate constant as a function of depth such that: 
+
+\begin{equation}
+k_{{b,aq}_z} = k_{b,aq}\cdot exp(-\gamma \cdot D_{z/2}) 
+\label{eq:gamma}
+\end{equation} 
+
+where $\gamma$ $(-)$ is a calibration parameter $0 \leq \gamma \leq 1$ and $D_{z/2}~(m)$ the depth to center of layer $z$. 
+
+Adapting the reference half-life to temperature and moisture changes the half-life becomes:
 
 \begin{equation}
 t_\frac{1}{2}=t_\frac{1}{2}^{ref}\cdot F_T \cdot F_\theta
 \label{eq:DT50}	
 \end{equation} 
 
-where $t_\frac{1}{2}^{ref}$ is the half-life (days) at the reference moisture and temperature. $F_T$ and $F_\theta$ are factor changes in degradation rates associated to temperature and moisture conditions, respectively. To account for the influence of water content across a range of saturation conditions $F_\theta$ is given by (cite: Schroll et al, 2006):
+where $t_\frac{1}{2}^{ref}$ is the half-life (days) at the reference moisture and temperature. $F_T$ and $F_\theta$ are factor changes in degradation rates associated to temperature and moisture conditions, following \cite{Schroll2006} and the Arrhenius equation, respectively. To account for the influence of water content across a range of saturation conditions $F_\theta$ is given by:
+
+[comment]:$$
+\begin{equation} 
+    F_\theta = 
+\begin{dcases}
+     ~~~~~0~,                 & \theta_t \leq 0.5 \cdot \theta_{wp} \\
+    \Big(\frac{ \theta_t- 0.5 \cdot \theta_{wp} } { \theta_{fc} - \theta_{wp} }\Big)^{\beta_{\theta} },    & \theta_t <  \theta_{fc} \\
+     ~~~~~1~,                 & \theta_t > \theta_{fc} 
+\end{dcases}
+\end{equation}
+[comment]:$$
 
 \begin{equation} 
-F_\theta = 
+F_T = e^{(E_a/R)(1/T_{ref} - 1/T)}
 \end{equation} 
 
-\begin{equation} 
-F_T =
-\end{equation} 
+where T is the temperature in soil converted to Kelvin. $T_{ref}$ is the reference temperature at which the experimental half-life is reported (i.e. typically 20 $^{\circ}$C). $E_a$ is the activation energy generally equal to 54,000 (KJ mol$^{-1}$) and R is the gas constant 8.314 (J mol$^{-1}$ K$^{-1}$).
 
-where T is the temperature in soil layer k and time step t. $T_{ref}$ is the reference temperature at which the experimental half-life is reported (i.e. typically 20 $^{\circ}$C). $E_a$ is the activation energy generally equal to 54,000 (KJ mol$^{-1}$) and R is the gas constant 8.314 (J mol$^{-1}$ K$^{-1}$). 
+To compute  mass degradation, the following method is used:
+
+```{python}
+def getMassDegradation(model, layer,
+                       theta_sat, theta_fcap, theta_wp,
+                       mass, frac="L", sor_deg_factor=1,
+                       sorption_model="linear", gas=True):
+    # Get mass applied if top-soil
+    if layer == 0:
+        theta_aq_layer = model.theta_z0
+        temp_layer = model.temp_z0_fin
+        depth = model.z0
+    elif layer == 1:
+        theta_aq_layer = model.theta_z1
+        temp_layer = model.temp_z1_fin
+        depth = model.z1
+    elif layer == 2:
+        theta_aq_layer = model.theta_z2
+        temp_layer = model.temp_z2_fin
+        depth = model.z2
+
+    # F_Theta_1
+    theta_factor = ifthenelse(
+        theta_aq_layer <= 0.5 * theta_wp, scalar(0),
+        ifthenelse(theta_aq_layer <= theta_fcap,
+                   (((theta_aq_layer - 0.5 * theta_wp) / (
+                       theta_fcap - theta_wp)) ** scalar(model.beta_moisture)),
+                   scalar(1)))
+    # Temperature factor in biodegradation
+    # F_T_1
+    temp_factor = exp((model.act_e / model.r_gas) *
+                      (1 / (model.temp_ref + 273.15) - 1 / (model.temp_air + 273.15)))
+
+    # Half-life as a function of temperature and moisture
+    dt_50 = max(model.dt_50_ref * theta_factor * temp_factor, scalar(0))
+    # dt_50 = max(model.dt_50_ref)
+
+    # Convert to degradation constant
+    # Deg in dissolved phase
+    k_b = ifthenelse(dt_50 > 0, ln(2) / dt_50,
+                     scalar(0))  
+    # Deg in sorbed phase (now assumed equal)
+    k_bs = k_b * sor_deg_factor
+
+    # Step 0 - Obtain species concentration (all phases)
+    conc_aq = getConcAq(model, layer, theta_sat, mass,
+                        sorption_model=sorption_model, gas=gas)  # mass/L
+    conc_ads = getConcAds(model, layer, theta_sat, mass, gas=gas)  # mass/g soil
+    conc_gas = conc_aq / model.k_h
+
+    mass_aq = conc_aq * (theta_aq_layer * depth * cellarea())
+    mass_ads = conc_ads * (depth * cellarea() * model.p_b)  # pb = g/cm3
+
+    # Step 1 - Degrade phase fractions
+    # First order degradation kinetics
+    theta_gas = max(theta_sat - theta_aq_layer, scalar(0))
+    if frac == "H":
+        conc_aq_new = conc_aq * exp(-1 * model.alpha_iso * k_b * scalar(model.jd_dt))
+        conc_ads_new = conc_ads * exp(-1 * model.alpha_iso * k_bs * scalar(model.jd_dt))
+    else:  # Same for total conc as for "L"
+        conc_aq_new = conc_aq * exp(-1 * k_b * scalar(model.jd_dt))
+        conc_ads_new = conc_ads * exp(-1 * k_bs * scalar(model.jd_dt))
+
+    # Step 2 - Convert to mass (i.e., after degradation in each phase)
+    mass_aq_new = conc_aq_new * (theta_aq_layer * depth * cellarea())
+    mass_ads_new = conc_ads_new * (model.p_b * depth * cellarea())  # pb = g/cm3
+    mass_gas = conc_gas * (theta_gas * depth * cellarea())
+    mass_tot_new = mass_aq_new + mass_ads_new + mass_gas
+    mass_deg_aq = mass_aq - mass_aq_new
+    mass_deg_ads = mass_ads - mass_ads_new
+
+    return {"mass_tot_new": mass_tot_new,
+            "mass_deg_aq": mass_deg_aq,
+            "mass_deg_ads": mass_deg_ads}
+```
 
 
 ### Isotope treatment
 
-
 To obtain the masses of heavy $M^h$ and light isotopes $M^l$, the isotope signature $\delta ^{13}C$ is used where:
 
 \begin{equation} 
-\delta ^{13}C [???] = \Big(\frac{R_{smp} - R_{std}}{R_{std}}\Big)\cdot 1000
+\delta ^{13}C [\textperthousand] = \Big(\frac{R_{smp} - R_{std}}{R_{std}}\Big)\cdot 1000
 \end{equation}
 
 
