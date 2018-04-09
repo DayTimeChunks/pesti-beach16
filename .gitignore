@@ -9,3 +9,6 @@ WriteUp/LargeFiles
 DataSource/LargeFiles
 
 Analysis/Old
+
+# Compiled docs
+*.pyc
