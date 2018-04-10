@@ -9,6 +9,9 @@ WriteUp/LargeFiles
 DataSource/LargeFiles
 
 Analysis/Old
+Analysis/plotlycred.py
 
 # Compiled docs
 *.pyc
+
+
