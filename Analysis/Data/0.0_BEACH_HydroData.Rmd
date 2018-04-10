@@ -8,8 +8,8 @@ output: pdf_document
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL", "English")
 
-MAC = F
-WIN = T
+MAC = T
+WIN = F
 ```
 
 # Purpose
@@ -26,7 +26,8 @@ if (MAC) {
     path = file.path("C:/Users/DayTimeChunks/Documents/PhD/HydrologicalMonitoring")
     
   } else {
-    path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+    # path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+    path = file.path("/Users/DayTightChunks/Documents/PhD/HydroMonitor/.nosync/HydrologicalMonitoring")
   }
 } else {
   path = file.path("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring")

@@ -2,22 +2,39 @@
 
 import pandas as pd
 
-# Get Observed data
-PC = False
-if PC:
+
+def getWaterData(tss=True):
+
     path = "Data/"
-else:
-    # path = "C:/Users/DayTimeChunks/Documents/PhD/HydrologicalMonitoring"
+    if tss:
+        path += "q_obs_m3day.tss"
+        obs = pd.read_table(path)
+    else:
+        path += "qmBlk_R.csv"
+        obs = pd.read_csv(path, sep=",")
+
+    return obs
+
+
+def getSoilData(transect, tss=True):
     path = "Data/"
 
-use_tss = False
-if use_tss:
-    path += "q_obs_m3day.tss"
-    obs = pd.read_table(path)
-else:
-    path += "qmBlk_R.csv"
-    obs = pd.read_csv(path, sep=",")
+    if tss:
+        if transect == "North":
+            path += "north.tss"
+            obs = pd.read_table(path)
+        elif transect == "Valley":
+            path += "valley.tss"
+            obs = pd.read_table(path)
+        else:
+            path += "south.tss"
+            obs = pd.read_table(path)
+    else:
+        path += "qmBlk_R.csv"
+        obs = pd.read_csv(path, sep=",")
 
-test = 'test'
+    return obs
+
+
 
 

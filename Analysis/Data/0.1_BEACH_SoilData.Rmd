@@ -1,0 +1,94 @@
+---
+title: "Observed Data Prep for Model Analysis - Soils"
+author: "PAZ"
+date: "31/01/2018"
+output: pdf_document
+---
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+Sys.setlocale("LC_ALL", "English")
+
+MAC = T
+WIN = F
+```
+
+# Purpose
+
+Generate BEACH calibration data with:
+
+- **groupAlteck2016_R.csv** (Book 04)
+
+# Lab parameters and field constants
+
+```{r}
+if (MAC) {
+  if (WIN){
+    path = file.path("C:/Users/DayTimeChunks/Documents/PhD/HydrologicalMonitoring")
+    
+  } else {
+    # path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+    path = file.path("/Users/DayTightChunks/Documents/PhD/HydroMonitor/.nosync/HydrologicalMonitoring")
+    time = read.csv2("/Users/DayTightChunks/Documents/PhD/Models/.nosync/pesti-beach16/Analysis/Data/Time.csv")
+    time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
+  }
+} else {
+  path = file.path("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring")
+  time = read.csv2("D:/Documents/these_pablo/Models/BEACH2016/Analysis/Data/Time.csv")
+  time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
+}
+source(file.path(path, "global.R"))
+```
+
+
+# Packages
+
+```{r, message=FALSE}
+
+# Plotting functions
+library("scales")
+library("tidyr")
+library("dplyr")
+library("reshape")
+library("zoo") # na.approx()
+
+```
+
+## Working directory
+
+```{r, message=FALSE}
+
+# setwd("D:/Documents/these_pablo/Alteckendorf2016/R")
+
+# MAC
+# setwd("/Users/DayTightChunks/Documents/PhD/Routput/Alteck/R")
+
+# Mac-WIN
+# setwd("C:/Users/DayTightChunks/Documents/Models/pesti-beach16/Analysis/Data")
+getwd()
+
+```
+
+
+# Merge Transects with Time (Julian Days)
+
+```{r}
+s = read.csv2(file.path(path, "Data/MonitoringScopeSoils_R.csv"))
+
+#q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
+s$DayMoYr = as.POSIXct(strptime(s$Date.Soil, "%d/%m/%Y", tz="EST"))
+
+north = subset(s, Transect == "N")
+valley = subset(s, Transect == "T")
+south = subset(s, Transect == "S")
+
+njd = merge(time, north, by = "DayMoYr", all = T)
+vjd = merge(time, valley, by = "DayMoYr", all = T)
+sjd = merge(time, south, by = "DayMoYr", all = T)
+
+write.table(njd, "BEACH_R/north.tss", sep="\t", row.names = F)
+write.table(vjd, "BEACH_R/valley.tss", sep="\t", row.names = F)
+write.table(sjd, "BEACH_R/south.tss", sep="\t", row.names = F)
+
+```
+
+
