@@ -309,18 +309,55 @@
 
     
     
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}44}]:} \PY{n}{variable} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Smet Conc}\PY{l+s+s2}{\PYZdq{}}
+         \PY{n}{figname} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SoilsConc.png}\PY{l+s+s1}{\PYZsq{}}
+\end{Verbatim}
+
+
     \hypertarget{observed}{%
 \subsection{Observed}\label{observed}}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}3}]:} \PY{n}{n\PYZus{}obs} \PY{o}{=} \PY{n}{getSoilData}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{North}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{tss}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{)}
-        \PY{n}{v\PYZus{}obs} \PY{o}{=} \PY{n}{getSoilData}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Valley}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{tss}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{)}
-        \PY{n}{s\PYZus{}obs} \PY{o}{=} \PY{n}{getSoilData}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{South}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{tss}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{)}
-        \PY{c+c1}{\PYZsh{} s\PYZus{}obs.head()}
-        
-        \PY{n}{nConc} \PY{o}{=} \PY{n}{n\PYZus{}obs}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.mug.g.dry.soil}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
-        \PY{n}{vConc} \PY{o}{=} \PY{n}{v\PYZus{}obs}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.mug.g.dry.soil}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
-        \PY{n}{sConc} \PY{o}{=} \PY{n}{s\PYZus{}obs}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.mug.g.dry.soil}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}45}]:} \PY{n}{n\PYZus{}obs} \PY{o}{=} \PY{n}{getSoilData}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{North}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{tss}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{)}
+         \PY{n}{v\PYZus{}obs} \PY{o}{=} \PY{n}{getSoilData}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{Valley}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{tss}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{)}
+         \PY{n}{s\PYZus{}obs} \PY{o}{=} \PY{n}{getSoilData}\PY{p}{(}\PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{South}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{tss}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{)}
+         \PY{n}{s\PYZus{}obs}\PY{o}{.}\PY{n}{head}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+
+\begin{Verbatim}[commandchars=\\\{\}]
+{\color{outcolor}Out[{\color{outcolor}45}]:}       DayMoYr        Date  Jdays   ID Transect  Wnum Date.Soil Date.ti  \textbackslash{}
+         0  2015-10-01  01/10/2015      1  NaN      NaN   NaN       NaN     NaN   
+         1  2015-10-02  02/10/2015      2  NaN      NaN   NaN       NaN     NaN   
+         2  2015-10-03  03/10/2015      3  NaN      NaN   NaN       NaN     NaN   
+         3  2015-10-04  04/10/2015      4  NaN      NaN   NaN       NaN     NaN   
+         4  2015-10-05  05/10/2015      5  NaN      NaN   NaN       NaN     NaN   
+         
+            Conc.mug.g.dry.soil  Conc.ComSoil.SD  Mass.Soil.g  theta.prct  N\_compsoil  \textbackslash{}
+         0                  NaN              NaN          NaN         NaN         NaN   
+         1                  NaN              NaN          NaN         NaN         NaN   
+         2                  NaN              NaN          NaN         NaN         NaN   
+         3                  NaN              NaN          NaN         NaN         NaN   
+         4                  NaN              NaN          NaN         NaN         NaN   
+         
+            comp.d13C  comp.d13C.SD  N\_isoComp  prctError  DD13C.comp  comp.IMP.d13C  
+         0        NaN           NaN        NaN        NaN         NaN            NaN  
+         1        NaN           NaN        NaN        NaN         NaN            NaN  
+         2        NaN           NaN        NaN        NaN         NaN            NaN  
+         3        NaN           NaN        NaN        NaN         NaN            NaN  
+         4        NaN           NaN        NaN        NaN         NaN            NaN  
+\end{Verbatim}
+            
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}46}]:} \PY{k}{if} \PY{n}{variable} \PY{o}{==} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{d13C}\PY{l+s+s2}{\PYZdq{}}\PY{p}{:}
+             \PY{n}{name} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{comp.d13C}\PY{l+s+s2}{\PYZdq{}}
+         \PY{k}{else}\PY{p}{:}
+             \PY{n}{name} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.mug.g.dry.soil}\PY{l+s+s1}{\PYZsq{}}
+         
+         \PY{n}{nConc} \PY{o}{=} \PY{n}{n\PYZus{}obs}\PY{p}{[}\PY{n}{name}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
+         \PY{n}{vConc} \PY{o}{=} \PY{n}{v\PYZus{}obs}\PY{p}{[}\PY{n}{name}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
+         \PY{n}{sConc} \PY{o}{=} \PY{n}{s\PYZus{}obs}\PY{p}{[}\PY{n}{name}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 
 
@@ -328,20 +365,20 @@
 \subsection{Simulated}\label{simulated}}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}4}]:} \PY{c+c1}{\PYZsh{} Model version and mc\PYZhy{}run number:}
-        \PY{n}{version} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{v9}\PY{l+s+s2}{\PYZdq{}}
-        \PY{n}{folder} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1}\PY{l+s+s2}{\PYZdq{}}
-        
-        \PY{c+c1}{\PYZsh{} Working computer}
-        \PY{n}{PC} \PY{o}{=} \PY{n+nb+bp}{False}
-        \PY{k}{if} \PY{n}{PC}\PY{p}{:}
-            \PY{n}{back} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+se}{\PYZbs{}\PYZbs{}}\PY{l+s+s2}{\PYZdq{}}  
-            \PY{n}{sim\PYZus{}path} \PY{o}{=} \PY{n}{version} \PY{o}{+} \PY{n}{back}  
-        \PY{k}{else}\PY{p}{:}
-            \PY{n}{back} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{/}\PY{l+s+s2}{\PYZdq{}}
-            \PY{n}{sim\PYZus{}path} \PY{o}{=} \PY{n}{version} \PY{o}{+} \PY{n}{back}
-            
-        \PY{k}{print}\PY{p}{(}\PY{n}{sim\PYZus{}path}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}47}]:} \PY{c+c1}{\PYZsh{} Model version and mc\PYZhy{}run number:}
+         \PY{n}{version} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{v9}\PY{l+s+s2}{\PYZdq{}}
+         \PY{n}{folder} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{1}\PY{l+s+s2}{\PYZdq{}}
+         
+         \PY{c+c1}{\PYZsh{} Working computer}
+         \PY{n}{PC} \PY{o}{=} \PY{n+nb+bp}{False}
+         \PY{k}{if} \PY{n}{PC}\PY{p}{:}
+             \PY{n}{back} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+se}{\PYZbs{}\PYZbs{}}\PY{l+s+s2}{\PYZdq{}}  
+             \PY{n}{sim\PYZus{}path} \PY{o}{=} \PY{n}{version} \PY{o}{+} \PY{n}{back}  
+         \PY{k}{else}\PY{p}{:}
+             \PY{n}{back} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{/}\PY{l+s+s2}{\PYZdq{}}
+             \PY{n}{sim\PYZus{}path} \PY{o}{=} \PY{n}{version} \PY{o}{+} \PY{n}{back}
+             
+         \PY{k}{print}\PY{p}{(}\PY{n}{sim\PYZus{}path}\PY{p}{)}
 \end{Verbatim}
 
 
@@ -351,32 +388,46 @@ v9/
     \end{Verbatim}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}5}]:} \PY{n}{col} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.North}\PY{l+s+s1}{\PYZsq{}}
-        \PY{n}{c\PYZus{}north\PYZus{}sim} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}table}\PY{p}{(}\PY{n}{sim\PYZus{}path} \PY{o}{+} \PY{n}{folder} \PY{o}{+} \PY{n}{back} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{resM\PYZus{}norCONC.tss}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{skiprows}\PY{o}{=}\PY{l+m+mi}{4}\PY{p}{,} \PY{n}{delim\PYZus{}whitespace}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{,}
-                                 \PY{n}{names}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Jdays}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{col}\PY{p}{]}\PY{p}{,}
-                                 \PY{n}{header}\PY{o}{=}\PY{n+nb+bp}{None}\PY{p}{)}
-        
-        \PY{n}{simN} \PY{o}{=} \PY{n}{c\PYZus{}north\PYZus{}sim}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.North}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}48}]:} \PY{c+c1}{\PYZsh{} Time series name}
+         \PY{n}{name\PYZus{}tss} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{CONC}\PY{l+s+s1}{\PYZsq{}}
 \end{Verbatim}
 
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}6}]:} \PY{n}{col} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.Valley}\PY{l+s+s1}{\PYZsq{}}
-        \PY{n}{c\PYZus{}val\PYZus{}sim} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}table}\PY{p}{(}\PY{n}{sim\PYZus{}path} \PY{o}{+} \PY{n}{folder} \PY{o}{+} \PY{n}{back} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{resM\PYZus{}valCONC.tss}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{skiprows}\PY{o}{=}\PY{l+m+mi}{4}\PY{p}{,} \PY{n}{delim\PYZus{}whitespace}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{,}
-                                 \PY{n}{names}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Jdays}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{col}\PY{p}{]}\PY{p}{,}
-                                 \PY{n}{header}\PY{o}{=}\PY{n+nb+bp}{None}\PY{p}{)}
-        
-        \PY{n}{simV} \PY{o}{=} \PY{n}{c\PYZus{}val\PYZus{}sim}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.Valley}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}49}]:} \PY{n}{col} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{sim}\PY{l+s+s1}{\PYZsq{}} 
+         \PY{n}{transect} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{nor}\PY{l+s+s1}{\PYZsq{}}
+         \PY{n}{filename} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{resM\PYZus{}}\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{n}{transect} \PY{o}{+} \PY{n}{name\PYZus{}tss} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{.tss}\PY{l+s+s2}{\PYZdq{}}
+         \PY{n}{c\PYZus{}north\PYZus{}sim} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}table}\PY{p}{(}\PY{n}{sim\PYZus{}path} \PY{o}{+} \PY{n}{folder} \PY{o}{+} \PY{n}{back} \PY{o}{+} \PY{n}{filename}\PY{p}{,} 
+                                     \PY{n}{skiprows}\PY{o}{=}\PY{l+m+mi}{4}\PY{p}{,} \PY{n}{delim\PYZus{}whitespace}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{,}
+                                     \PY{n}{names}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Jdays}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{col}\PY{p}{]}\PY{p}{,}
+                                     \PY{n}{header}\PY{o}{=}\PY{n+nb+bp}{None}\PY{p}{)}
+         
+         \PY{n}{simN} \PY{o}{=} \PY{n}{c\PYZus{}north\PYZus{}sim}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}7}]:} \PY{n}{col} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.South}\PY{l+s+s1}{\PYZsq{}}
-        \PY{n}{c\PYZus{}sou\PYZus{}sim} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}table}\PY{p}{(}\PY{n}{sim\PYZus{}path} \PY{o}{+} \PY{n}{folder} \PY{o}{+} \PY{n}{back} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{resM\PYZus{}souCONC.tss}\PY{l+s+s2}{\PYZdq{}}\PY{p}{,} \PY{n}{skiprows}\PY{o}{=}\PY{l+m+mi}{4}\PY{p}{,} \PY{n}{delim\PYZus{}whitespace}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{,}
-                                 \PY{n}{names}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Jdays}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{col}\PY{p}{]}\PY{p}{,}
-                                 \PY{n}{header}\PY{o}{=}\PY{n+nb+bp}{None}\PY{p}{)}
-        
-        \PY{n}{simS} \PY{o}{=} \PY{n}{c\PYZus{}sou\PYZus{}sim}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Conc.South}\PY{l+s+s1}{\PYZsq{}}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
+{\color{incolor}In [{\color{incolor}50}]:} \PY{n}{transect} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{val}\PY{l+s+s1}{\PYZsq{}}
+         \PY{n}{filename} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{resM\PYZus{}}\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{n}{transect} \PY{o}{+} \PY{n}{name\PYZus{}tss} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{.tss}\PY{l+s+s2}{\PYZdq{}}
+         \PY{n}{c\PYZus{}val\PYZus{}sim} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}table}\PY{p}{(}\PY{n}{sim\PYZus{}path} \PY{o}{+} \PY{n}{folder} \PY{o}{+} \PY{n}{back} \PY{o}{+} 
+                                   \PY{n}{filename}\PY{p}{,} 
+                                   \PY{n}{skiprows}\PY{o}{=}\PY{l+m+mi}{4}\PY{p}{,} \PY{n}{delim\PYZus{}whitespace}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{,}
+                                   \PY{n}{names}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Jdays}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{col}\PY{p}{]}\PY{p}{,}
+                                   \PY{n}{header}\PY{o}{=}\PY{n+nb+bp}{None}\PY{p}{)}
+         
+         \PY{n}{simV} \PY{o}{=} \PY{n}{c\PYZus{}val\PYZus{}sim}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
+\end{Verbatim}
+
+
+    \begin{Verbatim}[commandchars=\\\{\}]
+{\color{incolor}In [{\color{incolor}51}]:} \PY{n}{transect} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{sou}\PY{l+s+s1}{\PYZsq{}}
+         \PY{n}{filename} \PY{o}{=} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{resM\PYZus{}}\PY{l+s+s2}{\PYZdq{}} \PY{o}{+} \PY{n}{transect} \PY{o}{+} \PY{n}{name\PYZus{}tss} \PY{o}{+} \PY{l+s+s2}{\PYZdq{}}\PY{l+s+s2}{.tss}\PY{l+s+s2}{\PYZdq{}}
+         \PY{n}{c\PYZus{}sou\PYZus{}sim} \PY{o}{=} \PY{n}{pd}\PY{o}{.}\PY{n}{read\PYZus{}table}\PY{p}{(}\PY{n}{sim\PYZus{}path} \PY{o}{+} \PY{n}{folder} \PY{o}{+} \PY{n}{back} \PY{o}{+} 
+                                   \PY{n}{filename}\PY{p}{,} \PY{n}{skiprows}\PY{o}{=}\PY{l+m+mi}{4}\PY{p}{,} \PY{n}{delim\PYZus{}whitespace}\PY{o}{=}\PY{n+nb+bp}{True}\PY{p}{,}
+                                   \PY{n}{names}\PY{o}{=}\PY{p}{[}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Jdays}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{n}{col}\PY{p}{]}\PY{p}{,}
+                                   \PY{n}{header}\PY{o}{=}\PY{n+nb+bp}{None}\PY{p}{)}
+         
+         \PY{n}{simS} \PY{o}{=} \PY{n}{c\PYZus{}sou\PYZus{}sim}\PY{p}{[}\PY{n}{col}\PY{p}{]}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
 \end{Verbatim}
 
 
@@ -384,11 +435,11 @@ v9/
 \subsection{Plotting}\label{plotting}}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}8}]:} \PY{c+c1}{\PYZsh{} Julian days}
-        \PY{n}{x} \PY{o}{=} \PY{n}{s\PYZus{}obs}\PY{o}{.}\PY{n}{Jdays}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
-        
-        \PY{n}{start} \PY{o}{=} \PY{l+m+mi}{169}
-        \PY{n}{end} \PY{o}{=} \PY{l+m+mi}{300}
+{\color{incolor}In [{\color{incolor}52}]:} \PY{c+c1}{\PYZsh{} Julian days}
+         \PY{n}{x} \PY{o}{=} \PY{n}{s\PYZus{}obs}\PY{o}{.}\PY{n}{Jdays}\PY{o}{.}\PY{n}{tolist}\PY{p}{(}\PY{p}{)}
+         
+         \PY{n}{start} \PY{o}{=} \PY{l+m+mi}{180}
+         \PY{n}{end} \PY{o}{=} \PY{l+m+mi}{300}
 \end{Verbatim}
 
 
@@ -396,50 +447,50 @@ v9/
 \subsubsection{Observed}\label{observed}}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}9}]:} \PY{n}{nObs} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Scatter}\PY{p}{(}
-            \PY{n}{x} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
-            \PY{n}{y} \PY{o}{=} \PY{n}{nConc}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
-            \PY{n}{mode} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{markers}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-            \PY{n}{name} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{North Conc.}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-            \PY{n}{marker}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
-                \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{} \PYZsq{}rgba(204, 204, 204, 0.95)\PYZsq{},}
-                \PY{n}{line}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
-                    \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{}\PYZsq{}rgba(217, 217, 217, 1.0)\PYZsq{},}
-                    \PY{n}{width}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}
-                \PY{p}{)}\PY{p}{,}
-                \PY{n}{symbol}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{circle}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-                \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
-        \PY{p}{)}
-        
-        \PY{n}{vObs} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Scatter}\PY{p}{(}
-            \PY{n}{x} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
-            \PY{n}{y} \PY{o}{=} \PY{n}{vConc}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
-            \PY{n}{mode} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{markers}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-            \PY{n}{name} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Valley Conc.}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-            \PY{n}{marker}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
-                \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{green}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{} \PYZsq{}rgba(204, 204, 204, 0.95)\PYZsq{},}
-                \PY{n}{line}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
-                    \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{}\PYZsq{}rgba(217, 217, 217, 1.0)\PYZsq{},}
-                    \PY{n}{width}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}
-                \PY{p}{)}\PY{p}{,}
-                \PY{n}{symbol}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{circle}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-                \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
-        \PY{p}{)}
-        
-        \PY{n}{sObs} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Scatter}\PY{p}{(}
-            \PY{n}{x} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
-            \PY{n}{y} \PY{o}{=} \PY{n}{sConc}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
-            \PY{n}{mode} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{markers}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-            \PY{n}{name} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{South Conc.}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-            \PY{n}{marker}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
-                \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{blue}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{} \PYZsq{}rgba(204, 204, 204, 0.95)\PYZsq{},}
-                \PY{n}{line}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
-                    \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{}\PYZsq{}rgba(217, 217, 217, 1.0)\PYZsq{},}
-                    \PY{n}{width}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}
-                \PY{p}{)}\PY{p}{,}
-                \PY{n}{symbol}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{circle}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
-                \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
-        \PY{p}{)}
+{\color{incolor}In [{\color{incolor}53}]:} \PY{n}{nObs} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Scatter}\PY{p}{(}
+             \PY{n}{x} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
+             \PY{n}{y} \PY{o}{=} \PY{n}{nConc}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
+             \PY{n}{mode} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{markers}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
+             \PY{n}{name} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{North }\PY{l+s+s1}{\PYZsq{}}  \PY{o}{+} \PY{n}{variable}\PY{p}{,}
+             \PY{n}{marker}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
+                 \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{red}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{} \PYZsq{}rgba(204, 204, 204, 0.95)\PYZsq{},}
+                 \PY{n}{line}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
+                     \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{}\PYZsq{}rgba(217, 217, 217, 1.0)\PYZsq{},}
+                     \PY{n}{width}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}
+                 \PY{p}{)}\PY{p}{,}
+                 \PY{n}{symbol}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{circle}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
+                 \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
+         \PY{p}{)}
+         
+         \PY{n}{vObs} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Scatter}\PY{p}{(}
+             \PY{n}{x} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
+             \PY{n}{y} \PY{o}{=} \PY{n}{vConc}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
+             \PY{n}{mode} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{markers}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
+             \PY{n}{name} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{Valley }\PY{l+s+s1}{\PYZsq{}} \PY{o}{+} \PY{n}{variable}\PY{p}{,}
+             \PY{n}{marker}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
+                 \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{green}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{} \PYZsq{}rgba(204, 204, 204, 0.95)\PYZsq{},}
+                 \PY{n}{line}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
+                     \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{}\PYZsq{}rgba(217, 217, 217, 1.0)\PYZsq{},}
+                     \PY{n}{width}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}
+                 \PY{p}{)}\PY{p}{,}
+                 \PY{n}{symbol}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{circle}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
+                 \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
+         \PY{p}{)}
+         
+         \PY{n}{sObs} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Scatter}\PY{p}{(}
+             \PY{n}{x} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
+             \PY{n}{y} \PY{o}{=} \PY{n}{sConc}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
+             \PY{n}{mode} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{markers}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
+             \PY{n}{name} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{South }\PY{l+s+s1}{\PYZsq{}} \PY{o}{+} \PY{n}{variable}\PY{p}{,}
+             \PY{n}{marker}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
+                 \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{blue}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{} \PYZsq{}rgba(204, 204, 204, 0.95)\PYZsq{},}
+                 \PY{n}{line}\PY{o}{=}\PY{n+nb}{dict}\PY{p}{(}
+                     \PY{n}{color}\PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{black}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,} \PY{c+c1}{\PYZsh{}\PYZsq{}rgba(217, 217, 217, 1.0)\PYZsq{},}
+                     \PY{n}{width}\PY{o}{=}\PY{l+m+mi}{1}\PY{p}{,}
+                 \PY{p}{)}\PY{p}{,}
+                 \PY{n}{symbol}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{circle}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
+                 \PY{n}{size}\PY{o}{=}\PY{l+m+mi}{10}\PY{p}{)}
+         \PY{p}{)}
 \end{Verbatim}
 
 
@@ -447,7 +498,7 @@ v9/
 \subsubsection{Simulated}\label{simulated}}
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}10}]:} \PY{n}{traceN} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Scatter}\PY{p}{(}
+{\color{incolor}In [{\color{incolor}54}]:} \PY{n}{traceN} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Scatter}\PY{p}{(}
              \PY{n}{x} \PY{o}{=} \PY{n}{x}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
              \PY{n}{y} \PY{o}{=} \PY{n}{simN}\PY{p}{[}\PY{n}{start}\PY{p}{:}\PY{n}{end}\PY{p}{]}\PY{p}{,}
              \PY{n}{mode} \PY{o}{=} \PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{lines}\PY{l+s+s1}{\PYZsq{}}\PY{p}{,}
@@ -477,34 +528,34 @@ v9/
 
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor} }]:} \PY{n}{data} \PY{o}{=} \PY{p}{[}\PY{n}{nObs}\PY{p}{,} \PY{n}{vObs}\PY{p}{,} \PY{n}{sObs}\PY{p}{,} \PY{n}{traceN}\PY{p}{,} \PY{n}{traceV}\PY{p}{,} \PY{n}{traceS}\PY{p}{]}
+{\color{incolor}In [{\color{incolor}55}]:} \PY{n}{data} \PY{o}{=} \PY{p}{[}\PY{n}{nObs}\PY{p}{,} \PY{n}{vObs}\PY{p}{,} \PY{n}{sObs}\PY{p}{,} \PY{n}{traceN}\PY{p}{,} \PY{n}{traceV}\PY{p}{,} \PY{n}{traceS}\PY{p}{]}
 \end{Verbatim}
 
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}19}]:} \PY{o}{\PYZpc{}}\PY{k}{matplotlib} inline
+{\color{incolor}In [{\color{incolor}58}]:} \PY{o}{\PYZpc{}}\PY{k}{matplotlib} inline
          \PY{k+kn}{import} \PY{n+nn}{plotlycred}
          
          \PY{n}{online} \PY{o}{=} \PY{n+nb+bp}{True}
          \PY{k}{if} \PY{n}{online}\PY{p}{:}
              \PY{c+c1}{\PYZsh{} fig = py.iplot(data) }
              \PY{n}{fig} \PY{o}{=} \PY{n}{go}\PY{o}{.}\PY{n}{Figure}\PY{p}{(}\PY{n}{data}\PY{o}{=}\PY{n}{data}\PY{p}{)} \PY{c+c1}{\PYZsh{} , layout=layout)}
-             \PY{n}{py}\PY{o}{.}\PY{n}{image}\PY{o}{.}\PY{n}{save\PYZus{}as}\PY{p}{(}\PY{n}{fig}\PY{p}{,} \PY{n}{filename}\PY{o}{=}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SoilsConc.png}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+             \PY{n}{py}\PY{o}{.}\PY{n}{image}\PY{o}{.}\PY{n}{save\PYZus{}as}\PY{p}{(}\PY{n}{fig}\PY{p}{,} \PY{n}{filename}\PY{o}{=}\PY{n}{figname}\PY{p}{)}
          \PY{k}{else}\PY{p}{:}
              \PY{n}{iplot}\PY{p}{(}\PY{n}{data}\PY{p}{)}
 \end{Verbatim}
 
 
     \begin{Verbatim}[commandchars=\\\{\}]
-{\color{incolor}In [{\color{incolor}20}]:} \PY{k+kn}{from} \PY{n+nn}{IPython.display} \PY{k+kn}{import} \PY{n}{Image}
+{\color{incolor}In [{\color{incolor}59}]:} \PY{k+kn}{from} \PY{n+nn}{IPython.display} \PY{k+kn}{import} \PY{n}{Image}
          \PY{k}{if} \PY{n}{online}\PY{p}{:}
-             \PY{n}{i} \PY{o}{=} \PY{n}{Image}\PY{p}{(}\PY{l+s+s1}{\PYZsq{}}\PY{l+s+s1}{SoilsConc.png}\PY{l+s+s1}{\PYZsq{}}\PY{p}{)}
+             \PY{n}{i} \PY{o}{=} \PY{n}{Image}\PY{p}{(}\PY{n}{figname}\PY{p}{)}
              \PY{n}{display}\PY{p}{(}\PY{n}{i}\PY{p}{)}
 \end{Verbatim}
 
 
     \begin{center}
-    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_17_0.png}
+    \adjustimage{max size={0.9\linewidth}{0.9\paperheight}}{output_20_0.png}
     \end{center}
     { \hspace*{\fill} \\}
     
