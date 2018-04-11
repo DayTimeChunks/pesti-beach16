@@ -23,8 +23,6 @@ knitr::opts_chunk$set(echo = TRUE)
 # knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
 ```
 
-
-
 # Methodology
 
 ## Hydrological Framework
