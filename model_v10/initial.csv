@@ -9,7 +9,7 @@ f_oc ,0.021
 k_oc ,120
 k_cp ,42600.00
 molar ,283.796
-dt_50_ref ,15
+dt_50_ref ,34
 temp_ref ,20
 beta_moisture ,1
 alpha_temperature ,6.495068559

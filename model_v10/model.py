@@ -71,6 +71,25 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.valley_wk = nominal(self.readmap("valley_nom"))
         self.south_wk = nominal(self.readmap("south_nom"))
 
+        self.n1_plot = nominal(self.readmap("n1_nom"))
+        self.n2_plot = nominal(self.readmap("n2_nom"))
+        self.n3_plot = nominal(self.readmap("n3_nom"))
+        self.n4_plot = nominal(self.readmap("n4_nom"))
+        self.n5_plot = nominal(self.readmap("n5_nom"))
+        self.n7_plot = nominal(self.readmap("n7_nom"))
+        self.n8_plot = nominal(self.readmap("n8_nom"))
+
+        self.t4_plot = nominal(self.readmap("t4_nom"))
+        self.t5_plot = nominal(self.readmap("t5_nom"))
+        self.t7_plot = nominal(self.readmap("t7_nom"))
+        self.t8_plot = nominal(self.readmap("t8_nom"))
+        self.t9_plot = nominal(self.readmap("t9_nom"))
+        self.t10_plot = nominal(self.readmap("t10_nom"))
+
+        self.s11_plot = nominal(self.readmap("s11_nom"))
+        self.s12_plot = nominal(self.readmap("s12_nom"))
+        self.s13_plot = nominal(self.readmap("s13_nom"))
+
         self.landuse = self.readmap("landuse")
 
         # Topographical Wetness Index
@@ -161,9 +180,45 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.valley_conc_tss = TimeoutputTimeseries("resM_valCONC", self, ordinal("valley_ave"), noHeader=False)
         self.south_conc_tss = TimeoutputTimeseries("resM_souCONC", self, ordinal("south_ave"), noHeader=False)
 
-        self.north_dC13_tss = TimeoutputTimeseries("resM_nordC13", self, ordinal("north_ave"), noHeader=False)
-        self.valley_dC13_tss = TimeoutputTimeseries("resM_valdC13", self, ordinal("valley_ave"), noHeader=False)
-        self.south_dC13_tss = TimeoutputTimeseries("resM_soudC13", self, ordinal("south_ave"), noHeader=False)
+        self.north_d13C_tss = TimeoutputTimeseries("resM_nord13C", self, ordinal("north_ave"), noHeader=False)
+        self.valley_dC13_tss = TimeoutputTimeseries("resM_vald13C", self, ordinal("valley_ave"), noHeader=False)
+        self.south_d13C_tss = TimeoutputTimeseries("resM_soud13C", self, ordinal("south_ave"), noHeader=False)
+
+        # Detailed
+        self.n1_d13C_tss = TimeoutputTimeseries("resM_n1d13C", self, ordinal("n1_out"), noHeader=False)
+        self.n1_conc_tss = TimeoutputTimeseries("resM_n1CONC", self, ordinal("n1_out"), noHeader=False)
+        self.n2_d13C_tss = TimeoutputTimeseries("resM_n2d13C", self, ordinal("n2_out"), noHeader=False)
+        self.n2_conc_tss = TimeoutputTimeseries("resM_n2CONC", self, ordinal("n2_out"), noHeader=False)
+        self.n3_d13C_tss = TimeoutputTimeseries("resM_n3d13C", self, ordinal("n3_out"), noHeader=False)
+        self.n3_conc_tss = TimeoutputTimeseries("resM_n3CONC", self, ordinal("n3_out"), noHeader=False)
+        self.n4_d13C_tss = TimeoutputTimeseries("resM_n4d13C", self, ordinal("n4_out"), noHeader=False)
+        self.n4_conc_tss = TimeoutputTimeseries("resM_n4CONC", self, ordinal("n4_out"), noHeader=False)
+        self.n5_d13C_tss = TimeoutputTimeseries("resM_n5d13C", self, ordinal("n5_out"), noHeader=False)
+        self.n5_conc_tss = TimeoutputTimeseries("resM_n5CONC", self, ordinal("n5_out"), noHeader=False)
+        self.n7_d13C_tss = TimeoutputTimeseries("resM_n7d13C", self, ordinal("n7_out"), noHeader=False)
+        self.n7_conc_tss = TimeoutputTimeseries("resM_n7CONC", self, ordinal("n7_out"), noHeader=False)
+        self.n8_d13C_tss = TimeoutputTimeseries("resM_n8d13C", self, ordinal("n8_out"), noHeader=False)
+        self.n8_conc_tss = TimeoutputTimeseries("resM_n8CONC", self, ordinal("n8_out"), noHeader=False)
+
+        self.t4_d13C_tss = TimeoutputTimeseries("resM_t4d13C", self, ordinal("t4_out"), noHeader=False)
+        self.t4_conc_tss = TimeoutputTimeseries("resM_t4CONC", self, ordinal("t4_out"), noHeader=False)
+        self.t5_d13C_tss = TimeoutputTimeseries("resM_t5d13C", self, ordinal("t5_out"), noHeader=False)
+        self.t5_conc_tss = TimeoutputTimeseries("resM_t5CONC", self, ordinal("t5_out"), noHeader=False)
+        self.t7_d13C_tss = TimeoutputTimeseries("resM_t7d13C", self, ordinal("t7_out"), noHeader=False)
+        self.t7_conc_tss = TimeoutputTimeseries("resM_t7CONC", self, ordinal("t7_out"), noHeader=False)
+        self.t8_d13C_tss = TimeoutputTimeseries("resM_t8d13C", self, ordinal("t8_out"), noHeader=False)
+        self.t8_conc_tss = TimeoutputTimeseries("resM_t8CONC", self, ordinal("t8_out"), noHeader=False)
+        self.t9_d13C_tss = TimeoutputTimeseries("resM_t9d13C", self, ordinal("t9_out"), noHeader=False)
+        self.t9_conc_tss = TimeoutputTimeseries("resM_t9CONC", self, ordinal("t9_out"), noHeader=False)
+        self.t10_d13C_tss = TimeoutputTimeseries("resM_t10d13C", self, ordinal("t10_out"), noHeader=False)
+        self.t10_conc_tss = TimeoutputTimeseries("resM_t10CONC", self, ordinal("t10_out"), noHeader=False)
+
+        self.s11_d13C_tss = TimeoutputTimeseries("resM_s11d13C", self, ordinal("s11_out"), noHeader=False)
+        self.s11_conc_tss = TimeoutputTimeseries("resM_s11CONC", self, ordinal("s11_out"), noHeader=False)
+        self.s12_d13C_tss = TimeoutputTimeseries("resM_s12d13C", self, ordinal("s12_out"), noHeader=False)
+        self.s12_conc_tss = TimeoutputTimeseries("resM_s12CONC", self, ordinal("s12_out"), noHeader=False)
+        self.s13_d13C_tss = TimeoutputTimeseries("resM_s13d13C", self, ordinal("s13_out"), noHeader=False)
+        self.s13_conc_tss = TimeoutputTimeseries("resM_s13CONC", self, ordinal("s13_out"), noHeader=False)
 
         # Analysis
         # This is 'q' as time series.
@@ -862,35 +917,162 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Observed conc. is betw 1 and 8 ug/g dry soil (on transect)
         # Observed conc. can reach 20 ug/g dry soil (on single plot on application)
 
-        # Isotope mass balance
+        # Mass and Mass x Isotopes
         cell_mass = self.lightmass_z0 + self.heavymass_z0
         cell_mass_delta = cell_mass * self.delta_z0
 
+        # Mass
+        # North
         north_tot_mass = areatotal(cell_mass, self.north_wk)
-        north_dC13 = areatotal(cell_mass_delta, self.north_wk) / north_tot_mass
+        n1_tot_mass = areatotal(cell_mass, self.n1_plot)
+        n2_tot_mass = areatotal(cell_mass, self.n2_plot)
+        n3_tot_mass = areatotal(cell_mass, self.n3_plot)
+        n4_tot_mass = areatotal(cell_mass, self.n4_plot)
+        n5_tot_mass = areatotal(cell_mass, self.n5_plot)
+        n7_tot_mass = areatotal(cell_mass, self.n7_plot)
+        n8_tot_mass = areatotal(cell_mass, self.n8_plot)
+
+        north_d13C = areatotal(cell_mass_delta, self.north_wk) / north_tot_mass
+        n1_d13C = areatotal(cell_mass_delta, self.n1_plot) / n1_tot_mass
+        n2_d13C = areatotal(cell_mass_delta, self.n2_plot) / n2_tot_mass
+        n3_d13C = areatotal(cell_mass_delta, self.n3_plot) / n3_tot_mass
+        n4_d13C = areatotal(cell_mass_delta, self.n4_plot) / n4_tot_mass
+        n5_d13C = areatotal(cell_mass_delta, self.n5_plot) / n5_tot_mass
+        n7_d13C = areatotal(cell_mass_delta, self.n7_plot) / n7_tot_mass
+        n8_d13C = areatotal(cell_mass_delta, self.n8_plot) / n8_tot_mass
+
         valley_tot_mass = areatotal(cell_mass, self.valley_wk)
-        valley_dC13 = areatotal(cell_mass_delta, self.valley_wk) / valley_tot_mass
+        t4_tot_mass = areatotal(cell_mass, self.t4_plot)
+        t5_tot_mass = areatotal(cell_mass, self.t5_plot)
+        t7_tot_mass = areatotal(cell_mass, self.t7_plot)
+        t8_tot_mass = areatotal(cell_mass, self.t8_plot)
+        t9_tot_mass = areatotal(cell_mass, self.t9_plot)
+        t10_tot_mass = areatotal(cell_mass, self.t10_plot)
+
+        valley_d13C = areatotal(cell_mass_delta, self.valley_wk) / valley_tot_mass
+        v4_d13C = areatotal(cell_mass_delta, self.t4_plot) / t4_tot_mass
+        v5_d13C = areatotal(cell_mass_delta, self.t5_plot) / t5_tot_mass
+        v7_d13C = areatotal(cell_mass_delta, self.t7_plot) / t7_tot_mass
+        v8_d13C = areatotal(cell_mass_delta, self.t8_plot) / t8_tot_mass
+        v9_d13C = areatotal(cell_mass_delta, self.t9_plot) / t9_tot_mass
+        v10_d13C = areatotal(cell_mass_delta, self.t10_plot) / t10_tot_mass
+
         south_tot_mass = areatotal(cell_mass, self.south_wk)
-        south_dC13 = areatotal(cell_mass_delta, self.south_wk) / south_tot_mass
+        s11_tot_mass = areatotal(cell_mass, self.s11_plot)
+        s12_tot_mass = areatotal(cell_mass, self.s12_plot)
+        s13_tot_mass = areatotal(cell_mass, self.s13_plot)
+
+        south_d13C = areatotal(cell_mass_delta, self.south_wk) / south_tot_mass
+        s11_d13C = areatotal(cell_mass_delta, self.s11_plot) / s11_tot_mass
+        s12_d13C = areatotal(cell_mass_delta, self.s12_plot) / s12_tot_mass
+        s13_d13C = areatotal(cell_mass_delta, self.s13_plot) / s13_tot_mass
 
         # Concentrations
+        # North
         north_ave_mass = north_tot_mass / scalar(30)
+        n1_ave_mass = n1_tot_mass / scalar(4)
+        n2_ave_mass = n2_tot_mass / scalar(6)
+        n3_ave_mass = n3_tot_mass / scalar(6)
+        n4_ave_mass = n4_tot_mass / scalar(4)
+        n5_ave_mass = n5_tot_mass / scalar(4)
+        n7_ave_mass = n7_tot_mass / scalar(5)
+        n8_ave_mass = n8_tot_mass / scalar(5)
+
         north_ave_conc = 10e6 * (north_ave_mass /
                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
-        valley_ave_mass = valley_tot_mass / scalar(25)
-        valley_ave_conc = 10e6 * (valley_ave_mass /
-                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
-        south_ave_mass = south_tot_mass / scalar(26)
-        south_ave_conc = 10e6 * (south_ave_mass /
+
+        n1_ave_conc = 10e6 * (n1_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        n2_ave_conc = 10e6 * (n2_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        n3_ave_conc = 10e6 * (n3_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        n4_ave_conc = 10e6 * (n4_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        n5_ave_conc = 10e6 * (n5_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        n7_ave_conc = 10e6 * (n7_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        n8_ave_conc = 10e6 * (n8_ave_mass /
                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
 
-        self.north_conc_tss.sample(north_ave_conc)  # 30 obs
-        self.valley_conc_tss.sample(valley_ave_conc)  # 25 obs
-        self.south_conc_tss.sample(south_ave_conc)  # 26 obs
+        # Valley
+        valley_ave_mass = valley_tot_mass / scalar(25)
+        t4_ave_mass = t4_tot_mass / scalar(4)
+        t5_ave_mass = t5_tot_mass / scalar(4)
+        t7_ave_mass = t7_tot_mass / scalar(5)
+        t8_ave_mass = t8_tot_mass / scalar(5)
+        t9_ave_mass = t9_tot_mass / scalar(5)
+        t10_ave_mass = t10_tot_mass / scalar(5)
 
-        self.north_dC13_tss.sample(north_dC13)
-        self.valley_dC13_tss.sample(valley_dC13)
-        self.south_dC13_tss.sample(south_dC13)
+        valley_ave_conc = 10e6 * (valley_ave_mass /
+                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        t4_ave_conc = 10e6 * (t4_ave_mass /
+                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        t5_ave_conc = 10e6 * (t5_ave_mass /
+                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        t7_ave_conc = 10e6 * (t7_ave_mass /
+                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        t8_ave_conc = 10e6 * (t8_ave_mass /
+                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        t9_ave_conc = 10e6 * (t9_ave_mass /
+                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        t10_ave_conc = 10e6 * (t10_ave_mass /
+                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+
+        # South
+        south_ave_mass = south_tot_mass / scalar(26)
+        s11_ave_mass = s11_tot_mass / scalar(8)
+        s12_ave_mass = s12_tot_mass / scalar(7)
+        s13_ave_mass = s13_tot_mass / scalar(5)
+
+        south_ave_conc = 10e6 * (south_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        s11_ave_conc = 10e6 * (s11_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        s12_ave_conc = 10e6 * (s12_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        s13_ave_conc = 10e6 * (s13_ave_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+
+        # Record
+        self.north_conc_tss.sample(north_ave_conc)  # 30 obs
+        self.n1_conc_tss.sample(n1_ave_conc)
+        self.n2_conc_tss.sample(n2_ave_conc)
+        self.n3_conc_tss.sample(n3_ave_conc)
+        self.n4_conc_tss.sample(n4_ave_conc)
+        self.n5_conc_tss.sample(n5_ave_conc)
+        self.n7_conc_tss.sample(n7_ave_conc)
+        self.n8_conc_tss.sample(n8_ave_conc)
+
+        self.valley_conc_tss.sample(valley_ave_conc)  # 25 obs
+        self.t4_conc_tss.sample(t4_ave_conc)  #
+        self.t5_conc_tss.sample(t5_ave_conc)  #
+        self.t7_conc_tss.sample(t7_ave_conc)  #
+        self.t8_conc_tss.sample(t8_ave_conc)  #
+        self.t9_conc_tss.sample(t9_ave_conc)  #
+        self.t10_conc_tss.sample(t10_ave_conc)  #
+
+        self.south_conc_tss.sample(south_ave_conc)  # 26 obs
+        self.s11_conc_tss.sample(s11_ave_conc)
+        self.s12_conc_tss.sample(s12_ave_conc)
+        self.s13_conc_tss.sample(s13_ave_conc)
+
+        self.north_d13C_tss.sample(north_d13C)
+        self.n1_d13C_tss.sample(n1_d13C)
+        self.n2_d13C_tss.sample(n2_d13C)
+        self.n3_d13C_tss.sample(n3_d13C)
+        self.n4_d13C_tss.sample(n4_d13C)
+        self.n5_d13C_tss.sample(n5_d13C)
+        self.n7_d13C_tss.sample(n7_d13C)
+        self.n8_d13C_tss.sample(n8_d13C)
+
+        self.valley_dC13_tss.sample(valley_d13C)
+
+        self.south_d13C_tss.sample(south_d13C)
+        self.s11_d13C_tss.sample(s11_d13C)
+        self.s12_d13C_tss.sample(s12_d13C)
+        self.s13_d13C_tss.sample(s13_d13C)
 
         #######################################################################################
         # Layer z = 1  (Layer with artificial drainage)
