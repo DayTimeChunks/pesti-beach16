@@ -36,5 +36,9 @@ def getSoilData(transect, tss=True):
     return obs
 
 
-
+def getDetailed(name):
+    # Imports only tss files (read_table)
+    path = "Data/BEACH_R/"
+    path += name
+    return pd.read_table(path)
 
