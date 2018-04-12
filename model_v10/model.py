@@ -405,6 +405,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # (Likely larger dosage, early in the season)
             m_beet_Friess = scalar(0.6) * 1 / 10 ** 4 * (double)  # 0.6 L/Ha * 1 Ha / 10000 m2
             m_beet_Mathis = scalar(0.6) * 1 / 10 ** 4 * (double)  #
+            m_beet_Kopp = scalar(0.6) * 1 / 10 ** 4 * (double + 1)  #
 
             # Assign dosages based on Farmer-Crop combinations [ug/m2]
             fa_cr = readmap("crop_burn")  # Contains codes to assign appropriate dosage
@@ -427,7 +428,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                                                              # 1611 (Kopp-Beet)
                                                                                              ifthenelse(
                                                                                                  fa_cr == 1611,
-                                                                                                 m_beet * m_gold * self.mask,
+                                                                                                 m_beet_Kopp * m_gold * self.mask,
                                                                                                  0 * self.mask))))))))
             )
             # Pesticide applied (ug->g) on Julian day 177 (March 25, 2016).
