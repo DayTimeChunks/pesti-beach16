@@ -3,12 +3,19 @@
 import pandas as pd
 
 
+def getTime(sep=","):
+    path = "Data/Time.csv"
+    obs = pd.read_csv(path, sep=sep)
+    return obs
+
+
 def getWaterData(tss=True):
 
     path = "Data/"
     if tss:
         path += "q_obs_m3day.tss"
-        obs = pd.read_table(path)
+        obs = pd.read_table(path, header=None)
+        obs = obs.rename(index=str, columns={0: "Jdays", 1: "Qm3"})
     else:
         path += "qmBlk_R.csv"
         obs = pd.read_csv(path, sep=",")

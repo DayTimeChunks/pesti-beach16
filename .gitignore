@@ -12,6 +12,6 @@ Analysis/Old
 Analysis/plotlycred.py
 
 # Compiled docs
-*.pyc
+Analysis/*.pyc
 
 
