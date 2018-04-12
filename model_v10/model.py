@@ -359,7 +359,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         if (self.PEST):
             # Application days
-            self.app_days = [177, 197, 238]
+            self.app_days = [177, 196, 238]
             # Mass
             # in ug = conc. (ug/g soil) * density (g/cm3) * (10^6 cm3/m3)*(1 m/10^3 mm)* depth_layer(mm) * cellarea(m2)
             # g = ug * 10e-06
@@ -403,8 +403,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
             m_beet = scalar(0.6) * 1 / 10 ** 4 * double
             m_corn = scalar(2.0) * 1 / 10 ** 4
             # (Likely larger dosage, early in the season)
-            m_beet_Friess = scalar(0.6) * 1 / 10 ** 4 * (double + 1)  # 0.6 L/Ha * 1 Ha / 10000 m2
-            m_beet_Mathis = scalar(0.6) * 1 / 10 ** 4 * (double + 1)  #
+            m_beet_Friess = scalar(0.6) * 1 / 10 ** 4 * (double)  # 0.6 L/Ha * 1 Ha / 10000 m2
+            m_beet_Mathis = scalar(0.6) * 1 / 10 ** 4 * (double)  #
 
             # Assign dosages based on Farmer-Crop combinations [ug/m2]
             fa_cr = readmap("crop_burn")  # Contains codes to assign appropriate dosage
@@ -438,7 +438,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                               ifthenelse(fa_cr == 1711, 1 * app_conc * cellarea(),  # 1711 (Mathis-Beet)
                                                          0 * app_conc * cellarea())))
             # Pesticide applied (ug->g) on Julian day 197 (April 14, 2016).
-            # April 14, Kopp and Burger
+            # April 13, Kopp and Burger
             self.app2 = ifthenelse(fa_cr == 1511, 1 * app_conc * cellarea(),  # 1511 (Burger-Beet)
                                    ifthenelse(fa_cr == 1611, 1 * app_conc * cellarea(),  # 1611 (Kopp-Beet),
                                               0 * app_conc * cellarea()))
