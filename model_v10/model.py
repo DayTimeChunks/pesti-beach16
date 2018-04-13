@@ -171,6 +171,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.out_runoff_L_tss = TimeoutputTimeseries("resM_accRO_L", self, nominal("outlet_true"), noHeader=False)
         self.out_degZ0_L_tss = TimeoutputTimeseries("resM_accDEG_L", self, nominal("outlet_true"), noHeader=False)
         self.out_leachZ0_L_tss = TimeoutputTimeseries("resM_accLCH_L", self, nominal("outlet_true"), noHeader=False)
+        self.out_leachZ1_L_tss = TimeoutputTimeseries("resM_accDPz1_L", self, nominal("outlet_true"), noHeader=False)
 
 
         self.out_leach_L_tss = TimeoutputTimeseries("resM_accDP_L", self, nominal("outlet_true"), noHeader=False)
@@ -879,9 +880,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 z0_heavy_latflux = getLatMassFlux(self, 0, theta_sat_z0z1, theta_fcap_z0z1,
                                                   self.heavymass_z0,
                                                   sorption_model="linear", gas=True)
-
-                self.lightmass_z0 += z0_light_latflux['net_mass_latflux']
-                self.heavymass_z0 += z0_heavy_latflux['net_mass_latflux']
+                # DEBUG, Pest mass increasing?
+                # TODO: turn LF back on.
+                #self.lightmass_z0 += z0_light_latflux['net_mass_latflux']
+                #self.heavymass_z0 += z0_heavy_latflux['net_mass_latflux']
 
                 # net_latflux = z0_light_latflux['net_mass_latflux']
                 # self.report(net_latflux, 'aLF')
@@ -1477,6 +1479,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 # z0-mass leached
                 out_leach_light_z0 = areatotal(z0_light_leached, self.is_catchment)
                 self.out_leachZ0_L_tss.sample(out_leach_light_z0)
+
+                # z1-mass leached
+                out_leach_light_z1 = areatotal(z1_light_leached, self.is_catchment)
+                self.out_leachZ1_L_tss.sample(out_leach_light_z1)
 
                 # z2-mass leached (zero if no deep percolation)
                 out_leach_light = areatotal(z2_light_leached, self.is_catchment)
