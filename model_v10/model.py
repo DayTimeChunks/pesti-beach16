@@ -169,6 +169,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.out_app_L_tss = TimeoutputTimeseries("resM_accAPP_L", self, nominal("outlet_true"), noHeader=False)
         self.out_volat_L_tss = TimeoutputTimeseries("resM_accVOL_L", self, nominal("outlet_true"), noHeader=False)
         self.out_runoff_L_tss = TimeoutputTimeseries("resM_accRO_L", self, nominal("outlet_true"), noHeader=False)
+        self.out_degZ0_L_tss = TimeoutputTimeseries("resM_accDEG_L", self, nominal("outlet_true"), noHeader=False)
+        self.out_leachZ0_L_tss = TimeoutputTimeseries("resM_accLCH_L", self, nominal("outlet_true"), noHeader=False)
+
+
         self.out_leach_L_tss = TimeoutputTimeseries("resM_accDP_L", self, nominal("outlet_true"), noHeader=False)
         self.out_drain_L_tss = TimeoutputTimeseries("resM_accADR_L", self, nominal("outlet_true"), noHeader=False)
         self.out_latflux_L_tss = TimeoutputTimeseries("resM_accLF_L", self, nominal("outlet_true"), noHeader=False)
@@ -1458,6 +1462,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 # Degradation
                 light_deg = z0_light_deg + z1_light_deg + z2_light_deg
                 out_deg_light = areatotal(light_deg, self.is_catchment)
+                z0_light_deg_tot = areatotal(z0_light_deg, self.is_catchment)
+                self.out_degZ0_L_tss.sample(z0_light_deg_tot)
 
                 # Volatilized
                 out_volat_light = areatotal(light_volat, self.is_catchment)
@@ -1468,18 +1474,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.out_runoff_L_tss.sample(out_runoff_light)
                 # cum_out_runoff_light = accuflux(self.ldd_subs, self.cum_runoff_ug)
 
-                # Mass loss to leaching  (zero as long as no percolation)
-                # accu_leach_light_z0 = accuflux(self.ldd_subs, z0_light_leached)
-                # accu_leach_light_z1 = accuflux(self.ldd_subs, z1_light_leached)
-                # Accumulated upstream cells
-                # self.report(accu_leach_light_z0, 'az0LCH')
-                # self.report(accu_leach_light_z1, 'az1LCH')
-                # Cell level
-                # self.report(z0_light_leached, 'az0LCH')
-                # self.report(z1_light_leached, 'az1LCH')
-                # out_leach_light = areatotal(accu_leach_light, self.outlet_multi)
-                # out_leach_light_z0 = areatotal(z0_light_leached, self.is_catchment)
-                # out_leach_light_z1 = areatotal(z1_light_leached, self.is_catchment)
+                # z0-mass leached
+                out_leach_light_z0 = areatotal(z0_light_leached, self.is_catchment)
+                self.out_leachZ0_L_tss.sample(out_leach_light_z0)
+
+                # z2-mass leached (zero if no deep percolation)
                 out_leach_light = areatotal(z2_light_leached, self.is_catchment)
                 # out_leach_light = out_leach_light_z0 + out_leach_light_z1 + out_leach_light_z2
                 self.out_leach_L_tss.sample(out_leach_light)
