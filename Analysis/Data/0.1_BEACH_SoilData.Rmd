@@ -10,6 +10,8 @@ Sys.setlocale("LC_ALL", "English")
 
 MAC = T
 WIN = F
+
+SAVE = T
 ```
 
 # Purpose
@@ -91,7 +93,7 @@ njd = merge(time, north, by = "DayMoYr", all = T)
 vjd = merge(time, valley, by = "DayMoYr", all = T)
 sjd = merge(time, south, by = "DayMoYr", all = T)
 
-SAVE = F
+
 if (SAVE) {
   write.table(njd, "BEACH_R/north.tss", sep="\t", row.names = F)
   write.table(vjd, "BEACH_R/valley.tss", sep="\t", row.names = F)
@@ -172,10 +174,9 @@ sou = list(S11, S12, S13)
 
 ```
 
-## Save
+## Save detailed
 
 ```{r}
-SAVE = F
 
 if (SAVE) {
   counter = 0
