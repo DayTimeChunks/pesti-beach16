@@ -1048,8 +1048,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Test for variation in sample points
         cell_conc = 10e6 * (cell_mass /
                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
-        self.s11_smass_tss.sample(cell_conc)  # Should only increase due to upstream infux (if at all)
-        self.s11_sconc_tss.sample(cell_mass)  # Should only increase after applciation
+        self.s11_smass_tss.sample(cell_mass)  # Should only increase due to upstream infux (if at all)
+        self.s11_sconc_tss.sample(cell_conc)  # Should only increase after applciation
 
         # Record
         self.north_conc_tss.sample(north_ave_conc)  # 30 obs
