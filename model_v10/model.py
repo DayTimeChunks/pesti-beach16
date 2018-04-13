@@ -220,6 +220,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.s13_d13C_tss = TimeoutputTimeseries("resM_s13d13C", self, ordinal("s13_out"), noHeader=False)
         self.s13_conc_tss = TimeoutputTimeseries("resM_s13CONC", self, ordinal("s13_out"), noHeader=False)
 
+        # Test s11 sample variation
+        self.s11_sconc_tss = TimeoutputTimeseries("resM_s11_sconc", self, ordinal("s11_ord"), noHeader=False)
+        self.s11_smass_tss = TimeoutputTimeseries("resM_s11_smass", self, ordinal("s11_ord"), noHeader=False)
+
         # Analysis
         # This is 'q' as time series.
         self.i_Q_m3_tss = TimeoutputTimeseries("resN_i_accVol_m3", self, nominal("outlet_true"), noHeader=False)
@@ -400,11 +404,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Dosages # L/Ha * 1Ha/1000m2 = L/m2
             d_beet = None
             d_corn = scalar(2.1) * 1 / 10 ** 4  # 2.1 L/Ha * 1 Ha / 10000 m2
-            m_beet = scalar(0.6) * 1 / 10 ** 4 * double
+            m_beet = scalar(0.6) * 1 / 10 ** 4
             m_corn = scalar(2.0) * 1 / 10 ** 4
-            # (Likely larger dosage, early in the season)
-            m_beet_Friess = scalar(0.6) * 1 / 10 ** 4 * (double)  # 0.6 L/Ha * 1 Ha / 10000 m2
-            m_beet_Mathis = scalar(0.6) * 1 / 10 ** 4 * (double)  #
+            #
+            m_beet_Friess = scalar(0.6) * 1 / 10 ** 4  # 0.6 L/Ha * 1 Ha / 10000 m2
+            m_beet_Mathis = scalar(0.6) * 1 / 10 ** 4 * (double)
+            m_beet_Burger = scalar(0.6) * 1 / 10 ** 4 * (double + 1)  #
             m_beet_Kopp = scalar(0.6) * 1 / 10 ** 4 * (double + 1)  #
 
             # Assign dosages based on Farmer-Crop combinations [ug/m2]
@@ -421,7 +426,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                             ifthenelse(fa_cr == 1412,  # 1412 (Schmitt-Corn)
                                                                        d_corn * d_gold * self.mask,
                                                                        ifthenelse(fa_cr == 1511,  # 1511 (Burger-Beet)
-                                                                                  m_beet * m_gold * self.mask,
+                                                                                  m_beet_Burger * m_gold * self.mask,
                                                                                   # 1711 (Mathis-Beet),
                                                                                   ifthenelse(fa_cr == 1711,
                                                                                              m_beet_Mathis * m_gold * self.mask,
@@ -438,7 +443,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                    ifthenelse(fa_cr == 1112, 1 * app_conc * cellarea(),
                                               ifthenelse(fa_cr == 1711, 1 * app_conc * cellarea(),  # 1711 (Mathis-Beet)
                                                          0 * app_conc * cellarea())))
-            # Pesticide applied (ug->g) on Julian day 197 (April 14, 2016).
+            # Pesticide applied (ug->g) on Julian day 196 (April 13, 2016).
             # April 13, Kopp and Burger
             self.app2 = ifthenelse(fa_cr == 1511, 1 * app_conc * cellarea(),  # 1511 (Burger-Beet)
                                    ifthenelse(fa_cr == 1611, 1 * app_conc * cellarea(),  # 1611 (Kopp-Beet),
@@ -446,7 +451,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
             # Pesticide applied (ug->g) on Julian day 238 (May 25, 2016).
             # May 25, Schmidt and Speich, and (out of transect): Friess and Mahler
-            # Note: Speich and Friess could be 1 week later.
+            # Note: Speich could be 1 week later.
             self.app3 = ifthenelse(fa_cr == 1112, 1 * app_conc * cellarea(),  # 1112 (Friess-Corn)
                                    ifthenelse(fa_cr == 1212, 1 * app_conc * cellarea(),  # 1212 (Speich-Corn),
                                               ifthenelse(fa_cr == 1412, 1 * app_conc * cellarea(),
@@ -951,12 +956,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         t10_tot_mass = areatotal(cell_mass, self.t10_plot)
 
         valley_d13C = areatotal(cell_mass_delta, self.valley_wk) / valley_tot_mass
-        v4_d13C = areatotal(cell_mass_delta, self.t4_plot) / t4_tot_mass
-        v5_d13C = areatotal(cell_mass_delta, self.t5_plot) / t5_tot_mass
-        v7_d13C = areatotal(cell_mass_delta, self.t7_plot) / t7_tot_mass
-        v8_d13C = areatotal(cell_mass_delta, self.t8_plot) / t8_tot_mass
-        v9_d13C = areatotal(cell_mass_delta, self.t9_plot) / t9_tot_mass
-        v10_d13C = areatotal(cell_mass_delta, self.t10_plot) / t10_tot_mass
+        t4_d13C = areatotal(cell_mass_delta, self.t4_plot) / t4_tot_mass
+        t5_d13C = areatotal(cell_mass_delta, self.t5_plot) / t5_tot_mass
+        t7_d13C = areatotal(cell_mass_delta, self.t7_plot) / t7_tot_mass
+        t8_d13C = areatotal(cell_mass_delta, self.t8_plot) / t8_tot_mass
+        t9_d13C = areatotal(cell_mass_delta, self.t9_plot) / t9_tot_mass
+        t10_d13C = areatotal(cell_mass_delta, self.t10_plot) / t10_tot_mass
 
         south_tot_mass = areatotal(cell_mass, self.south_wk)
         s11_tot_mass = areatotal(cell_mass, self.s11_plot)
@@ -1036,6 +1041,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         s13_ave_conc = 10e6 * (s13_ave_mass /
                                  (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
 
+        # Test for variation in sample points
+        cell_conc = 10e6 * (cell_mass /
+                                 (cellarea() * self.smp_depth)) * 1 / (self.p_b * 10e03)  # ug/g soil
+        self.s11_smass_tss.sample(cell_conc)  # Should only increase due to upstream infux (if at all)
+        self.s11_sconc_tss.sample(cell_mass)  # Should only increase after applciation
+
         # Record
         self.north_conc_tss.sample(north_ave_conc)  # 30 obs
         self.n1_conc_tss.sample(n1_ave_conc)
@@ -1069,6 +1080,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.n8_d13C_tss.sample(n8_d13C)
 
         self.valley_dC13_tss.sample(valley_d13C)
+        self.t4_d13C_tss.sample(t4_d13C)
+        self.t5_d13C_tss.sample(t5_d13C)
+        self.t7_d13C_tss.sample(t7_d13C)
+        self.t8_d13C_tss.sample(t8_d13C)
+        self.t9_d13C_tss.sample(t9_d13C)
+        self.t10_d13C_tss.sample(t10_d13C)
 
         self.south_d13C_tss.sample(south_d13C)
         self.s11_d13C_tss.sample(s11_d13C)
