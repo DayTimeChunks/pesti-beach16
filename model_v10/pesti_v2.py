@@ -244,6 +244,8 @@ def getLeachedMass(model, layer, theta_sat, theta_fc,
     # Aqueous concentration
     conc_aq = getConcAq(model, layer, theta_sat, mass,
                         sorption_model=sorption_model, gas=gas)
+    # Mass available for transport
+    mass_aq = conc_aq * (theta_layer * depth * cellarea())
 
     if sorption_model == "linear":
         # Retardation factor
@@ -254,11 +256,9 @@ def getLeachedMass(model, layer, theta_sat, theta_fc,
 
     if leach_model == "mcgrath":
         if layer == 0:
-            conc_aq_new = conc_aq * exp(-water_flux / (theta_layer * retard_layer * depth))
-            mass_aq = conc_aq * (theta_layer * depth * cellarea())
-            mass_aq_new = conc_aq_new * (theta_after_percolate * depth * cellarea())
+            mass_aq_new = mass_aq * exp(-water_flux / (theta_layer * retard_layer * depth))
             mass_leached = mass_aq - mass_aq_new
-            if mapminimum(mass_aq_new) < 0:
+            if mapminimum(mass_leached) < -1e10-6:
                 print("Error in Leached Model, layer: ", str(layer))
                 model.report(mass_leached, 'aZ' + str(layer) + 'LCH')
         else:
