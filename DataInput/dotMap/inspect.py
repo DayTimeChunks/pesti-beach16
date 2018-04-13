@@ -9,7 +9,7 @@ landuse = readmap("landuse")
 # aguila(landuse)
 clone = readmap("clone")
 
-aguila("t10_nom")
+
 
 create_outlet = False
 if create_outlet:
@@ -72,6 +72,19 @@ if create_weekly:
     # report(valley_nom, 'valley_nom.map')
     # report(south_nom, 'south_nom.map')
     # aguila(south_nom, south)
+
+detailed_s11 = True
+if detailed_s11:
+    detail_ord = order(readmap("detailed_smp"))
+    ts = ifthen(detail_ord > 34, detail_ord)
+    ts = order(ts)
+    # S
+    sou = ifthen(ts > 30, ts)
+    s11 = ifthen(sou < 39, sou)
+    s11_ord = order(s11)
+    report(s11_ord, 's11_ord.map')
+
+    # report(s11_out, "s11_out.map")
 
 detailed = False
 if detailed:

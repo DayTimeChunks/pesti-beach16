@@ -332,9 +332,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         if m_state == 1:
             pass  # c1, c2 = 0.15, d1 = 0.8
         elif m_state == 2:
-            epsilon = -1 * 1.476  # mid deg
-        elif m_state == 3:
             epsilon = -1 * 1.369  # high deg
+        elif m_state == 3:
+            epsilon = -1 * 1.476  # mid deg
 
         self.alpha_iso = epsilon/1000 + 1
         self.gw_factor = 1 - z2_factor
@@ -1604,7 +1604,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
 # aguila 1\resM_norCONC.tss 1\resM_valCONC.tss 1\resM_souCONC.tss
 
-nrOfSamples = 3  # Samples are each a MonteCarlo realization
+nrOfSamples = 2  # Samples are each a MonteCarlo realization
 firstTimeStep = 1
 nTimeSteps = 290
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
