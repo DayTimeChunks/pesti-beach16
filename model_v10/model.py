@@ -880,10 +880,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 z0_heavy_latflux = getLatMassFlux(self, 0, theta_sat_z0z1, theta_fcap_z0z1,
                                                   self.heavymass_z0,
                                                   sorption_model="linear", gas=True)
-                # DEBUG, Pest mass increasing?
-                # TODO: turn LF back on.
-                #self.lightmass_z0 += z0_light_latflux['net_mass_latflux']
-                #self.heavymass_z0 += z0_heavy_latflux['net_mass_latflux']
+
+                self.lightmass_z0 += z0_light_latflux['net_mass_latflux']
+                self.heavymass_z0 += z0_heavy_latflux['net_mass_latflux']
 
                 # net_latflux = z0_light_latflux['net_mass_latflux']
                 # self.report(net_latflux, 'aLF')
