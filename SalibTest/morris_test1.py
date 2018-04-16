@@ -16,6 +16,26 @@ problem = {
                [-3.14159265359, 3.14159265359]]
 }
 
+problem_alt = {
+    'num_vars': 17,
+    'names': ['thsat0', 'thsat1', 'thsat2',
+              'thfc0', 'thfc1', 'thfc2',
+              'thwp0', 'thwp1', 'thwp2',
+              'gamma0', 'gamma1',
+              's0', 's1',
+              'clf0', 'clf1', 'clf2',
+              'cadr1'
+              ],
+    'bounds': [[0.01, 0.61], [0.01, 0.61], [0.01, 0.61],  # sat
+               [0.01, 0.40], [0.01, 0.40], [0.01, 0.40],  # fc
+               [0.01, 0.10], [0.01, 0.10], [0.01, 0.10],  # wp
+               [0.001, 1], [0.001, 1],  # gamma
+               [0.004852, 1], [0.004852, 1],  # s
+               [0.001, 1], [0.001, 1], [0.001, 1],  # clf
+               [0.001, 1]  # cadr
+               ]
+}
+
 # Generate samples
 # Store in a 8000-samples by 3-variables numpy matrix
 
@@ -33,13 +53,23 @@ Delta
 
     But it is advised that delta = 1/(2*(p-1)
 """
-p = 4.0
-delta = p/(2*(p-1))
 
-param_values = mos.sample(problem, 1000, num_levels=p, grid_jump=delta)
+"""
+Dairon...
+p is the number of level in the grid (gamma) for each dimension. 
+Values of p = 4 and r = 10 are generally satisfactory for screening factor.
+"""
+p = 4.0  # q in Dairon
+delta = p/(2*(p-1))
+r = 10  # Trajectories
+param_values = mos.sample(problem_alt, r, num_levels=p, grid_jump=delta)
 print(param_values.shape)  # -> (4000, 3)
 print(param_values.shape[0])  # -> 4000
-
+vector = param_values[0]
+print (vector[0])
+print(param_values[0])
+# print(param_values[0][0])
+# print(param_values)
 # Run model (example)
 Y = Ishigami.evaluate(param_values)
 

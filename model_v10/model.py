@@ -4,17 +4,59 @@
 import time
 from datetime import datetime
 from hydro import *
-from pesti import *
 from pesti_v2 import *
 
 from pcraster._pcraster import *
 from pcraster.framework import *
-import os
 
+from SALib.sample import morris as mos
+from SALib.analyze import morris as moa
+
+import os
 print(os.getcwd())
 
 global state
-state = 0
+state = -1
+
+# prep
+# select parameters and ranges to test
+
+# 1st
+# - Generate the set of input parameters
+# - Save either to a txt file or file that init() can read and assign
+#          or rather, make the numpy array global
+# Define the model inputs
+problem = {
+    'num_vars': 17,
+    'names': ['thsat0', 'thsat1', 'thsat2',
+              'thfc0', 'thfc1', 'thfc2',
+              'thwp0', 'thwp1', 'thwp2',
+              'gamma0', 'gamma1',
+              's0', 's1',
+              'clf0', 'clf1', 'clf2',
+              'cadr1'
+              ],
+    'bounds': [[0.01, 0.61], [0.01, 0.61], [0.01, 0.61],  # sat
+               [0.01, 0.40], [0.01, 0.40], [0.01, 0.40],  # fc
+               [0.01, 0.10], [0.01, 0.10], [0.01, 0.10],  # wp
+               [0.001, 1], [0.001, 1],  # gamma
+               [0.004852, 1], [0.004852, 1],  # s
+               [0.001, 1], [0.001, 1], [0.001, 1],  # clf
+               [0.001, 1]  # cadr
+               ]
+}
+
+global param_values
+p = 4.0
+delta = p/(2*(p-1))
+r = 10  # Trajectories
+param_values = mos.sample(problem, r, num_levels=p, grid_jump=delta)
+runs = param_values.shape[0]
+print("Running ", runs, " sample runs.")
+# - For y_1:
+#   - store the cumulative discharge every time step
+#   - divide by the number of simulation days (start simulation only after day 177,
+#   - save the model output to a csv/table's new row
 
 
 def get_state(old_state):
@@ -22,6 +64,17 @@ def get_state(old_state):
     global state
     state = new_state
     return state
+
+
+def getInputVector(row, sample_matrix):
+    """
+    :param row: relevant sample row
+    :param sample_matrix: numpy sample matrix
+    :return: a numpy row with required input parameters
+    """
+    test_vector = sample_matrix[row]
+    return test_vector
+
 
 
 class BeachModel(DynamicModel, MonteCarloModel):
@@ -324,22 +377,25 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.r_standard = scalar(self.ini_param.get("r_standard"))  # VPDB
         # self.alpha_iso = scalar(self.ini_param.get("alpha_iso"))  # 1 is no fractionation
 
-        # First run will return state = 1
+        # First run will return state = 0
         m_state = get_state(state)
+        vector = getInputVector(m_state, param_values)
+        self.c_adr = vector.indexof('cadr1')
+
         # Degradation Scenarios
         epsilon = -1*1.743  # low deg
         # Hydrological scenarios
         self.PERCOL = False  # z2 deep percolation (DP)
         self.ADLF = True
-        self.c_adr = 0.50
+
         self.k_g = 1500  # [days] = 4 yrs
         z2_factor = 0.9
-        if m_state == 1:
-            pass  # c1, c2 = 0.15, d1 = 0.8
-        elif m_state == 2:
-            epsilon = -1 * 1.369  # high deg
-        elif m_state == 3:
-            epsilon = -1 * 1.476  # mid deg
+        # if m_state == 1:
+        #     pass  # c1, c2 = 0.15, d1 = 0.8
+        # elif m_state == 2:
+        #     epsilon = -1 * 1.369  # high deg
+        # elif m_state == 3:
+        #     epsilon = -1 * 1.476  # mid deg
 
         self.alpha_iso = epsilon/1000 + 1
         self.gw_factor = 1 - z2_factor
@@ -1608,7 +1664,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
 # aguila 1\resM_norCONC.tss 1\resM_valCONC.tss 1\resM_souCONC.tss
 
-nrOfSamples = 2  # Samples are each a MonteCarlo realization
+nrOfSamples = runs  # Samples are each a MonteCarlo realization
 firstTimeStep = 1
 nTimeSteps = 290
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
