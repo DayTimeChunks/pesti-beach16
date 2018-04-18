@@ -8,7 +8,7 @@ output: pdf_document
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL", "English")
 
-MAC = T
+MAC = F
 WIN = F
 
 SAVE = T
@@ -85,19 +85,47 @@ s = read.csv2(file.path(path, "Data/MonitoringScopeSoils_R.csv"))
 #q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
 s$DayMoYr = as.POSIXct(strptime(s$Date.Soil, "%d/%m/%Y", tz="EST"))
 
+
+
 north = subset(s, Transect == "N")
 valley = subset(s, Transect == "T")
 south = subset(s, Transect == "S")
+
+mean(north$Conc.mug.g.dry.soil)
+mean(valley$Conc.mug.g.dry.soil)
+mean(south$Conc.mug.g.dry.soil)
 
 njd = merge(time, north, by = "DayMoYr", all = T)
 vjd = merge(time, valley, by = "DayMoYr", all = T)
 sjd = merge(time, south, by = "DayMoYr", all = T)
 
+norConc_tss = njd[, c("Jdays", "Conc.mug.g.dry.soil")]
+valConc_tss = vjd[, c("Jdays", "Conc.mug.g.dry.soil")]
+souConc_tss = sjd[, c("Jdays", "Conc.mug.g.dry.soil")]
+
+norConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(norConc_tss$Conc.mug.g.dry.soil), -1, norConc_tss$Conc.mug.g.dry.soil)
+valConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(valConc_tss$Conc.mug.g.dry.soil), -1, valConc_tss$Conc.mug.g.dry.soil)
+souConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(souConc_tss$Conc.mug.g.dry.soil), -1, souConc_tss$Conc.mug.g.dry.soil)
+
+norDelta_tss = njd[, c("Jdays", "comp.d13C")]
+valDelta_tss = vjd[, c("Jdays", "comp.d13C")]
+souDelta_tss = sjd[, c("Jdays", "comp.d13C")]
+
+norDelta_tss$comp.d13C = ifelse(is.na(norDelta_tss$comp.d13C), 0, norDelta_tss$comp.d13C)
+valDelta_tss$comp.d13C = ifelse(is.na(valDelta_tss$comp.d13C), 0, valDelta_tss$comp.d13C)
+souDelta_tss$comp.d13C = ifelse(is.na(souDelta_tss$comp.d13C), 0, souDelta_tss$comp.d13C)
+
 
 if (SAVE) {
-  write.table(njd, "BEACH_R/north.tss", sep="\t", row.names = F)
-  write.table(vjd, "BEACH_R/valley.tss", sep="\t", row.names = F)
-  write.table(sjd, "BEACH_R/south.tss", sep="\t", row.names = F)  
+  write.table(njd, "north.tss", sep="\t", row.names = F)
+  write.table(vjd, "valley.tss", sep="\t", row.names = F)
+  write.table(sjd, "south.tss", sep="\t", row.names = F)  
+  write.table(norConc_tss, "northConc.tss", sep="\t", row.names = F)
+  write.table(valConc_tss, "valleyConc.tss", sep="\t", row.names = F)
+  write.table(souConc_tss, "southConc.tss", sep="\t", row.names = F)  
+  write.table(norDelta_tss, "northDelta.tss", sep="\t", row.names = F)
+  write.table(valDelta_tss, "valleyDelta.tss", sep="\t", row.names = F)
+  write.table(souDelta_tss, "southDelta.tss", sep="\t", row.names = F)  
 }
 
 
@@ -112,8 +140,20 @@ if (SAVE) {
 - merge with concentrations
 
 ```{r}
+
 co = read.csv("DetailConc.csv")
 is = read.csv("DetailIsotopes.csv")
+
+if (length(is) == 1) {
+  is = read.csv("DetailIsotopes.csv", sep = ";")
+}
+
+
+if (length(co) == 1) {
+  co = read.csv("DetailConc.csv")
+}
+
+is = subset(is, !is.na(d13C))
 ```
 
 ### Group
@@ -127,7 +167,7 @@ sumIS = ddply(siso, c("ID"),
               det.d13C = mean(d13C),
               det.d13C.SD = sd(d13C)
               )
-
+sumIS = subset(sumIS, N_detsoil > 1 & det.d13C.SD < 0.8)
 ```
 
 

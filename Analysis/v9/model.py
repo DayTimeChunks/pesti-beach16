@@ -1244,9 +1244,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
             out_app_light = areatotal(light_applied, self.is_catchment)  # ug
             self.out_app_L_tss.sample(out_app_light)
 
-            # cum_appl_catch_light = accuflux(self.ldd_subs, self.cum_appl_ug)
+            # cum_appl_catch_light = accuflux(self.ldd_subs, self.cum_appl_g)
             # Todo: Check if below same result
-            # cum_appl_catch_mg = upstream(self.ldd_subs, self.cum_appl_ug)
+            # cum_appl_catch_mg = upstream(self.ldd_subs, self.cum_appl_g)
             if self.TRANSPORT:
                 # Degradation
                 light_deg = z0_light_deg + z1_light_deg + z2_light_deg

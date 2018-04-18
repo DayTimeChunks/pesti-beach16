@@ -156,22 +156,28 @@ def getLayerMoisture(model, layer,
     water_balance_layer = None
     if layer == 0:
         depth = model.z0
-        c = model.c1
+        c = model.c_lf0
+        gamma = model.gamma0
+        s = model.s0
         theta_temp_layer = model.theta_z0
         theta_ini = model.theta_z0
     elif layer == 1:
         depth = model.z1
-        c = model.c1
+        c = model.c_lf1
+        gamma = model.gamma1
+        s = model.s1
         theta_temp_layer = model.theta_z1
         theta_ini = model.theta_z1
     elif layer == 2:
         store = False
         depth = model.z2
-        c = model.c2
+        c = model.c_lf2
+        gamma = model.gamma2
+        s = model.s2
         theta_temp_layer = model.theta_z2
         theta_ini = model.theta_z2
 
-    tau = min(0.0866 * exp(model.drain_coef * log10(k_sat)), 1)  # dimensionless drainage param.
+    tau = min(0.0866 * exp(gamma * log10(s*k_sat)), 1)  # dimensionless drainage param.
     zero_map = depth - depth
     # Run-off, infiltration & deep percolation
     ##########################

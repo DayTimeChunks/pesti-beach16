@@ -10,8 +10,11 @@ DataSource/LargeFiles
 
 Analysis/Old
 Analysis/plotlycred.py
+Analysis/*.png
 
 # Compiled docs
+*.pyc
 Analysis/*.pyc
+model_v10/*.pyc
 
 

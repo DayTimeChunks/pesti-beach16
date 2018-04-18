@@ -23,6 +23,14 @@ def getWaterData(tss=True):
     return obs
 
 
+def getETP():
+    path = "Data/"
+    path += "ET0.tss"
+    obs = pd.read_table(path, header=None, skiprows=4)
+    obs = obs.rename(index=str, columns={0: "Jdays", 1: "ETPmm"})
+    return obs
+
+
 def getSoilData(transect, tss=True):
     path = "Data/"
 

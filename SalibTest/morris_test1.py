@@ -60,9 +60,10 @@ p is the number of level in the grid (gamma) for each dimension.
 Values of p = 4 and r = 10 are generally satisfactory for screening factor.
 """
 p = 4.0  # q in Dairon
-delta = p/(2*(p-1))
-r = 10  # Trajectories
-param_values = mos.sample(problem_alt, r, num_levels=p, grid_jump=delta)
+grid_jump = 2
+r = 2  # Trajectories
+
+param_values = mos.sample(problem_alt, r, num_levels=p, grid_jump=grid_jump)
 print(param_values.shape)  # -> (4000, 3)
 print(param_values.shape[0])  # -> 4000
 vector = param_values[0]
@@ -74,9 +75,10 @@ print(param_values[0])
 Y = Ishigami.evaluate(param_values)
 
 Si = moa.analyze(problem, param_values, Y, num_resamples=1000, print_to_console=True,
-                 grid_jump=delta, num_levels=p)
+                 grid_jump=grid_jump, num_levels=p)
 
 
+print(Si)
 """
 Si - A dictionary of sensitivity indices containing the following entries.
 
@@ -87,3 +89,19 @@ mu_star_conf - the bootstrapped confidence interval
 names - the names of the parameters
 
 """
+import json
+
+mSi = {}
+mSi["mu"] = Si["mu"].tolist()
+mSi["mu_star"] = Si["mu_star"].tolist()
+mSi['mu_star_conf'] = Si['mu_star_conf']
+mSi['sigma'] = Si['sigma'].tolist()
+mSi['names'] = Si['names']
+
+with open('test_morris.json', 'w') as f:
+    json.dump(mSi, f)
+
+with open('test_morris.json') as f:
+    my_dict = json.load(f)
+
+
