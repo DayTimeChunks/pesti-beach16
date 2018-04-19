@@ -9,6 +9,16 @@ def getTime(sep=","):
     return obs
 
 
+def getTimeStamp(timestep, sep=','):
+    path = "Data/Time.csv"
+    obs = pd.read_csv(path, sep=sep)
+    obs = obs[['Jdays', 'Date']]
+    obs_dict = obs.to_dict(orient='split')
+    return str(obs_dict['data'][timestep-1][1])
+
+day = getTimeStamp(177, ";")
+print(day.split("/")[2])
+
 def getWaterData(tss=True):
 
     path = "Data/"
@@ -56,4 +66,5 @@ def getDetailed(name):
     path = "Data/BEACH_R/"
     path += name
     return pd.read_table(path)
+
 

@@ -27,6 +27,17 @@ else:
 # - Generate the set of input parameters (see: morris_analysis.py)
 # - Make input parameters a global numpy array (for model access)
 
+import numpy as np
+
+
+# def getTimeStamp(timestep, sep=','):
+#     path = "Data/Time.csv"
+#     obs = read_csv(path, sep=sep)
+#     obs = obs[['Jdays', 'Date']]
+#     obs_dict = obs.to_dict(orient='split')
+#     obs_dict['data']
+#     return str(obs_dict['data'][timestep-1][1])
+
 
 def get_state(old_state):
     new_state = old_state + 1
@@ -568,9 +579,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         Simulation start time: Oct 1st, 2015
         """
-        yy = scalar(2016)
-        mm = scalar(05)
-        dd = scalar(17)
+        start_day = self.currentTimeStep()  # Returns initial timestep
+        start_date = getTimeStamp(start_day, sep=";")
+        print(start_day)
+        yy = scalar(start_date.split("/")[2])  # start_date["yy"]
+        mm = scalar(03)  # start_date["mm"]
+        dd = scalar(25)  # start_date["dd"]
 
         date_factor = 1
         if (100 * yy + mm - 190002.5) < 0:
@@ -1734,8 +1748,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila 1\resM_norCONC.tss 1\resM_valCONC.tss 1\resM_souCONC.tss
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
-firstTimeStep = 230  # 177
-nTimeSteps = 236  # 300
+firstTimeStep = 177  # 177
+nTimeSteps = 300  # 300
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
