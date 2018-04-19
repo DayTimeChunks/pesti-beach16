@@ -621,19 +621,18 @@ class BeachModel(DynamicModel, MonteCarloModel):
         jd_sim = self.jd_start + self.jd_cum
         if self.PEST:
             self.aged_days += scalar(1)
-        # Tells which row in crop table to select, based on the nominal.landuse value
-        # landuse.tss has 48 columns which come from the ArcGis polygon generation, each col = one polygon
-        fields = timeinputscalar('landuse.tss', nominal(self.landuse))
-        self.report(fields, 'aFields')
-        # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_timeinput....html?highlight=timeinputscalar
-        # returns value of land-use field (i.e. n = 22), per time step. (Layon)
-        # So, at dt = 1
-        # fields's values: 98 98	98	98	98	98	98	98	98	98	98	98	13	98	15	99	99	99	99	99	99	98
+        # timeinputscalar() gets the TSS's cell value of row (timestep) and TSS's column indexed by the landuse-map.
+        # In other words, the value of the landuse-map pixel == column to to look for in landuse.tss
+        # So currently becasue landuse does not change value in the year, this step is redundant
+        # and we could simply use the landuse map to map the fields to the "Crop Parameters" below.
+        # Mapping "landuse.map" to -> "field.map" (i.e. the latter is a dyanmic-landuse equivalent).
+        fields = timeinputscalar('landuse.tss', nominal(self.landuse))  #
+        # Note that the number of columns could still be reduced to 9 as, only 9 classes are considered in 2016.
 
         " Crop Parameters "
         # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_lookup.html?highlight=lookupscalar
         setglobaloption('matrixtable')  # allows lookupscalar to read more than 2 expressions.
-        crop_type = lookupscalar('croptable.tbl', 1, fields)  # (table, col-value, row-value)
+        crop_type = lookupscalar('croptable.tbl', 1, fields)  # (table, col-value in crop table, column-value in fields)
         sow_yy = lookupscalar('croptable.tbl', 2, fields)
         sow_mm = lookupscalar('croptable.tbl', 3, fields)  # sowing or Greenup month
         sow_dd = lookupscalar('croptable.tbl', 4, fields)  # sowing day
@@ -740,7 +739,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         #                                               len_grow_stage_ini + len_dev_stage + 0.5 * len_mid_stage),
         #                                           ifthenelse(jd_sim < jd_end, max_height,
         #                                                      0))))
-        height = ifthenelse(self.landuse == scalar(13.0), max_height,  # Orchard
+        height = ifthenelse(crop_type == scalar(13.0), max_height,  # Orchard
                             ifthenelse(jd_sim < jd_plant, scalar(0),
                                        ifthenelse(jd_sim < jd_mid,
                                                   max_height * (jd_sim - jd_plant) / (jd_mid - jd_plant),
@@ -750,11 +749,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # calculation of root depth
         # Maximum root depth is assumed to be attained at the end of the development phase
         # i.e. > jd_mid (or start of mid-season), Allen 1998
-        root_depth = ifthenelse(self.landuse == scalar(5.0), max_root_depth,  # Orchard
+        root_depth = ifthenelse(crop_type == scalar(13.0), max_root_depth,  # Orchard
                                 ifthenelse(jd_sim < jd_plant, scalar(0),
                                            ifthenelse(jd_sim < jd_mid,
                                                       max_root_depth * (jd_sim - jd_plant) / (jd_mid - jd_plant),
-                                                      ifthenelse(jd_sim > jd_mid, max_root_depth,
+                                                      ifthenelse(jd_sim >= jd_mid, max_root_depth,
                                                                  scalar(0)))))
 
         # TODO: Remove printouts
@@ -1728,7 +1727,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila 1\at0dC000.177 1\at1dC000.177
 # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[175,179,1] aLEACH aLEACHz aLF aLFz
 # aguila --scenarios='{1}'  --timesteps=[100,280,1] az0dC az1dC az2dC
-# aguila --scenarios='{1}'  --timesteps=[1,280,1] aJDSim aHeight aRDtot aJDplant aJDmid landuse aPotETP aPotEVA f aFracCV aBCV
+# aguila --scenarios='{1}'  --timesteps=[1,280,1] aJDSim aHeight aRDtot aJDplant aJDmid landuse aFields  aCrop aPotETP aPotEVA f aFracCV aBCV
 
 # Time series
 # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
@@ -1736,7 +1735,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = 230  # 177
-nTimeSteps = 235  # 300
+nTimeSteps = 236  # 300
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
