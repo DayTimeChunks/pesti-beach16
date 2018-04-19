@@ -5,7 +5,11 @@ import pandas as pd
 # Which computer's directory?
 PC = True
 # What model version?
-version = 'v6'  # v6
+save_here = True
+if save_here:
+    pass
+else:
+    version = 'v6'  # v6
 
 if PC:
     path = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/"
@@ -23,28 +27,30 @@ landuse = {"Corn": 1, "Wheat": 2, "Oats": 3, "Alfalfa": 4, "Beet": 5,
            "Fallow": 11, "Hedge": 12, "Orchard": 13}
 
 # Corn, Wheat, Beet
-crop_conditions = [
+crop_conditions = [  # landuse codes
     (croptable.loc[1:, 'crop_type'] == 1),  # Corn
     (croptable.loc[1:, 'crop_type'] == 2),  # Wheat
-    (croptable.loc[1:, 'crop_type'] == 5)  # Beet
+    (croptable.loc[1:, 'crop_type'] == 5),  # Beet
+    (croptable.loc[1:, 'crop_type'] == 11),  # Fallow
+    (croptable.loc[1:, 'crop_type'] == 13)  # Orchard
 ]
-sow_yy = [2016, 2015, 2016]
-sow_mm = [4, 10, 3]  # Apr, Oct, March
-sow_dd = [10, 15, 25]
+sow_yy = [2016, 2015, 2016, 2015, 2000]
+sow_mm = [4, 10, 3, 8, 4]  # Apr, Oct, March, Sept(cut grass), April(orchard?)
+sow_dd = [10, 15, 25, 1, 1]
 
 # Corn, Wheat, Beet
-len_grow_stage_ini = [28, 160, 50]  # (days)
-len_dev_stage = [14, 75, 40]  # (days)
-len_mid_stage = [14, 75, 50]  # (days)
-len_end_stage = [14, 25, 40]  # (days)
-kcb_ini = [0.3, 0.7, 0.35]  # (-)
-kcb_mid = [1.2, 1.15, 1.2]  # (-)
-kcb_end = [0.5, 0.25, 0.7]  # (-)
-max_LAI = [7, 6.3, 4.5]  # (-)
-mu = [3.5, 1.5, 1.8]  # (g biomass / MJ), not used, see: getBiomassCover()
-max_height = [2.43, 0.79, 0.55]  # m  (SWAT needs 'm')
-max_root_depth = [1, 1.4, 1]  # m (convert to mm on run())
-p_tab = [0.55, 0.55, 0.55]  # Depletion coeff (-) assumed total from FAO.
+len_grow_stage_ini = [28, 160, 50, 0, 0]  # (days)
+len_dev_stage = [14, 75, 40, 0, 0]  # (days)
+len_mid_stage = [14, 75, 50, 0, 0]  # (days)
+len_end_stage = [14, 25, 40, 0, 0]  # (days)
+kcb_ini = [0.3, 0.7, 0.35, 0.3, 0.75]  # (-)
+kcb_mid = [1.2, 1.15, 1.2, 0.7, 1.15]  # (-)
+kcb_end = [0.5, 0.25, 0.7, 0.7, 0.8]  # (-)
+max_LAI = [7, 6.3, 4.5, 7, 4]  # (-)
+mu = [3.5, 1.5, 1.8, 1, 1]  # (g biomass / MJ), not used, see: getBiomassCover()
+max_height = [2.43, 0.79, 0.55, 0.2, 3.0]  # m  (SWAT needs 'm')
+max_root_depth = [1, 1.4, 1, 0.2, 1]  # m (convert to mm on run())
+p_tab = [0.55, 0.55, 0.55, 0.55, 0.55]  # Depletion coeff (-) assumed total from FAO.
 
 croptable.loc[1:, 'sow_yy'] = np.select(crop_conditions, sow_yy, default=0)
 croptable.loc[1:, 'sow_mm'] = np.select(crop_conditions, sow_mm, default=0)
@@ -58,7 +64,7 @@ croptable.loc[1:, 'kcb_mid'] = np.select(crop_conditions, kcb_mid, default=0.15)
 croptable.loc[1:, 'kcb_end'] = np.select(crop_conditions, kcb_end, default=0.15)
 croptable.loc[1:, 'max_LAI'] = np.select(crop_conditions, max_LAI, default=0)
 croptable.loc[1:, 'mu'] = np.select(crop_conditions, mu, default=0)
-croptable.loc[1:, 'max_height'] = np.select(crop_conditions, max_height, default=0)
+croptable.loc[1:, 'max_height'] = np.select(crop_conditions, max_height, default=0)  # Assuming 20cm for grasses
 croptable.loc[1:, 'max_root_depth'] = np.select(crop_conditions, max_root_depth, default=0)
 croptable.loc[1:, 'p_tab'] = np.select(crop_conditions, p_tab, default=0)
 
@@ -160,8 +166,11 @@ if PC:
     saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/croptable_end.csv"
     # saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/croptable.csv"
     croptable.to_csv(saved, sep=';', index=False)
-    model = "D:/Documents/these_pablo/Models/BEACH2016/model_" + version + '/croptable.tbl'
-    np.savetxt(model, croptable.values, fmt='%10.5f', delimiter="\t")
+    if save_here:
+        saved = 'D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/croptable.tbl'
+    else:
+        saved = "D:/Documents/these_pablo/Models/BEACH2016/model_" + version + '/croptable.tbl'
+    np.savetxt(saved, croptable.values, fmt='%10.5f', delimiter="\t")
 else:
     print ("True")
     saved = "croptable_end.csv"

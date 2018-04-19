@@ -568,9 +568,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         Simulation start time: Oct 1st, 2015
         """
-        yy = scalar(2015)
-        mm = scalar(10)
-        dd = scalar(1)
+        yy = scalar(2016)
+        mm = scalar(05)
+        dd = scalar(17)
 
         date_factor = 1
         if (100 * yy + mm - 190002.5) < 0:
@@ -622,8 +622,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         if self.PEST:
             self.aged_days += scalar(1)
         # Tells which row in crop table to select, based on the nominal.landuse value
+        # landuse.tss has 48 columns which come from the ArcGis polygon generation, each col = one polygon
         fields = timeinputscalar('landuse.tss', nominal(self.landuse))
-
+        self.report(fields, 'aFields')
         # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_timeinput....html?highlight=timeinputscalar
         # returns value of land-use field (i.e. n = 22), per time step. (Layon)
         # So, at dt = 1
@@ -725,6 +726,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         jd_end = jd_late + len_end_stage
         LAIful = max_LAI + 0.5
 
+        withHeight = ifthenelse(jd_sim < jd_mid, scalar(1), scalar(0))
+        self.report(jd_sim, 'aJDSim')
+        self.report(withHeight, 'awHeight')
+        self.report(jd_plant, 'aJDplant')
+        self.report(jd_mid, 'aJDmid')
+
         # calculation of crop height
         # height = ifthenelse(crop_type == scalar(13), max_height,  # Orchard
         #                     ifthenelse(jd_sim < jd_plant, scalar(0),
@@ -733,7 +740,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         #                                               len_grow_stage_ini + len_dev_stage + 0.5 * len_mid_stage),
         #                                           ifthenelse(jd_sim < jd_end, max_height,
         #                                                      0))))
-        height = ifthenelse(crop_type == scalar(13), max_height,  # Orchard
+        height = ifthenelse(self.landuse == scalar(13.0), max_height,  # Orchard
                             ifthenelse(jd_sim < jd_plant, scalar(0),
                                        ifthenelse(jd_sim < jd_mid,
                                                   max_height * (jd_sim - jd_plant) / (jd_mid - jd_plant),
@@ -743,7 +750,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # calculation of root depth
         # Maximum root depth is assumed to be attained at the end of the development phase
         # i.e. > jd_mid (or start of mid-season), Allen 1998
-        root_depth = ifthenelse(crop_type > scalar(1), max_root_depth,
+        root_depth = ifthenelse(self.landuse == scalar(5.0), max_root_depth,  # Orchard
                                 ifthenelse(jd_sim < jd_plant, scalar(0),
                                            ifthenelse(jd_sim < jd_mid,
                                                       max_root_depth * (jd_sim - jd_plant) / (jd_mid - jd_plant),
@@ -751,6 +758,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                                  scalar(0)))))
 
         # TODO: Remove printouts
+        self.report(crop_type, 'aCrop')
         self.report(height, 'aHeight')
         self.report(root_depth, 'aRDtot')
         # root dispersal for each soil layer (z)
@@ -1720,15 +1728,15 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila 1\at0dC000.177 1\at1dC000.177
 # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[175,179,1] aLEACH aLEACHz aLF aLFz
 # aguila --scenarios='{1}'  --timesteps=[100,280,1] az0dC az1dC az2dC
-# aguila --scenarios='{1}'  --timesteps=[1,280,1] aGed aMz0LL
+# aguila --scenarios='{1}'  --timesteps=[1,280,1] aJDSim aHeight aRDtot aJDplant aJDmid landuse aPotETP aPotEVA f aFracCV aBCV
 
 # Time series
 # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
 # aguila 1\resM_norCONC.tss 1\resM_valCONC.tss 1\resM_souCONC.tss
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
-firstTimeStep = 177  # 177
-nTimeSteps = 230  # 300
+firstTimeStep = 230  # 177
+nTimeSteps = 235  # 300
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework

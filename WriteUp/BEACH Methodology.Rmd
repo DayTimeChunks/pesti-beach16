@@ -286,7 +286,25 @@ where $\theta_t$ is soil moisture ($m^3/m^3$) and $\theta_{dr}$ is the moisture 
 
 ### Crop Growth
 
-...to document
+#### Height
+
+Height is determined as a function of the stage of crop development. 
+
+[comment]:$$
+\begin{equation} 
+    h = 
+\begin{dcases}
+     ~~~~~0~,                                     & t \leq t_{sow-date} \\
+     \frac{~h_{max} \cdot~(t-t_{sow-date})}{\Delta t_{}} ,     & t \leq t_{sow-date} \\
+    \frac{lnf}{-5\cdot10^{-5}},              & f > 0 
+\end{dcases}
+\end{equation}
+[comment]:$$
+
+
+
+- Root depth
+
 
 ### Soil Temperature
 
