@@ -639,7 +639,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # In other words, the value of the landuse-map pixel == column to to look for in landuse.tss
         # So currently becasue landuse does not change value in the year, this step is redundant
         # and we could simply use the landuse map to map the fields to the "Crop Parameters" below.
-        # Mapping "landuse.map" to -> "field.map" (i.e. the latter is a dyanmic-landuse equivalent).
+        # Mapping "landuse.map" to -> "fields map" (i.e. the latter is a dyanmic-landuse equivalent).
         fields = timeinputscalar('landuse.tss', nominal(self.landuse))  #
         # Note that the number of columns could still be reduced to 9 as, only 9 classes are considered in 2016.
 
@@ -739,11 +739,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
         jd_end = jd_late + len_end_stage
         LAIful = max_LAI + 0.5
 
-        withHeight = ifthenelse(jd_sim < jd_mid, scalar(1), scalar(0))
-        self.report(jd_sim, 'aJDSim')
-        self.report(withHeight, 'awHeight')
-        self.report(jd_plant, 'aJDplant')
-        self.report(jd_mid, 'aJDmid')
+        # withHeight = ifthenelse(jd_sim < jd_mid, scalar(1), scalar(0))
+        # self.report(jd_sim, 'aJDSim')
+        # self.report(withHeight, 'awHeight')
+        #self.report(jd_plant, 'aJDplant')
+        #self.report(jd_mid, 'aJDmid')
 
         # calculation of crop height
         # height = ifthenelse(crop_type == scalar(13), max_height,  # Orchard
@@ -753,13 +753,13 @@ class BeachModel(DynamicModel, MonteCarloModel):
         #                                               len_grow_stage_ini + len_dev_stage + 0.5 * len_mid_stage),
         #                                           ifthenelse(jd_sim < jd_end, max_height,
         #                                                      0))))
-        height = ifthenelse(crop_type == scalar(13.0), max_height,  # Orchard
-                            ifthenelse(jd_sim < jd_dev, scalar(0),
-                                       ifthenelse(jd_sim < jd_late,
-                                                  max_height * (jd_sim - jd_plant) / (jd_late - jd_plant),
-                                                  ifthenelse(jd_sim >= jd_late,  max_height,
-                                                             0))))
-
+        #height = ifthenelse(crop_type == scalar(13.0), max_height,  # Orchard
+        #                    ifthenelse(jd_sim < jd_dev, scalar(0),
+        #                               ifthenelse(jd_sim < jd_late,
+        #                                          max_height * (jd_sim - jd_plant) / (jd_late - jd_plant),
+        #                                          ifthenelse(jd_sim >= jd_late,  max_height,
+        #                                                     0))))
+        height = timeinputscalar('height.tss', nominal(self.landuse))
         # calculation of root depth
         # Maximum root depth is assumed to be attained at the end of the development phase
         # i.e. > jd_mid (or start of mid-season), Allen 1998
@@ -1748,7 +1748,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[175,179,1] aLEACH aLEACHz aLF aLFz
 # aguila --scenarios='{1}'  --timesteps=[100,280,1] az0dC az1dC az2dC
 # aguila --scenarios='{1}'  --timesteps=[1,280,1] aHeight aRDtot aCrop aPotETP akcb akcb1 akcmax
-#  aguila --scenarios='{1}'  --timesteps=[1,300,1] aJDSim aHeight aRDtot aJDplant aJDmid landuse  aCrop aPotETP aPotEVA
+#  aguila --scenarios='{1}'  --timesteps=[1,360,1] aJDSim aHeight aRDtot aJDplant aJDmid aCrop akcb aPotETP aPotEVA
 
 # Time series
 # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
