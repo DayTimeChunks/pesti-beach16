@@ -580,9 +580,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Simulation start time: Oct 1st, 2015
         """
         start_day = self.currentTimeStep()  # Returns initial timestep
-        start_date = getTimeStamp(start_day, sep=";")
+        # start_date = getTimeStamp(start_day, sep=";")
         print(start_day)
-        yy = scalar(start_date.split("/")[2])  # start_date["yy"]
+        yy = scalar(2016)# scalar(start_date.split("/")[2])  # start_date["yy"]
         mm = scalar(03)  # start_date["mm"]
         dd = scalar(25)  # start_date["dd"]
 
@@ -754,22 +754,28 @@ class BeachModel(DynamicModel, MonteCarloModel):
         #                                           ifthenelse(jd_sim < jd_end, max_height,
         #                                                      0))))
         height = ifthenelse(crop_type == scalar(13.0), max_height,  # Orchard
-                            ifthenelse(jd_sim < jd_plant, scalar(0),
-                                       ifthenelse(jd_sim < jd_mid,
-                                                  max_height * (jd_sim - jd_plant) / (jd_mid - jd_plant),
-                                                  ifthenelse(jd_sim >= jd_mid,  max_height,
+                            ifthenelse(jd_sim < jd_dev, scalar(0),
+                                       ifthenelse(jd_sim < jd_late,
+                                                  max_height * (jd_sim - jd_plant) / (jd_late - jd_plant),
+                                                  ifthenelse(jd_sim >= jd_late,  max_height,
                                                              0))))
 
         # calculation of root depth
         # Maximum root depth is assumed to be attained at the end of the development phase
         # i.e. > jd_mid (or start of mid-season), Allen 1998
+        #root_depth = ifthenelse(crop_type == scalar(13.0), max_root_depth,  # Orchard
+        #                        ifthenelse(jd_sim < jd_plant, scalar(0),
+         #                                  ifthenelse(jd_sim < jd_mid,
+          #                                            max_root_depth * (jd_sim - jd_plant) / (jd_mid - jd_plant),
+           #                                           ifthenelse(jd_sim >= jd_mid, max_root_depth,
+            #                                                     scalar(0)))))
+
         root_depth = ifthenelse(crop_type == scalar(13.0), max_root_depth,  # Orchard
                                 ifthenelse(jd_sim < jd_plant, scalar(0),
-                                           ifthenelse(jd_sim < jd_mid,
-                                                      max_root_depth * (jd_sim - jd_plant) / (jd_mid - jd_plant),
-                                                      ifthenelse(jd_sim >= jd_mid, max_root_depth,
+                                           ifthenelse(jd_sim < jd_late,
+                                                      max_root_depth * (jd_sim - jd_plant) / (jd_late - jd_plant),
+                                                      ifthenelse(jd_sim >= jd_late, max_root_depth,
                                                                  scalar(0)))))
-
         # TODO: Remove printouts
         self.report(crop_type, 'aCrop')
         self.report(height, 'aHeight')
@@ -1741,7 +1747,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila 1\at0dC000.177 1\at1dC000.177
 # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[175,179,1] aLEACH aLEACHz aLF aLFz
 # aguila --scenarios='{1}'  --timesteps=[100,280,1] az0dC az1dC az2dC
-# aguila --scenarios='{1}'  --timesteps=[1,280,1] aJDSim aHeight aRDtot aJDplant aJDmid landuse aFields  aCrop aPotETP aPotEVA f aFracCV aBCV
+# aguila --scenarios='{1}'  --timesteps=[1,280,1] aHeight aRDtot aCrop aPotETP akcb akcb1 akcmax
+#  aguila --scenarios='{1}'  --timesteps=[1,300,1] aJDSim aHeight aRDtot aJDplant aJDmid landuse  aCrop aPotETP aPotEVA
 
 # Time series
 # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
@@ -1749,7 +1756,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = 177  # 177
-nTimeSteps = 300  # 300
+nTimeSteps = 360  # 300
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework

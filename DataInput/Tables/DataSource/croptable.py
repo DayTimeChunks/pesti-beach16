@@ -48,7 +48,7 @@ kcb_mid = [1.2, 1.15, 1.2, 0.7, 1.15]  # (-)
 kcb_end = [0.5, 0.25, 0.7, 0.7, 0.8]  # (-)
 max_LAI = [7, 6.3, 4.5, 7, 4]  # (-)
 mu = [3.5, 1.5, 1.8, 1, 1]  # (g biomass / MJ), not used, see: getBiomassCover()
-max_height = [2.43, 0.79, 0.55, 0.2, 3.0]  # m  (SWAT needs 'm')
+max_height = [2.43, 0.79, 0.45, 0.2, 3.0]  # m  (SWAT needs 'm')
 max_root_depth = [1, 1.4, 1, 0.2, 1]  # m (convert to mm on run())
 p_tab = [0.55, 0.55, 0.55, 0.55, 0.55]  # Depletion coeff (-) assumed total from FAO.
 
