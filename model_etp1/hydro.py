@@ -370,10 +370,16 @@ def getLayerMoisture(model, layer,
     # Crop evapotranspiration: guidelines for computing cropwater requirements.
     # In: Irrigation and Drainage. Paper 56. FAO, Rome.
     ################
-    pot_transpir_layer = ifthenelse(root_depth > scalar(0),
-                                    2 * (1 - (root_depth_layer / float(2)) / root_depth) *
-                                    (root_depth_layer / root_depth) * pot_transpir,
-                                    scalar(0))  # proportion of transpiration in surface layer
+    test_simple = True
+    if test_simple:
+        pot_transpir_layer = pot_transpir * root_depth_layer / root_depth
+    else:
+        pot_transpir_layer = ifthenelse(root_depth > scalar(0),
+                                        2 * (1 - (root_depth_layer / float(2)) / root_depth) *
+                                        (root_depth_layer / root_depth) * pot_transpir,
+                                        scalar(0))  # proportion of transpiration in surface layer
+        #
+
     # Transpiration
     # Critical moisture content defines
     # transition btw. unstressed and stressed transpiration rate

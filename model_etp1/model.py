@@ -760,6 +760,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         #                                          ifthenelse(jd_sim >= jd_late,  max_height,
         #                                                     0))))
         height = timeinputscalar('height.tss', nominal(self.landuse))
+        root_depth = timeinputscalar('rootdepth.tss', nominal(self.landuse))
+        root_depth = root_depth*10**3
         # calculation of root depth
         # Maximum root depth is assumed to be attained at the end of the development phase
         # i.e. > jd_mid (or start of mid-season), Allen 1998
@@ -770,22 +772,21 @@ class BeachModel(DynamicModel, MonteCarloModel):
            #                                           ifthenelse(jd_sim >= jd_mid, max_root_depth,
             #                                                     scalar(0)))))
 
-        root_depth = ifthenelse(crop_type == scalar(13.0), max_root_depth,  # Orchard
-                                ifthenelse(jd_sim < jd_plant, scalar(0),
-                                           ifthenelse(jd_sim < jd_late,
-                                                      max_root_depth * (jd_sim - jd_plant) / (jd_late - jd_plant),
-                                                      ifthenelse(jd_sim >= jd_late, max_root_depth,
-                                                                 scalar(0)))))
+        #root_depth = ifthenelse(crop_type == scalar(13.0), max_root_depth,  # Orchard
+        #                        ifthenelse(jd_sim < jd_plant, scalar(0),
+        #                                   ifthenelse(jd_sim < jd_late,
+        #                                              max_root_depth * (jd_sim - jd_plant) / (jd_late - jd_plant),
+        #                                              ifthenelse(jd_sim >= jd_late, max_root_depth,
+        #                                                         scalar(0)))))
         # TODO: Remove printouts
         self.report(crop_type, 'aCrop')
         self.report(height, 'aHeight')
         self.report(root_depth, 'aRDtot')
         # root dispersal for each soil layer (z)
         root_depth_z0 = ifthenelse(root_depth > self.z0, self.z0, root_depth)
-        root_depth_z1 = ifthenelse(root_depth < self.z1, scalar(0),
-                                   ifthenelse(root_depth < self.z1 + self.z0, root_depth - self.z0, self.z1))
-        root_depth_z2 = ifthenelse(root_depth <= self.z0 + self.z1, scalar(0),
-                                   ifthenelse(root_depth < self.tot_depth, root_depth - self.z1 - self.z0, self.z2))
+        root_depth_z1 = ifthenelse(root_depth < self.z0, scalar(0),
+                                   ifthenelse(root_depth <= self.z1 + self.z0, root_depth - self.z0, self.z1))
+        root_depth_z2 = ifthenelse(root_depth <= self.z0 + self.z1, scalar(0), root_depth - self.z1 - self.z0)
 
         # calculation of leaf area index
         LAI = ifthenelse(jd_sim < jd_plant, scalar(0),
@@ -823,8 +824,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         pot_evapor = etp_dict["Ep"]
         depletable_water = etp_dict["P"]
         # TODO: printouts!
-        self.report(pot_transpir, 'aPotETP')
-        self.report(pot_transpir, 'aPotEVA')
+        self.report(pot_transpir, 'aPotTRA')
+        self.report(pot_evapor, 'aPotEVA')
 
         # Not in use for water balance, but used to estimate surface temp due to bio-cover.
         frac_soil_cover = etp_dict["f"]
