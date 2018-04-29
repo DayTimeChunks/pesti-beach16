@@ -584,7 +584,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         print(start_day)
         yy = scalar(2016)# scalar(start_date.split("/")[2])  # start_date["yy"]
         mm = scalar(03)  # start_date["mm"]
-        dd = scalar(25)  # start_date["dd"]
+        dd = scalar(15)  # start_date["dd"]
 
         date_factor = 1
         if (100 * yy + mm - 190002.5) < 0:
@@ -605,6 +605,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.q_sim_ave = 0
 
         self.rain_cum_m3 = 0  # Rainfall
+        self.rain_cum_mm = self.zero_map + scalar(400.0)  # Cum Rainfall
 
         self.tot_drain_m3 = 0  # drainage z1
         self.tot_nlf_m3 = 0
@@ -699,7 +700,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # k_sat_z0z1 = lookupscalar('croptable.tbl', 22, fields)  # saturated conductivity of the first layer
         k_sat_z0z1 = timeinputscalar('ksats.tss', nominal(self.landuse))
         k_sat_z2 = lookupscalar('croptable.tbl', 23, fields)  # saturated conductivity of the second layer
-        CN2 = lookupscalar('croptable.tbl', 24, fields)  # curve number of moisture condition II
+        CN2_A = lookupscalar('croptable.tbl', 24, fields)  # curve number of moisture condition II
+        CN2_B = lookupscalar('croptable.tbl', 25, fields)  # curve number of moisture condition II
+        CN2_C = lookupscalar('croptable.tbl', 26, fields)  # curve number of moisture condition II
 
 
         """
@@ -707,6 +710,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         map is implicitly defined as the clonemap.
         """
         precip = timeinputscalar('rain.tss', 1)  # daily precipitation data as time series (mm)
+
         temp_bare_soil = timeinputscalar('T_bare.tss', nominal('clone_nom'))  # SWAT, Neitsch2009, p.43.
         self.temp_air = timeinputscalar('airTemp.tss', nominal('clone_nom'))
         et0 = timeinputscalar('ET0.tss', 1)  # daily ref. ETP at Zorn station (mm)
@@ -718,6 +722,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Crop growth ##
         ################
         jd_sow = convertJulian(sow_yy, sow_mm, sow_dd)
+        self.rain_cum_mm += precip
+        self.rain_cum_mm = ifthenelse(jd_sim == jd_sow, scalar(0), self.rain_cum_mm)
+        self.report(self.rain_cum_mm, 'aCuRain')
+        CN2 = ifthenelse(self.rain_cum_mm > 90, CN2_C, CN2_A)
         all_stages = len_grow_stage_ini + len_dev_stage + len_mid_stage + len_end_stage
 
         # updating of sowing date by land use
@@ -780,8 +788,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         #                                                         scalar(0)))))
         # TODO: Remove printouts
         self.report(crop_type, 'aCrop')
-        self.report(height, 'aHeight')
-        self.report(root_depth, 'aRDtot')
+        # self.report(height, 'aHeight')
+        # self.report(root_depth, 'aRDtot')
         # root dispersal for each soil layer (z)
         root_depth_z0 = ifthenelse(root_depth > self.z0, self.z0, root_depth)
         root_depth_z1 = ifthenelse(root_depth < self.z0, scalar(0),
@@ -824,16 +832,16 @@ class BeachModel(DynamicModel, MonteCarloModel):
         pot_evapor = etp_dict["Ep"]
         depletable_water = etp_dict["P"]
         # TODO: printouts!
-        self.report(pot_transpir, 'aPotTRA')
-        self.report(pot_evapor, 'aPotEVA')
+        # self.report(pot_transpir, 'aPotTRA')
+        # self.report(pot_evapor, 'aPotEVA')
 
         # Not in use for water balance, but used to estimate surface temp due to bio-cover.
         frac_soil_cover = etp_dict["f"]
-        self.report(frac_soil_cover, 'aFracCV')
+        # self.report(frac_soil_cover, 'aFracCV')
 
         bio_cover = getBiomassCover(self, frac_soil_cover)
         # bcv should range 0 (bare soil) to 1 (complete cover)
-        self.report(bio_cover, 'aBCV')
+        # self.report(bio_cover, 'aBCV')
 
         ######################################################################################
         # Mixing layer: depth z0
@@ -1749,14 +1757,15 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # aguila --scenarios='{1,2}' --multi=1x2  --timesteps=[175,179,1] aLEACH aLEACHz aLF aLFz
 # aguila --scenarios='{1}'  --timesteps=[100,280,1] az0dC az1dC az2dC
 # aguila --scenarios='{1}'  --timesteps=[1,280,1] aHeight aRDtot aCrop aPotETP akcb akcb1 akcmax
-#  aguila --scenarios='{1}'  --timesteps=[1,360,1] aJDSim aHeight aRDtot aJDplant aJDmid aCrop akcb aPotETP aPotEVA
+#  aguila --scenarios='{1}'  --timesteps=[1,360,1] aHeight aRDtot aCrop akcb aPotTRA aPotEVA
+#  aguila --scenarios='{1}'  --timesteps=[1,360,1] aCuRain aCrop az2ETP
 
 # Time series
 # aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
 # aguila 1\resM_norCONC.tss 1\resM_valCONC.tss 1\resM_souCONC.tss
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
-firstTimeStep = 177  # 177
+firstTimeStep = 167  # 15/03/2016
 nTimeSteps = 360  # 300
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,

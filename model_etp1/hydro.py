@@ -2,12 +2,12 @@
 from pcraster._pcraster import *
 from pcraster.framework import *
 
-
 # import os
 # import time
 # print(os.getcwd())
 
 DEBUG = False
+
 
 def getBiomassCover(model, frac_soil_cover):
     # biomass cover conversion (SWAT adaptation)
@@ -177,7 +177,7 @@ def getLayerMoisture(model, layer,
         theta_temp_layer = model.theta_z2
         theta_ini = model.theta_z2
 
-    tau = min(0.0866 * exp(gamma * log10(s*k_sat)), 1)  # dimensionless drainage param.
+    tau = min(0.0866 * exp(gamma * log10(s * k_sat)), 1)  # dimensionless drainage param.
     zero_map = depth - depth
     # Run-off, infiltration & deep percolation
     ##########################
@@ -270,8 +270,8 @@ def getLayerMoisture(model, layer,
 
         if PERCOL_z2:
             potential = tau * depth * (theta_sat - theta_fcap) * \
-                        ((exp(theta_temp_layer - theta_fcap)) - 1)/((exp(theta_sat - theta_fcap)) - 1)
-            deep_percolation = ifthenelse(theta_temp_layer > theta_fcap, potential, scalar(0))   # [mm]
+                        ((exp(theta_temp_layer - theta_fcap)) - 1) / ((exp(theta_sat - theta_fcap)) - 1)
+            deep_percolation = ifthenelse(theta_temp_layer > theta_fcap, potential, scalar(0))  # [mm]
             # min(potential, depth*(theta_temp_layer-theta_fcap))
 
         else:
@@ -339,8 +339,9 @@ def getLayerMoisture(model, layer,
         # State_1 = cell_moisture_outflow
         # model.wetness1 = ifthenelse(State_1> 0,Wetness,0)
         # Cell inflow
-        upstream_cell_inflow = (model.wetness * accuflux(model.ldd_subs, cell_moisture_outflow)) / accuflux(model.ldd_subs,
-                                                                                                            model.wetness)
+        upstream_cell_inflow = (model.wetness * accuflux(model.ldd_subs, cell_moisture_outflow)) / accuflux(
+            model.ldd_subs,
+            model.wetness)
         # Cell inflow - cell outflow
         # TODO: Doubt:
         # Verify that that the inflow component is appropriate against Sheikh2009's formalism.
@@ -370,15 +371,11 @@ def getLayerMoisture(model, layer,
     # Crop evapotranspiration: guidelines for computing cropwater requirements.
     # In: Irrigation and Drainage. Paper 56. FAO, Rome.
     ################
-    test_simple = True
-    if test_simple:
-        pot_transpir_layer = pot_transpir * root_depth_layer / root_depth
-    else:
-        pot_transpir_layer = ifthenelse(root_depth > scalar(0),
-                                        2 * (1 - (root_depth_layer / float(2)) / root_depth) *
-                                        (root_depth_layer / root_depth) * pot_transpir,
-                                        scalar(0))  # proportion of transpiration in surface layer
-        #
+
+    pot_transpir_layer = ifthenelse(root_depth > scalar(0),
+                                    2 * (1 - (root_depth_layer / float(2)) / root_depth) *
+                                    (root_depth_layer / root_depth) * pot_transpir,
+                                    scalar(0))  # proportion of transpiration in surface layer
 
     # Transpiration
     # Critical moisture content defines
@@ -559,13 +556,13 @@ def getPotET(model, sow_yy, sow_mm, sow_dd,
     kcb = ifthenelse(kcb1 > 0.4, kcb1 + (0.04 * (wind - 2) - 0.004 * (humid - 45)) * (height / 3) ** 0.3, kcb1)
     kcmax = max((1.2 + (0.04 * (wind - 2) - 0.004 * (humid - 45)) * (height / float(3)) ** 0.3), kcb + 0.05)
     # TODO: Remove printouts
-    model.report(kcb, 'akcb')
-    model.report(kcb1, 'akcb1')
-    model.report(kcmax, 'akcmax')
+    # model.report(kcb, 'akcb')
+    # model.report(kcb1, 'akcb1')
+    # model.report(kcmax, 'akcmax')
     # Pot. Transpiration
     # Due to Allen et al., 1998
     kcb_ratio = max((kcb - kcb_ini) / (kcmax - kcb_ini), scalar(0))
-    frac_soil_cover = min((kcb_ratio)**(height*0.5+1), scalar(0.99))
+    frac_soil_cover = min((kcb_ratio) ** (height * 0.5 + 1), scalar(0.99))
     # frac_soil_cover = ifthenelse(kcmax > kcb_ini, ((kcb - kcb_ini) / (kcmax - kcb_ini)) ** (height*0.5 + 1), scalar(0))
     # model.report(kcb, 'kcb')
     # model.report(kcb_ini, 'kcb_ini')

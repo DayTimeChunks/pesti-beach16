@@ -106,6 +106,7 @@ croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [62, 31, 43.2], defaul
 # croptable.loc[1:, 'k_sat_z0z1'] = 43.2  # mm/day
 # croptable.loc[1:, 'k_sat_z2'] = 43.2  # mm/day
 
+
 # Curve Number guidelines:
 # https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb1044171.pdf
 # https://en.wikipedia.org/wiki/Runoff_curve_number
@@ -125,42 +126,46 @@ cn_conditions = [
     (croptable.loc[1:, 'crop_type'] == 12),  # Hedge
     (croptable.loc[1:, 'crop_type'] == 13)  # Orchard
 ]
-# Assumed Poor hydrologic conditions (HC)
-# Hydraulic condition is based on combination factors that affect infiltration and runoff, including
-# (a) density and canopy of vegetative areas,
-# (b) amount of year-round cover,
-# (c) amount of grass or close-seeded legumes,
-# (d) percent of residue cover on the land surface (good gt 20%),and
-# (e) degree of surface roughness.
-CN2 = {"Corn": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
-       "Wheat": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
-       "Beet": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
-       "Greenery": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
-       "Dirt Road": {"A": 72, "B": 82, "C": 87, "D": 89},  # Table 2-2a
-       "Grass Road": {"A": 59, "B": 74, "C": 82, "D": 86},  # Farmsteads, # Table 2-2c
-       "Paved Road": {"A": 98, "B": 98, "C": 98, "D": 98},  # Table 2-2a
-       "Ditch": {"A": 98, "B": 98, "C": 98, "D": 98},  # Paved -> should add to vol.
-       "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
-       "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
-       "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82},  # Woods-grass, fair HC, # Table 2-2c
-       "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-2b, but Bare Soil treatment
-       }
 
-letter = "B"
-group = [CN2["Corn"][letter],
-         CN2["Wheat"][letter],
-         CN2["Beet"][letter],
-         CN2["Greenery"][letter],
-         CN2["Dirt Road"][letter],
-         CN2["Grass Road"][letter],
-         CN2["Paved Road"][letter],
-         CN2["Ditch"][letter],
-         CN2["Fallow"][letter],
-         CN2["Hedge"][letter],
-         CN2["Orchard"][letter]
-         ]
+def getCN2(letter):
+    # Assumed Poor hydrologic conditions (HC)
+    # Hydraulic condition is based on combination factors that affect infiltration and runoff, including
+    # (a) density and canopy of vegetative areas,
+    # (b) amount of year-round cover,
+    # (c) amount of grass or close-seeded legumes,
+    # (d) percent of residue cover on the land surface (good gt 20%),and
+    # (e) degree of surface roughness.
+    CN2 = {"Corn": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
+           "Wheat": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
+           "Beet": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
+           "Greenery": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
+           "Dirt Road": {"A": 72, "B": 82, "C": 87, "D": 89},  # Table 2-2a
+           "Grass Road": {"A": 59, "B": 74, "C": 82, "D": 86},  # Farmsteads, # Table 2-2c
+           "Paved Road": {"A": 98, "B": 98, "C": 98, "D": 98},  # Table 2-2a
+           "Ditch": {"A": 98, "B": 98, "C": 98, "D": 98},  # Paved -> should add to vol.
+           "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
+           "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
+           "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82},  # Woods-grass, fair HC, # Table 2-2c
+           "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-2b, but Bare Soil treatment
+           }
 
-croptable.loc[1:, 'CN2'] = np.select(cn_conditions, group, default=98)
+    group = [CN2["Corn"][letter],
+             CN2["Wheat"][letter],
+             CN2["Beet"][letter],
+             CN2["Greenery"][letter],
+             CN2["Dirt Road"][letter],
+             CN2["Grass Road"][letter],
+             CN2["Paved Road"][letter],
+             CN2["Ditch"][letter],
+             CN2["Fallow"][letter],
+             CN2["Hedge"][letter],
+             CN2["Orchard"][letter]
+             ]
+    return group
+
+croptable.loc[1:, 'CN2_A'] = np.select(cn_conditions, getCN2('A'), default=98)
+croptable.loc[1:, 'CN2_B'] = np.select(cn_conditions, getCN2('B'), default=98)
+croptable.loc[1:, 'CN2_C'] = np.select(cn_conditions, getCN2('C'), default=98)
 
 if PC:
     saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/croptable_end.csv"
