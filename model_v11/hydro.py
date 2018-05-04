@@ -41,7 +41,8 @@ def convertJulian(year, month, day):
 def runoff_SCS(model, rain,
                theta_sat_z0z1, theta_fcap_z0z1, theta_wp, CN2, crop_type,
                jd_sim, jd_dev, jd_mid, jd_end,
-               len_dev_stage, soil_group="B"):
+               len_dev_stage  #, soil_group
+               ):
     """
     Returns run-off amount in mm
     Retention parameters are calculated based on the first two model layers (z0 and z1)
@@ -54,6 +55,7 @@ def runoff_SCS(model, rain,
     # Curve Number guidelines:
     # https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb1044171.pdf
     # Will assume HSG Group C (final infiltration rate 1.3-3.8 mm per hour)
+
     CN2_table = {"Corn": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
                  "Wheat": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
                  "Beet": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
@@ -74,17 +76,18 @@ def runoff_SCS(model, rain,
     # SWPD0=theta_wp*self.depth0
     SWP = theta_wp * (model.z1 + model.z0)
 
+    # TODO: Check if improvements can be done with adapting below to stage...
     # adjusting CN values based on crop
-    CN2 = ifthenelse(crop_type > scalar(5), CN2,  # x > 5, not a crop in 2016
-                     ifthenelse(crop_type == scalar(0), CN2,  # Not a crop
-                                ifthenelse(jd_sim < jd_dev,  # Before planting (i.e. fallow, bare soil)
-                                           scalar(CN2_table["Bare Soil"][soil_group]),
-                                           ifthenelse(jd_sim <= jd_mid,  # Growth stage
-                                                      (CN2 + (scalar(CN2_table["Bare Soil"][soil_group]) - CN2) *
-                                                       ((jd_mid - jd_sim) / len_dev_stage)),
-                                                      ifthenelse(jd_sim <= jd_end,
-                                                                 CN2, scalar(CN2_table["Bare Soil"][soil_group])
-                                                                 )))))
+    # CN2 = ifthenelse(crop_type > scalar(5), CN2,  # x > 5, not a crop in 2016
+    #                  ifthenelse(crop_type == scalar(0), CN2,  # Not a crop
+    #                             ifthenelse(jd_sim < jd_dev,  # Before planting (i.e. fallow, bare soil)
+    #                                        scalar(CN2_table["Bare Soil"][soil_group]),
+    #                                        ifthenelse(jd_sim <= jd_mid,  # Growth stage
+    #                                                   (CN2 + (scalar(CN2_table["Bare Soil"][soil_group]) - CN2) *
+    #                                                    ((jd_mid - jd_sim) / len_dev_stage)),
+    #                                                   ifthenelse(jd_sim <= jd_end,
+    #                                                              CN2, scalar(CN2_table["Bare Soil"][soil_group])
+    #                                                              )))))
 
     # calculation of CN1 and CN2 based on CN2 values
     CN3 = CN2 * exp(0.00673 * (100 - CN2))
@@ -127,7 +130,7 @@ def runoff_SCS(model, rain,
 
 
 def getLayerMoisture(model, layer,
-                     precip, theta_wp, CN2, crop_type,
+                     precip, theta_wp, CN2, crop_type, #soil_group,
                      jd_sim, jd_dev, jd_mid, jd_end,
                      len_dev_stage,
                      root_depth, pot_evapor, pot_transpir, depletable_water,
@@ -136,7 +139,7 @@ def getLayerMoisture(model, layer,
                      root_depth_layer,
                      theta_fcap, theta_sat,  # field and saturation capacity (crop.tbl)
                      percolate=0, satex=0,  # Need to add these values for layers > 0 (layer 1 only for now)
-                     PERCOL_z2=True,
+                     PERCOL_basement=True,
                      ADLF=False, c_adr=0.25  # Artificial drainage lateral flow, and correction factor (adr)
                      ):
     """
@@ -152,30 +155,52 @@ def getLayerMoisture(model, layer,
     :param satex: considers additional percolation to layer z = 1
                     due to small thickness of mixing layer (i.e., in z = 0)
     """
-    store = False  # Variable to check mass balance
     water_balance_layer = None
-    if layer == 0:
-        depth = model.z0
-        c = model.c_lf0
-        gamma = model.gamma0
-        s = model.s0
-        theta_temp_layer = model.theta_z0
-        theta_ini = model.theta_z0
-    elif layer == 1:
-        depth = model.z1
-        c = model.c_lf1
-        gamma = model.gamma1
-        s = model.s1
-        theta_temp_layer = model.theta_z1
-        theta_ini = model.theta_z1
-    elif layer == 2:
-        store = False
-        depth = model.z2
-        c = model.c_lf2
-        gamma = model.gamma2
-        s = model.s2
-        theta_temp_layer = model.theta_z2
-        theta_ini = model.theta_z2
+
+    layer_params = {'depth': 'model.z' + str(layer),
+                    'theta': 'model.theta_z' + str(layer),
+                    'temp_lagged': 'model.temp_z' + str(layer) + '_fin',
+                    'c': 'model.c_lf' + str(layer),
+                    'gamma': 'model.gamma' + str(layer),
+                    's': 'model.s' + str(layer),
+                    'theta_temp_layer': 'model.theta_z' + str(layer),
+                    'theta_ini': 'model.theta_z' + str(layer)}
+
+    depth = eval(layer_params['depth'])
+    c = eval(layer_params['c'])
+    gamma = eval(layer_params['gamma'])
+    s = eval(layer_params['s'])
+    theta_temp_layer = eval(layer_params['theta_temp_layer'])
+    theta_ini = eval(layer_params['theta_ini'])
+
+    # if layer == 0:
+    #     depth = model.z0
+    #     c = model.c_lf0
+    #     gamma = model.gamma0
+    #     s = model.s0
+    #     theta_temp_layer = model.theta_z0
+    #     theta_ini = model.theta_z0
+    # elif layer == 1:
+    #     depth = model.z1
+    #     c = model.c_lf1
+    #     gamma = model.gamma1
+    #     s = model.s1
+    #     theta_temp_layer = model.theta_z1
+    #     theta_ini = model.theta_z1
+    # elif layer == 2:
+    #     depth = model.z2
+    #     c = model.c_lf2
+    #     gamma = model.gamma2
+    #     s = model.s2
+    #     theta_temp_layer = model.theta_z2
+    #     theta_ini = model.theta_z2
+    # elif layer == 3:
+    #     depth = model.z3
+    #     c = model.c_lf3
+    #     gamma = model.gamma3
+    #     s = model.s3
+    #     theta_temp_layer = model.theta_z3
+    #     theta_ini = model.theta_z3
 
     tau = min(0.0866 * exp(gamma * log10(s * k_sat)), 1)  # dimensionless drainage param.
     zero_map = depth - depth
@@ -185,7 +210,8 @@ def getLayerMoisture(model, layer,
         roff_z0 = runoff_SCS(model, precip,
                              theta_sat, theta_fcap, theta_wp, CN2, crop_type,
                              jd_sim, jd_dev, jd_mid, jd_end,
-                             len_dev_stage)
+                             len_dev_stage #, #soil_group
+                             )
 
         # Infiltration [mm] based on
         # retention parameter "S" with depth = 150mm (i.e. z0 + z1)
@@ -246,13 +272,6 @@ def getLayerMoisture(model, layer,
         theta_after_percolate = theta_temp_layer
         theta_ini_mm = model.theta_z0 * depth
 
-        if store:
-            water_balance_layer = precip - roff_z0 - deep_percolation - satex * model.z0
-            model.water_bal_ipr.sample(water_balance_layer)
-            model.infilz0tss.sample(infil)
-            model.satexz0tss.sample(satex * model.z0)
-            model.percz0tss.sample(deep_percolation)
-            model.ROz0tss.sample(roff_z0)
     else:  # Subsurface layers
         roff_z0 = zero_map
         infil = percolate  # percolation from above
@@ -268,7 +287,7 @@ def getLayerMoisture(model, layer,
 
         theta_temp_layer += infil / depth
 
-        if PERCOL_z2:
+        if PERCOL_basement:
             potential = tau * depth * (theta_sat - theta_fcap) * \
                         ((exp(theta_temp_layer - theta_fcap)) - 1) / ((exp(theta_sat - theta_fcap)) - 1)
             deep_percolation = ifthenelse(theta_temp_layer > theta_fcap, potential, scalar(0))  # [mm]
@@ -294,15 +313,6 @@ def getLayerMoisture(model, layer,
             theta_temp_layer -= deep_percolation / depth
 
         theta_after_percolate = theta_temp_layer
-        if store:  # store if true
-            water_balance_layer = infil - deep_percolation
-            model.water_bal_ipr.sample(water_balance_layer)
-            model.iniThetatss.sample(theta_ini_mm)
-            model.depthtss.sample(depth)
-            model.infiltss.sample(infil)
-            model.satextss.sample(satex * model.z0)
-            model.perctss.sample(deep_percolation)
-            # model.ROz0tss.sample(roff_z0)
 
     # Lateral Flow (artificial drainage)
     ###############
@@ -347,20 +357,11 @@ def getLayerMoisture(model, layer,
         # Verify that that the inflow component is appropriate against Sheikh2009's formalism.
         lateral_flow_layer = upstream_cell_inflow - cell_moisture_outflow  # [mm]
 
-    if store:
-        model.lat_inflow_tss.sample(upstream_cell_inflow)
-        model.lat_outflow_tss.sample(cell_moisture_outflow)
-
     # Water Mass Balance & Moisture Update #######
     theta_temp_layer += lateral_flow_layer / depth
     overflow = ifthenelse(theta_temp_layer > theta_sat, theta_temp_layer - theta_sat, scalar(0))
     theta_temp_layer -= overflow
     overflow_height = overflow * depth  # mm
-
-    if store:
-        water_balance_layer += lateral_flow_layer
-        model.water_bal_latflow.sample(water_balance_layer)
-        model.latflowtss.sample(lateral_flow_layer)
 
     # Evapotranspiration
     #####################
@@ -391,11 +392,6 @@ def getLayerMoisture(model, layer,
     # Water Mass Balance  ############
     theta_temp_layer -= act_transpir_layer / depth  # [-]
 
-    if store:
-        water_balance_layer -= act_transpir_layer  # [mm]
-        model.water_bal_transp.sample(water_balance_layer)
-        model.transptss.sample(act_transpir_layer)
-
     # Evaporation
     # Evaporation reduction parameter
     # Note: moisture content of air-dry soil = 0.33 * theta_wp [@Allen 1998 in @Sheikh2009]
@@ -420,21 +416,11 @@ def getLayerMoisture(model, layer,
         # Update soil moisture after evapotranspiration
         theta_temp_layer -= act_evaporation_layer / depth
         # theta_temp_z0=max(theta_temp_z0,0.05);
-
-        if store:
-            # Water Mass Balance
-            water_balance_layer -= act_evaporation_layer
-            model.water_bal_evap.sample(water_balance_layer)
-            model.evaptss.sample(act_evaporation_layer)
     else:
         act_evaporation_layer = model.zero_map
 
     # Final update (change in storage)
-    theta_change_mm = (theta_temp_layer * depth) - theta_ini_mm
-    if store:
-        water_balance_layer -= theta_change_mm
-        model.water_bal_fin.sample(water_balance_layer)
-        model.changetss.sample(theta_change_mm)
+    # theta_change_mm = (theta_temp_layer * depth) - theta_ini_mm
 
     etp_layer = act_evaporation_layer + act_transpir_layer
 
@@ -458,20 +444,30 @@ def getLayerMoisture(model, layer,
 def getLayerTemp(model, layer,
                  bio_cover, temp_bare_soil
                  ):
-    # Note:
-    # Temperature parameters is calculated before updating moisture content
-    if layer == 0:
-        depth = model.z0
-        theta = model.theta_z0
-        temp_lagged = model.temp_z0_fin
-    elif layer == 1:
-        depth = model.z1
-        theta = model.theta_z1
-        temp_lagged = model.temp_z1_fin
-    elif layer == 2:
-        depth = model.z2
-        theta = model.theta_z2
-        temp_lagged = model.temp_z2_fin
+    layer_params = {'depth': 'model.z' + str(layer),
+                    'theta': 'model.theta_z' + str(layer),
+                    'temp_lagged': 'model.temp_z' + str(layer) + '_fin'}
+
+    depth = eval(layer_params['depth'])
+    theta = eval(layer_params['theta'])
+    temp_lagged = eval(layer_params['temp_lagged'])
+
+    # if layer == 0:
+    #     depth = eval(layer_params['depth'])
+    #     theta = model.theta_z0
+    #     temp_lagged = model.temp_z0_fin
+    # elif layer == 1:
+    #     depth = model.z1
+    #     theta = model.theta_z1
+    #     temp_lagged = model.temp_z1_fin
+    # elif layer == 2:
+    #     depth = model.z2
+    #     theta = model.theta_z2
+    #     temp_lagged = model.temp_z2_fin
+    # elif layer == 3:
+    #     depth = eval(layer_params['depth'])
+    #     theta = model.theta_z3
+    #     temp_lagged = model.temp_z3_fin
 
     # Step 1: Defining the soil column's center to damping depth ratio.
     # Scaling factor (phi), adjusts the impact of soil water content (SW = theta*depth) on damping depth (dd)

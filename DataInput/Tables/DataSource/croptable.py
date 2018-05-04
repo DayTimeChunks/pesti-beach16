@@ -127,6 +127,7 @@ cn_conditions = [
     (croptable.loc[1:, 'crop_type'] == 13)  # Orchard
 ]
 
+
 def getCN2(letter):
     # Assumed Poor hydrologic conditions (HC)
     # Hydraulic condition is based on combination factors that affect infiltration and runoff, including

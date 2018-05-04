@@ -8,7 +8,7 @@ output: pdf_document
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL", "English")
 
-MAC = T
+MAC = F
 WIN = F
 ```
 
@@ -258,7 +258,10 @@ qmBlk = merge(qmBlk, m, by = "DayMoYr")
 qmBlk = merge(time, qmBlk, by = "DayMoYr", all = T)
 # qmBlk$JDay = seq.int(nrow(qmBlk)) + 176
 
-write.csv(qmBlk, "qmBlk_R.csv", row.names = F) # , sep = ";", dec = ".")
+if (F) {
+  write.csv(qmBlk, "qmBlk_R.csv", row.names = F) # , sep = ";", dec = ".")  
+}
+
 ```
 
 
@@ -278,10 +281,9 @@ Volm3_tss = qmBlk[,c("Jdays", "VolTot.m3")]
 
 Volm3_tss$VolTot.m3 = ifelse(is.na(Volm3_tss$VolTot.m3), -1.0, Volm3_tss$VolTot.m3)
 
-
-write.table(Volm3_tss, "BEACH_R/q_obs_m3day.tss", sep="\t", row.names = F, col.names = F)
-
-
+if (F) {
+  write.table(Volm3_tss, "BEACH_R/q_obs_m3day.tss", sep="\t", row.names = F, col.names = F)  
+}
 
 
 if (F) {
@@ -297,7 +299,7 @@ if (F) {
 
   # Qm3/day
   DischQm3_tss = qDay[,c("time", "Q.m3")] 
-  write.table(DischQm3_tss, "BEACH_R/disch_m3day.tss", sep="\t", row.names = F)
+  write.table(DischQm3_tss, "BEACH_R/disch_m3day.tss", sep="\t", row.names = F, col.names = F)
   
   # Qmm/day
   DischQmm_tss = qDay[,c("time", "Q.mm")] 
@@ -306,10 +308,32 @@ if (F) {
   
 }
 ```
+## Get S-met Concentrations Time Series (TSS)
+
+```{r}
+Conc_ugL_tss = qmBlk[,c("Jdays", "ConSmOut_ugL.blk")] 
+Conc_ugL_tss$ConSmOut_ugL.blk = ifelse(is.na(Conc_ugL_tss$ConSmOut_ugL.blk), -10**9, Conc_ugL_tss$ConSmOut_ugL.blk)
+```
+
+
+## Get $\delta^{13}C$ time series (TSS)
+
+```{r}
+Delta_out_tss = qmBlk[,c("Jdays", "deltaOut.blk")] 
+Delta_out_tss$deltaOut.blk = ifelse(is.na(Delta_out_tss$deltaOut.blk), 10**9, Delta_out_tss$deltaOut.blk)
+```
+
+### Save time series
+
+```{r}
+if (F){
+  write.table(Conc_ugL_tss, "BEACH_R/Conc_ugL.tss", sep="\t", row.names = F, col.names = F)
+  write.table(Delta_out_tss, "BEACH_R/Delta_out.tss", sep="\t", row.names = F, col.names = F)
+}
+```
 
 
 ## Analyse Discharge Monthly Values
-
 
 ```{r}
 
