@@ -71,11 +71,11 @@ croptable.loc[1:, 'p_tab'] = np.select(crop_conditions, p_tab, default=0)
 theta_condition = [
     (croptable.loc[1:, 'crop_type'] == 10)  # Ditch
 ]
-croptable.loc[1:, 'theta_sat_z0z1'] = np.select(theta_condition, [0.61], default=0.61)
-croptable.loc[1:, 'theta_fcap_z0z1'] = 0.2
-croptable.loc[1:, 'theta_sat_z2'] = np.select(theta_condition, [0.61], default=0.61)
-croptable.loc[1:, 'theta_fcap_z2'] = 0.2
-croptable.loc[1:, 'theta_wp'] = 0.1
+croptable.loc[1:, 'theta_sat_z0z1'] = np.select(theta_condition, [0.63], default=0.63)
+croptable.loc[1:, 'theta_fcap_z0z1'] = 0.25
+croptable.loc[1:, 'theta_sat_z2'] = np.select(theta_condition, [0.63], default=0.63)
+croptable.loc[1:, 'theta_fcap_z2'] = 0.25  # 0.2
+croptable.loc[1:, 'theta_wp'] = 0.19  # 0.10
 
 
 # Dynamic Ksat
