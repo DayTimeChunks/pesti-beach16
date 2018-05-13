@@ -6,6 +6,7 @@ from datetime import datetime
 from hydro import *
 
 from pesti_v2 import *
+from hydro_v2 import *
 
 from pcraster._pcraster import *
 from pcraster.framework import *
@@ -14,13 +15,6 @@ from copy import deepcopy
 import os
 
 print(os.getcwd())
-
-"""
-v11 tests moving drainage to z2, as drainage should be at 1 to 1.5m depth.
->> Not a good model, full basin drains too much then drainage stops, too quickly.
-
-Alternative: add a fourth bottom layer, leave z2 as drainage, but with 1,5m depth
-"""
 
 global state
 state = -1
@@ -90,7 +84,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
             reader = csv.reader(file, delimiter=';')
             for row in reader:
                 self.time_dict[str(int(row[1]))] = str(row[0].strip())
-
 
         """
         Landscape Maps
@@ -221,13 +214,20 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.out_chstorage_L_tss = TimeoutputTimeseries("resM_accCHS_L", self, nominal("outlet_true"), noHeader=False)
 
         # Cumulative Pesticide
-        self.cum_degZ0_L_g_tss = TimeoutputTimeseries("resM_cumDEGz0_L", self, nominal("outlet_true"), noHeader=False)  # Deg z0
-        self.cum_lchZ0_L_g_tss = TimeoutputTimeseries("resM_cumLCHz0_L", self, nominal("outlet_true"), noHeader=False)  # Leaching z0
-        self.cum_roZ0_L_g_tss = TimeoutputTimeseries("resM_cumROz0_L", self, nominal("outlet_true"), noHeader=False)  # Runoff
-        self.cum_adr_L_g_tss = TimeoutputTimeseries("resM_cumADR_L", self, nominal("outlet_true"), noHeader=False)  # Art. drainage
-        self.cum_latflux_L_g_tss = TimeoutputTimeseries("resM_cumLF_L", self, nominal("outlet_true"), noHeader=False)  # Soil column, outlet cells
-        self.cum_exp_L_g_tss = TimeoutputTimeseries("resM_cumEXP_L", self, nominal("outlet_true"), noHeader=False)  # Total cum. exports
-        self.nash_compConc_L_tss = TimeoutputTimeseries("resNash_compConc_L", self, nominal("outlet_true"), noHeader=False)
+        self.cum_degZ0_L_g_tss = TimeoutputTimeseries("resM_cumDEGz0_L", self, nominal("outlet_true"),
+                                                      noHeader=False)  # Deg z0
+        self.cum_lchZ0_L_g_tss = TimeoutputTimeseries("resM_cumLCHz0_L", self, nominal("outlet_true"),
+                                                      noHeader=False)  # Leaching z0
+        self.cum_roZ0_L_g_tss = TimeoutputTimeseries("resM_cumROz0_L", self, nominal("outlet_true"),
+                                                     noHeader=False)  # Runoff
+        self.cum_adr_L_g_tss = TimeoutputTimeseries("resM_cumADR_L", self, nominal("outlet_true"),
+                                                    noHeader=False)  # Art. drainage
+        self.cum_latflux_L_g_tss = TimeoutputTimeseries("resM_cumLF_L", self, nominal("outlet_true"),
+                                                        noHeader=False)  # Soil column, outlet cells
+        self.cum_exp_L_g_tss = TimeoutputTimeseries("resM_cumEXP_L", self, nominal("outlet_true"),
+                                                    noHeader=False)  # Total cum. exports
+        self.nash_compConc_L_tss = TimeoutputTimeseries("resNash_compConc_L", self, nominal("outlet_true"),
+                                                        noHeader=False)
 
         # Transects
         self.north_conc_tss = TimeoutputTimeseries("resM_norCONC", self, ordinal("north_ave"), noHeader=False)
@@ -321,13 +321,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.s = []
         self.c_lf = []
         for i in range(self.num_layers):
-            self.gamma.append(scalar(self.ini_param.get("gamma"+str(i))))  # percolation coefficient
-            self.s.append(scalar(self.ini_param.get("s"+str(i))))  # calibrate Ksat, mm/day
-            self.c_lf.append(scalar(self.ini_param.get("c"+str(i))))  # subsurface flow coefficient)
+            self.gamma.append(scalar(self.ini_param.get("gamma" + str(i))))  # percolation coefficient
+            self.s.append(scalar(self.ini_param.get("s" + str(i))))  # calibrate Ksat, mm/day
+            self.c_lf.append(scalar(self.ini_param.get("c" + str(i))))  # subsurface flow coefficient)
 
         self.fc_adj = scalar(self.ini_param.get("fc_adj"))  # Adjusting Paul's FC (equivalent so far)
         self.root_adj = scalar(self.ini_param.get("root_adj"))  # Adjust Root Depth factor
         self.c_adr = scalar(self.ini_param.get("c_adr"))
+        self.drainage_layers = [False, False, True, False]  # z2 turned on!!
         z3_factor = scalar(self.ini_param.get("z3_factor"))  # Represents top proportion of bottom-most layer
         # if m_state == 0:
         #     pass
@@ -420,12 +421,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         for i in range(self.num_layers):
             if i < self.num_layers - 1:
                 self.layer_depth.append(self.zero_map +
-                                        scalar(self.ini_param.get('z'+str(i))))
+                                        scalar(self.ini_param.get('z' + str(i))))
                 self.tot_depth += self.layer_depth[i]
             else:
                 self.layer_depth.append((self.datum_depth +  # total height
-                                        scalar(self.ini_param.get('z' + str(i))) # plus a min-depth
-                                        - self.tot_depth)*z3_factor)  # minus:(z0, z1, z2)*decreasing depth factor
+                                         scalar(self.ini_param.get('z' + str(i)))  # plus a min-depth
+                                         - self.tot_depth) * z3_factor)  # minus:(z0, z1, z2)*decreasing depth factor
                 self.tot_depth += self.layer_depth[i]
 
         # self.z0 = self.zero_map + 10  # mm -> 1cm
@@ -441,22 +442,20 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Hydro Maps
         """
         # Initial moisture (Final from model v1, Sept 30, 2016)
+        self.theta = []
         if start_jday() < 166:
-            self.theta_z0 = readmap('d14_theta_z0')  # map of initial soil moisture in top layer (-)
-            self.theta_z1 = readmap('d14_theta_z1')
-            self.theta_z2 = readmap('d14_theta_z2')
-            self.theta_z3 = readmap("d14_theta_z3")  # * z3_factor + scalar(0.6) * self.gw_factor
+            self.theta.append(readmap('d14_theta_z0'))  # map of initial soil moisture in top layer (-)
+            self.theta.append(readmap('d14_theta_z1'))
+            self.theta.append(readmap('d14_theta_z2'))
+            self.theta.append(readmap("d14_theta_z3"))  # * z3_factor + scalar(0.6) * self.gw_factor
         else:
-            self.theta_z0 = readmap('d166_theta_z0')
-            self.theta_z1 = readmap('d166_theta_z1')
-            self.theta_z2 = readmap('d166_theta_z2')
-            self.theta_z3 = readmap("d166_theta_z3")
+            self.theta.append(readmap('d166_theta_z0'))  # map of initial soil moisture in top layer (-)
+            self.theta.append(readmap('d166_theta_z1'))
+            self.theta.append(readmap('d166_theta_z2'))
+            self.theta.append(readmap("d166_theta_z3"))  # * z3_factor + scalar(0.6) * self.gw_factor
 
         # Need initial states to compute change in storage after each run
-        self.theta_z0_ini = self.theta_z0
-        self.theta_z1_ini = self.theta_z1
-        self.theta_z2_ini = self.theta_z2
-        self.theta_z3_ini = self.theta_z3
+        self.theta_ini = deepcopy(self.theta)
 
         """
         Pesticides Maps
@@ -469,34 +468,37 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Mass
             # in ug = conc. (ug/g soil) * density (g/cm3) * (10^6 cm3/m3)*(1 m/10^3 mm)* depth_layer(mm) * cellarea(m2)
             # g = ug * 10e-06
-            self.smback_z0 = (self.zero_map + 0.06) * self.p_b * scalar(
-                10 ** 6 / 10 ** 3) * self.layer_depth[0] * cellarea() * 10e-06  # Based on detailed soils
-            self.smback_z1 = (self.zero_map + 0.03) * self.p_b * scalar(
-                10 ** 6 / 10 ** 3) * self.layer_depth[1] * cellarea() * 10e-06  # Based on detailed soils
-            self.smback_z2 = (self.zero_map + 0.00001) * self.p_b * scalar(
-                10 ** 6 / 10 ** 3) * self.layer_depth[2] * cellarea() * 10e-06  # Assumed
-            # TODO: Background z3, and delta values..
+            self.sm_background = []
+            mean_back_conc = [0.06, 0.03, 0.001, 0.001]
+            for i in range(self.num_layers):
+                background = ((self.zero_map + mean_back_conc[i]) * self.p_b * scalar(10 ** 6 / 10 ** 3) *
+                              self.layer_depth[i] * cellarea() * 10e-06)  # Based on detailed soils
+                self.sm_background.append(background)
 
-            # Carbon Delta (Background)
-            # Assumed theoretical max @99% deg Streitwieser Semiclassical Limits
-            self.delta_z0 = self.zero_map - 23.7
-            self.delta_z0_ini = self.delta_z0
-            self.delta_z1 = self.zero_map - 23.7
-            self.delta_z1_ini = self.delta_z1
-            self.delta_z2 = self.zero_map - 23.7
-            self.delta_z2_ini = self.delta_z2
+            # Fraction masses and Delta (Background)
+            self.lightmass = []
+            self.lightmass_ini = []
+            self.heavymass = []
+            self.heavymass_ini = []
 
-            self.lightback_z0 = self.smback_z0 / (1 + self.r_standard * (self.delta_z0 / 1000 + 1))
-            self.lightback_z1 = self.smback_z1 / (1 + self.r_standard * (self.delta_z1 / 1000 + 1))
-            self.lightback_z2 = self.smback_z2 / (1 + self.r_standard * (self.delta_z2 / 1000 + 1))
+            self.delta = []
+            self.delta_ini = []
+            self.light_back = []
+            self.heavy_back = []
 
-            self.heavyback_z0 = self.smback_z0 - self.lightback_z0
-            self.heavyback_z1 = self.smback_z1 - self.lightback_z1
-            self.heavyback_z2 = self.smback_z2 - self.lightback_z2
+            for i in range(self.num_layers):
+                # Initial deltas assume theoretical max @99% deg Streitwieser Semiclassical Limits
+                self.delta.append(self.zero_map - 23.7)
+                self.delta_ini.append(self.zero_map - 23.7)
+                self.light_back.append(self.sm_background[i] /
+                                       (1 + self.r_standard * (self.delta[i] / 1000 + 1)))
+                self.heavy_back.append(self.sm_background[i] - self.light_back[i])
 
-            # self.report(self.smback_z0, 'a_tback')
-            # self.report(self.lightback_z0, "a_lback")
-            # self.report(self.heavyback_z0, "a_hback")
+                # Set mass fractions <- background fractions
+                self.lightmass.append(self.light_back[i])
+                self.lightmass_ini.append(self.light_back[i])
+                self.heavymass.append(self.heavy_back[i])
+                self.heavymass_ini.append(self.heavy_back[i])
 
             # Applications Mass
             # Product concentration (active ing.)
@@ -573,32 +575,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.app2delta = ifthenelse(self.app2 > 0, scalar(-32.3), scalar(-23.7))
             self.app3delta = ifthenelse(self.app3 > 0, scalar(-32.3), scalar(-23.7))
 
-            # Assign background as initial
-            # self.pestmass_z0 = self.smback_z0  #
-            # self.pestmass_z0_ini = self.pestmass_z0
-            # self.pestmass_z1 = self.smback_z1  #
-            # self.pestmass_z1_ini = self.pestmass_z1
-            # self.pestmass_z2 = self.smback_z2  #
-            # self.pestmass_z2_ini = self.pestmass_z2
-
-            self.lightmass_z0 = self.lightback_z0  #
-            self.lightmass_z0_ini = self.lightmass_z0
-            self.lightmass_z1 = self.lightback_z1  #
-            self.lightmass_z1_ini = self.lightmass_z1
-            self.lightmass_z2 = self.lightback_z2  #
-            self.lightmass_z2_ini = self.lightmass_z2
-            self.lightmass_z3 = self.lightback_z2  #
-            self.lightmass_z3_ini = self.lightmass_z2
-
-            self.heavymass_z0 = self.heavyback_z0  #
-            self.heavymass_z0_ini = self.heavymass_z0
-            self.heavymass_z1 = self.heavyback_z1  #
-            self.heavymass_z1_ini = self.heavymass_z1
-            self.heavymass_z2 = self.heavyback_z2  #
-            self.heavymass_z2_ini = self.heavymass_z2
-            self.heavymass_z3 = self.heavyback_z2  #
-            self.heavymass_z3_ini = self.heavymass_z2
-
             # Cumulative maps
             # self.light_ini_storage_ug = self.lightmass_z0_ini + self.lightmass_z1_ini + self.lightmass_z2_ini
             # self.cum_appl_g = self.zero_map
@@ -631,11 +607,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         self.lag = scalar(0.8)  # lag coefficient (-), 0 < lag < 1; -> in SWAT, lag = 0.80
         # Generating initial surface temp map (15 deg is arbitrary)
-        self.temp_z0_fin = self.zero_map + 15
-        self.temp_z1_fin = self.zero_map + 15
-        self.temp_z2_fin = self.zero_map + 15
-        self.temp_z3_fin = self.zero_map + 15
+        self.temp_fin = []
         self.temp_surf_fin = self.zero_map + 15
+        for i in range(self.num_layers):
+            self.temp_fin.append(self.zero_map + 15)
 
         # Maximum damping depth (dd_max)
         # The damping depth (dd) is calculated daily and is a function of max. damping depth (dd_max), (mm):
@@ -650,7 +625,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         start_day = start_jday()  # Returns initial timestep
         greg_date = self.time_dict[str(start_day)].split("/", 2)
-        print("Date: ", greg_date[0], greg_date[1],  greg_date[2])
+        print("Date: ", greg_date[0], greg_date[1], greg_date[2])
         print("Sim Day: ", start_day)
         yy = int(greg_date[2])
         mm = int(greg_date[1])
@@ -693,9 +668,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         print("state:", m_state)
         self.theta_wp = scalar(self.ini_param.get("wp_zAll"))  # => 0.19
         self.theta_sat_z2 = readmap("thSATz2")  # => 0.63
-            # scalar(self.ini_param.get("sat_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
+        # scalar(self.ini_param.get("sat_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
         self.theta_fcap_z2 = readmap("thFCz2")  # => 0.39
-            # scalar(self.ini_param.get("fc_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
+        # scalar(self.ini_param.get("fc_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
         # self.report(self.theta_sat_z2, "thSATz2")
         # self.report(self.theta_fcap_z2, "thFCz2")
 
@@ -761,17 +736,18 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # theta_sat_z0z1 = lookupscalar('croptable.tbl', 17, fields)  # saturated moisture # [-]
 
         theta_sat_z0z1 = timeinputscalar('thetaSat_agr.tss', nominal(self.landuse))  # saturated moisture # [-]
-        theta_sat_z2 = self.theta_sat_z2 # lookupscalar('croptable.tbl', 19, fields)  # saturated moisture # [-]
-        theta_sat_z3 = theta_sat_z2 # lookupscalar('croptable.tbl', 19, fields)  # saturated moisture
+        theta_sat_z2 = self.theta_sat_z2  # lookupscalar('croptable.tbl', 19, fields)  # saturated moisture # [-]
+        theta_sat_z3 = theta_sat_z2  # lookupscalar('croptable.tbl', 19, fields)  # saturated moisture
 
-        theta_fcap_z0z1 = timeinputscalar('thetaFC_agr.tss', nominal(self.landuse))*self.fc_adj  # field capacity
-        theta_fcap_z2 = self.theta_fcap_z2  #    field capacity
+        theta_fcap_z0z1 = timeinputscalar('thetaFC_agr.tss', nominal(self.landuse)) * self.fc_adj  # field capacity
+        theta_fcap_z2 = self.theta_fcap_z2  # field capacity
         theta_fcap_z3 = theta_fcap_z2  # lookupscalar('croptable.tbl', 20, fields)
 
-        theta_wp = self.theta_wp # scalar(0.19)  # lookupscalar('croptable.tbl', 21, fields)  # wilting point moisture
+        theta_wp = self.theta_wp  # scalar(0.19)  # lookupscalar('croptable.tbl', 21, fields)  # wilting point moisture
         # k_sat_z0z1 = lookupscalar('croptable.tbl', 22, fields)  # saturated conductivity of the first layer
         k_sat_z0z1 = timeinputscalar('ksats.tss', nominal(self.landuse))
         k_sat_z2z3 = lookupscalar('croptable.tbl', 23, fields)  # saturated conductivity of the second layer
+        k_sat = [k_sat_z0z1, k_sat_z0z1, k_sat_z2z3, k_sat_z2z3]
         CN2_A = lookupscalar('croptable.tbl', 24, fields)  # curve number of moisture condition II
         CN2_B = lookupscalar('croptable.tbl', 25, fields)  # curve number of moisture condition II
         CN2_C = lookupscalar('croptable.tbl', 26, fields)  # curve number of moisture condition II
@@ -820,7 +796,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         LAIful = max_LAI + 0.5
 
         height = timeinputscalar('height.tss', nominal(self.landuse))
-        root_depth = timeinputscalar('height.tss', nominal(self.landuse))*self.root_adj
+        root_depth = timeinputscalar('height.tss', nominal(self.landuse)) * self.root_adj
         root_depth *= 10 ** 3  # Convert to mm
 
         # TODO: Remove printouts
@@ -833,11 +809,16 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                    ifthenelse(root_depth <= self.layer_depth[1] + self.layer_depth[0],
                                               root_depth - self.layer_depth[0], self.layer_depth[1]))
         root_depth_z2 = ifthenelse(root_depth <= self.layer_depth[0] + self.layer_depth[1], scalar(0),
-                                   ifthenelse(root_depth <= self.layer_depth[0] + self.layer_depth[1] + self.layer_depth[2],
-                                              root_depth - self.layer_depth[0] - self.layer_depth[1], self.layer_depth[2]))
-        root_depth_z3 = ifthenelse(root_depth <= self.layer_depth[0] + self.layer_depth[1] + self.layer_depth[2], scalar(0),
-                                   ifthenelse(root_depth <= self.layer_depth[0] + self.layer_depth[1] + self.layer_depth[2] + self.layer_depth[3],
-                                              root_depth - self.layer_depth[0] - self.layer_depth[1] - self.layer_depth[2], self.layer_depth[3]))
+                                   ifthenelse(
+                                       root_depth <= self.layer_depth[0] + self.layer_depth[1] + self.layer_depth[2],
+                                       root_depth - self.layer_depth[0] - self.layer_depth[1], self.layer_depth[2]))
+        root_depth_z3 = ifthenelse(root_depth <= self.layer_depth[0] + self.layer_depth[1] + self.layer_depth[2],
+                                   scalar(0),
+                                   ifthenelse(
+                                       root_depth <= self.layer_depth[0] + self.layer_depth[1] + self.layer_depth[2] +
+                                       self.layer_depth[3],
+                                       root_depth - self.layer_depth[0] - self.layer_depth[1] - self.layer_depth[2],
+                                       self.layer_depth[3]))
 
         # calculation of leaf area index
         LAI = ifthenelse(jd_sim < jd_plant, scalar(0),
@@ -886,40 +867,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # bcv should range 0 (bare soil) to 1 (complete cover)
         # self.report(bio_cover, 'aBCV')
 
-        ######################################################################################
-        # Mixing layer: depth z0
-        layer = 0
-        # State functions
-        #########################
-        # Temperature, z0
-        temp_dict_z0 = getLayerTemp(self, layer, bio_cover, temp_bare_soil)
-        self.temp_surf_fin = temp_dict_z0["temp_surface"]
-        self.temp_z0_fin = temp_dict_z0["temp_layer"]
-
-        #########################
-        # Moisture, z0
-        z0_moisture = getLayerMoisture(self, layer,
-                                       precip, theta_wp, CN2, crop_type, #soil_group,
-                                       jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage,
-                                       root_depth, pot_evapor, pot_transpir, depletable_water,
-                                       k_sat_z0z1, root_depth_z0,
-                                       theta_fcap_z0z1, theta_sat_z0z1)
-        percolation_z0 = z0_moisture["percolate"]
-        sat_excess_z0 = z0_moisture["satex"]
-        runoff_z0 = z0_moisture["runoff"]
-        etp_z0 = z0_moisture["ETP"]
-        # Report the discharge map
-        # discharge = accuflux(self.ldd, runoff_z0)
-        # self.report(discharge, "dt" + str(self.jd_cum) + "discharge.map")
-        lat_netflow_z0 = z0_moisture["lat_flow"]
-        lat_inflow_z0 = z0_moisture["upstream_lat_inflow"]
-        lat_outflow_z0 = z0_moisture["cell_lat_outflow"]
-        overflow_height_z0 = z0_moisture["overflow_height"]
-
         if self.PEST:
+            # Non-hydrological, non-reactive transport on z0
             #########################
-            # Mass Transfer, z0
-
             # Applications
             mass_applied = self.zero_map
             light_applied = self.zero_map
@@ -952,9 +902,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.lightmass_z0 += light_applied
                 self.heavymass_z0 += heavy_applied
 
-                # Isotopes change due to applications
-                # self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
-                #                      self.r_standard) * 1000  # [permille]
 
                 if self.TRANSPORT:
                     # Mass & delta volatilized
@@ -971,93 +918,113 @@ class BeachModel(DynamicModel, MonteCarloModel):
                     self.lightmass_z0 -= light_volat
                     self.heavymass_z0 -= heavy_volat
 
-                # Final delta after application day (minus volat)
-                # delta_before = self.delta_z0
-                self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
-                                 self.r_standard) * 1000  # [permille]
-                # self.report(delta_before, 'at0dC')
-                # self.report(self.delta_z0, 'az0dC')
+        #########################
+        infil_z0 = deepcopy(self.zero_map)
+        runoff_z0 = deepcopy(self.zero_map)
+        percolation = []
+        mass_runoff = []
+        light_leached = []
+        heavy_leached = []
+        permeable = True
+        # # Infiltration, runoff, & percolation (all layers)
+        for i in range(self.num_layers):
+            if i == 0:  # Layer 0
+                z0_IRO = getTopLayerInfil(self, precip, theta_wp, CN2, crop_type,
+                                          jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage)
 
-            # self.report(mass_applied, 'aMapp')
-            # self.report(light_applied, 'aMappL')
-            # self.report(heavy_applied, 'aMappH')
-            # self.report(self.lightmass_z0, 'aMz0LL')
-            # self.report(light_volat, 'aMz0Vol')
-            if self.TRANSPORT:
+                infil_z0 = z0_IRO.get("infil")  # [mm]
+                runoff_z0 = z0_IRO.get("roff")  # [mm]
+                self.theta[i] += infil_z0 / self.layer_depth[i]  # [-]
+                # getRunOffMass
                 # Mass & delta run-off (RO)
-                light_runoff = getRunOffMass(self, theta_sat_z0z1, precip, runoff_z0,
-                                             self.lightmass_z0,
-                                             transfer_model="simple-mt", sorption_model="linear",
-                                             gas=True)
-                heavy_runoff = getRunOffMass(self, theta_sat_z0z1, precip, runoff_z0,
-                                             self.heavymass_z0,
-                                             transfer_model="simple-mt", sorption_model="linear",
-                                             gas=True)
+                mass_runoff.apped(getRunOffMass(self, precip, runoff_z0, self.lightmass_z0,
+                                                transfer_model="simple-mt", sorption_model="linear",
+                                                gas=True))
+                mass_runoff.apped(getRunOffMass(self, precip, runoff_z0, self.heavymass_z0,
+                                                transfer_model="simple-mt", sorption_model="linear",
+                                                gas=True))
+                self.lightmass_z0 -= mass_runoff[0]  # light
+                self.heavymass_z0 -= mass_runoff[1]  # heavy
+                percolation.append(getPercolation(self, i, k_sat[i], isPermeable=permeable))  # [mm]
+                light_leached.append(getLeachedMass(self, i, infil_z0, self.lightmass[i],
+                                                    sorption_model="linear", leach_model="mcgrath", gas=True,
+                                                    debug=self.PEST))
+                heavy_leached.append(getLeachedMass(self, i, infil_z0, self.heavymass[i],
+                                                    sorption_model="linear", leach_model="mcgrath", gas=True,
+                                                    debug=self.PEST))
+                self.theta[i] -= percolation[i] / self.layer_depth[i]
+                self.lightmass[i] -= light_leached[i]
+                self.heavymass[i] -= heavy_leached[i]
 
-                self.lightmass_z0 -= light_runoff  # ug
-                self.heavymass_z0 -= heavy_runoff
+            else:  # Layers 1, 2 & 3
+                if i == (self.num_layers - 1):
+                    permeable = self.bsmntIsPermeable
+                self.theta[i] += percolation[i - 1] / self.layer_depth[i - 1]
+                # self.theta[layer+1] += percolation_z0 / self.layer_depth[layer]
+                self.lightmass[i] += light_leached[i - 1]
+                self.heavymass[i] += heavy_leached[i - 1]
+                percolation.append(getPercolation(self, i, k_sat[i], isPermeable=permeable))
+                light_leached.append(getLeachedMass(self, i, percolation[i], self.lightmass[i],
+                                                    sorption_model="linear", leach_model="mcgrath", gas=True,
+                                                    debug=self.PEST))
+                heavy_leached.append(getLeachedMass(self, i, percolation[i], self.heavymass[i],
+                                                    sorption_model="linear", leach_model="mcgrath", gas=True,
+                                                    debug=self.PEST))
+                self.theta[i] -= percolation[i] / self.layer_depth[i]
+                self.lightmass[i] -= light_leached[i]
+                self.heavymass[i] -= heavy_leached[i]
 
-                # Mass & delta leached (Deep Percolation - DP)
-                z0_light_leached = getLeachedMass(self, layer, theta_sat_z0z1, theta_fcap_z0z1,
-                                                  precip,
-                                                  z0_moisture["theta_after_percolate"],
-                                                  self.lightmass_z0,
-                                                  sorption_model="linear",
-                                                  leach_model="mcgrath", gas=True)
-                z0_heavy_leached = getLeachedMass(self, layer, theta_sat_z0z1, theta_fcap_z0z1,
-                                                  precip,
-                                                  z0_moisture["theta_after_percolate"],
-                                                  self.heavymass_z0,
-                                                  sorption_model="linear",
-                                                  leach_model="mcgrath", gas=True)
-                # self.report(z0_light_leached, 'aLEACH')
-                # self.report(self.lightmass_z0, 'aLEACHz')
+        # Artificial drainage (relevant layer)
+        drained_layers = [n for n, x in enumerate(self.drainage_layers) if x is True]  # <- list of indexes
+        adr_layer = int(drained_layers[0])  # <- 13.05.2018, implements only one layer (i.e. z2)!
+        cell_drainge_outflow = getArtificialDrainage(self, drained_layers)  # mm
+        light_drained = getDrainMassFlux(self, adr_layer, self.lightmass[adr_layer])  #
+        heavy_drained = getDrainMassFlux(self, adr_layer, self.heavymass[adr_layer])  #
+        self.lightmass[adr_layer] -= light_drained
+        self.heavymass[adr_layer] -= heavy_drained
+        self.theta[adr_layer] -= cell_drainge_outflow/self.layer_depth[adr_layer]
 
-                self.lightmass_z0 -= z0_light_leached
-                self.heavymass_z0 -= z0_heavy_leached
+        # Lateral flow
+        latflow_net = []
+        ligth_latflow = []
+        heavy_latflow = []
+        for i in range(self.num_layers):
+            latflow_dict = getLateralFlow(self, i)
+            ligth_latflow_dict = getLatMassFlux(self, i, self.lightmass[i])
+            heavy_latflow_dict = getLatMassFlux(self, i, self.heavymass[i])
+            self.lightmass[i] += ligth_latflow_dict['net_mass_latflux']
+            self.heavymass[i] += heavy_latflow_dict['net_mass_latflux']
+            self.theta[i] += latflow_dict['lateral_flow_layer']
 
-                # Mass (LF)
-                z0_light_latflux = getLatMassFlux(self, layer, theta_sat_z0z1, theta_fcap_z0z1,
-                                                  self.lightmass_z0,
-                                                  sorption_model="linear", gas=True)
-                z0_heavy_latflux = getLatMassFlux(self, layer, theta_sat_z0z1, theta_fcap_z0z1,
-                                                  self.heavymass_z0,
-                                                  sorption_model="linear", gas=True)
+        # TODO: ETP, moisture change
 
-                self.lightmass_z0 += z0_light_latflux['net_mass_latflux']
-                self.heavymass_z0 += z0_heavy_latflux['net_mass_latflux']
+        light_deg = []
+        ch_storage_light = []
 
-                # net_latflux = z0_light_latflux['net_mass_latflux']
-                # self.report(net_latflux, 'aLF')
-                # self.report(self.lightmass_z0, 'aLFz')
-
-
+        for layer in range(self.num_layers):
+            # Temperature
+            temp_dict = getLayerTemp(self, layer, bio_cover, temp_bare_soil)
+            self.temp_surf_fin = temp_dict["temp_surface"]
+            self.temp_fin[layer] = temp_dict["temp_layer"]
 
             # Degradation
-            if self.DEGRADE:
-                z0_deg_light = getMassDegradation(self, layer,
-                                                  theta_sat_z0z1, theta_fcap_z0z1, theta_wp,
-                                                  self.lightmass_z0, frac="L", sor_deg_factor=1)
-                z0_deg_heavy = getMassDegradation(self, layer,
-                                                  theta_sat_z0z1, theta_fcap_z0z1, theta_wp,
-                                                  self.heavymass_z0, frac="H", sor_deg_factor=1)
+            deg_light_dict = getMassDegradation(self, layer, theta_wp, self.lightmass[layer],
+                                                frac="L", sor_deg_factor=1)
+            deg_heavy_dict = getMassDegradation(self, layer, theta_wp, self.heavymass[layer],
+                                                frac="H", sor_deg_factor=1)
 
-                self.lightmass_z0 = z0_deg_light["mass_tot_new"]
-                z0_light_deg = z0_deg_light.get("mass_deg_aq") + z0_deg_light.get("mass_deg_ads")
-                self.heavymass_z0 = z0_deg_heavy["mass_tot_new"]
+            self.lightmass[layer] = deg_light_dict["mass_tot_new"]
+            light_deg.append(deg_light_dict.get("mass_deg_aq") +
+                             deg_heavy_dict.get("mass_deg_ads"))
+            self.heavymass[layer] = deg_heavy_dict["mass_tot_new"]
 
             # Change in mass storage after degradation - Pesticide Mass
-            ch_storage_z0_light = self.lightmass_z0 - self.lightmass_z0_ini
-            self.lightmass_z0_ini = self.lightmass_z0
+            ch_storage_light.append(self.lightmass[layer] -
+                                    self.lightmass_ini[layer])
+            self.lightmass_ini[layer] = self.lightmass[layer]
 
-            # Cumulative
-            # tot_runoff = light_runoff + heavy_runoff
-            # self.cum_runoff_ug += tot_runoff
-            # self.cum_latflux_ug_z0 += z0_light_latflux["net_mass_latflux"]
-            self.delta_z0 = ((self.heavymass_z0 / self.lightmass_z0 - self.r_standard) /
+            self.delta[layer] = ((self.heavymass[layer] / self.lightmass[layer] - self.r_standard) /
                              self.r_standard) * 1000  # [permille]
-            # self.report(self.delta_z0, 'az0dC')
-            # self.report(self.lightmass_z0, 'az0ML')
 
         # Update state variables
         # Change in storage - Moisture
@@ -1252,7 +1219,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.temp_z1_fin = temp_dict_z1["temp_layer"]
         # Moisture
         z1_moisture = getLayerMoisture(self, layer,
-                                       precip, theta_wp, CN2, crop_type, #soil_group,
+                                       precip, theta_wp, CN2, crop_type,  # soil_group,
                                        jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage,
                                        root_depth, pot_evapor, pot_transpir, depletable_water,
                                        k_sat_z0z1, root_depth_z1,
@@ -1274,75 +1241,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Mass volatilized = not relevant @z1!
             # Mass runoff = not relevant @z1!
             # Mass & delta leached (Deep Percolation - DP, z1)
-            if self.TRANSPORT:
-                self.lightmass_z1 += z0_light_leached
-                self.heavymass_z1 += z0_heavy_leached
-                # z1_mass_leached = getLeachedMass(self, 1, theta_sat_z0z1,
-                #                                  precip,
-                #                                  percolation_z1,
-                #                                  z1_moisture["theta_after_percolate"],
-                #                                  sorption_model="linear")
-
-                # Mass & delta leached (Deep Percolation - DP)
-                z1_light_leached = getLeachedMass(self, layer, theta_sat_z0z1, theta_fcap_z0z1,
-                                                  percolation_z1,
-                                                  z1_moisture["theta_after_percolate"],
-                                                  self.lightmass_z1,
-                                                  sorption_model="linear",
-                                                  leach_model="mcgrath", gas=True)
-                z1_heavy_leached = getLeachedMass(self, layer, theta_sat_z0z1, theta_fcap_z0z1,
-                                                  percolation_z1,
-                                                  z1_moisture["theta_after_percolate"],
-                                                  self.heavymass_z1,
-                                                  sorption_model="linear",
-                                                  leach_model="mcgrath", gas=True)
-
-                self.lightmass_z1 -= z1_light_leached
-                self.heavymass_z1 -= z1_heavy_leached
-                # self.report(percolation_z1, 'aPercol')
-                # self.report(z1_light_leached, 'aLEACH')
-                # self.report(self.lightmass_z1, 'aLEACHz')
-
-                # TODO: Include mass drain if z1 remains
-                # Mass drainage (z1)
-                # z1_light_drain = getDrainMassFlux(self, 1, theta_sat_z0z1, theta_fcap_z0z1,
-                #                                   self.lightmass_z1,
-                #                                   sorption_model='linear', gas=True)
-                # z1_heavy_drain = getDrainMassFlux(self, 1, theta_sat_z0z1, theta_fcap_z0z1,
-                #                                   self.heavymass_z1,
-                #                                   sorption_model='linear', gas=True)
-
-                # self.lightmass_z1 -= z1_light_drain
-                # self.heavymass_z1 -= z1_heavy_drain
-
-                # Mass latflux (LF), z1
-                z1_light_latflux = getLatMassFlux(self, layer, theta_sat_z0z1, theta_fcap_z0z1,
-                                                  self.lightmass_z1,
-                                                  sorption_model="linear", gas=True)
-                z1_heavy_latflux = getLatMassFlux(self, layer, theta_sat_z0z1, theta_fcap_z0z1,
-                                                  self.heavymass_z1,
-                                                  sorption_model="linear", gas=True)
-
-                self.lightmass_z1 += z1_light_latflux['net_mass_latflux']
-                self.heavymass_z1 += z1_heavy_latflux['net_mass_latflux']
-
-            # Degradation
-            if self.DEGRADE:
-                z1_deg_light = getMassDegradation(self, layer,
-                                                  theta_sat_z0z1, theta_fcap_z0z1, theta_wp,
-                                                  self.lightmass_z1, frac="L", sor_deg_factor=1)
-                z1_deg_heavy = getMassDegradation(self, layer,
-                                                  theta_sat_z0z1, theta_fcap_z0z1, theta_wp,
-                                                  self.heavymass_z1, frac="H", sor_deg_factor=1)
-
-                self.lightmass_z1 = z1_deg_light["mass_tot_new"]
-                z1_light_deg = z1_deg_light.get("mass_deg_aq") + z1_deg_light.get("mass_deg_ads")
-                self.heavymass_z1 = z1_deg_heavy["mass_tot_new"]
-
-            self.delta_z1 = ((self.heavymass_z1 / self.lightmass_z1 - self.r_standard) /
-                             self.r_standard) * 1000  # [permille]
-            # self.report(self.delta_z1, 'az1dC')
-            # self.report(self.lightmass_z0, 'az1ML')
 
             # Change in storage - Pesticide Mass
             # self.conc_z1 = self.lightmass_z1 / (self.theta_z1 * self.layer_depth[1])  # mg/mm
@@ -1360,203 +1258,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
                            (self.theta_z1_ini * self.layer_depth[1] * cellarea() / 1000)
         self.theta_z1_ini = self.theta_z1
 
-        #######################################################################################
-        # Layer z = 2
-        layer = 2
-        # Temperature
-        temp_dict_z2 = getLayerTemp(self, layer, bio_cover, temp_bare_soil)
-        self.temp_z2_fin = temp_dict_z2["temp_layer"]
-        # Moisture
-        z2_moisture = getLayerMoisture(self, layer,
-                                       precip, theta_wp, CN2, crop_type, #soil_group,
-                                       jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage,
-                                       root_depth, pot_evapor, pot_transpir, depletable_water,
-                                       k_sat_z2z3, root_depth_z2,
-                                       theta_fcap_z2, theta_sat_z2,
-                                       percolate=percolation_z1, ADLF=self.ADLF, c_adr=self.c_adr
-                                       )
-
-        percolation_z2 = z2_moisture["percolate"]
-        drain_outflow_z2 = z2_moisture["drain_lat_outflow"]  # Artificial drainage
-        lat_netflow_z2 = z2_moisture["lat_flow"]
-        lat_outflow_z2 = z2_moisture["cell_lat_outflow"]
-        lat_inflow_z2 = z2_moisture["upstream_lat_inflow"]
-        overflow_height_z2 = z2_moisture["overflow_height"]
-        etp_z2 = z2_moisture["ETP"]
-
-        if self.PEST:
-            #########################
-            # Mass Transfer, z2
-            # Mass volatilized = not relevant @z2!
-            # Mass runoff = not relevant @z2!
-            # Mass & delta leached (Deep Percolation - DP, z2)
-            if self.TRANSPORT:
-                self.lightmass_z2 += z1_light_leached
-                self.heavymass_z2 += z1_heavy_leached
-
-                z2_light_leached = getLeachedMass(self, layer, theta_sat_z2, theta_fcap_z2,
-                                                  percolation_z2,
-                                                  z2_moisture["theta_after_percolate"],
-                                                  self.lightmass_z2,
-                                                  sorption_model="linear",
-                                                  leach_model="mcgrath", gas=True)
-                z2_heavy_leached = getLeachedMass(self, layer, theta_sat_z2, theta_fcap_z2,
-                                                  percolation_z2,
-                                                  z2_moisture["theta_after_percolate"],
-                                                  self.heavymass_z2,
-                                                  sorption_model="linear",
-                                                  leach_model="mcgrath", gas=True)
-
-                self.lightmass_z2 -= z2_light_leached
-                self.heavymass_z2 -= z2_heavy_leached
-
-                # Mass drainage (z2)
-                z2_light_drain = getDrainMassFlux(self, layer, theta_sat_z2, theta_fcap_z2,
-                                                  self.lightmass_z2,
-                                                  sorption_model='linear', gas=True)
-                z2_heavy_drain = getDrainMassFlux(self, layer, theta_sat_z2, theta_fcap_z2,
-                                                  self.heavymass_z2,
-                                                  sorption_model='linear', gas=True)
-
-                self.lightmass_z2 -= z2_light_drain
-                self.heavymass_z2 -= z2_heavy_drain
-
-                # Mass & delta latflux (LF), z2
-                z2_light_latflux = getLatMassFlux(self, layer, theta_sat_z2, theta_fcap_z2,
-                                                  self.lightmass_z2,
-                                                  sorption_model="linear", gas=True)
-                z2_heavy_latflux = getLatMassFlux(self, layer, theta_sat_z2, theta_fcap_z2,
-                                                  self.heavymass_z2,
-                                                  sorption_model="linear", gas=True)
-
-                self.lightmass_z2 += z2_light_latflux['net_mass_latflux']
-                self.heavymass_z2 += z2_heavy_latflux['net_mass_latflux']
-
-            # Degradation
-            if self.DEGRADE:
-                z2_deg_light = getMassDegradation(self, layer,
-                                                  theta_sat_z2, theta_fcap_z2, theta_wp,
-                                                  self.lightmass_z2, frac="L", sor_deg_factor=1)
-                z2_deg_heavy = getMassDegradation(self, layer,
-                                                  theta_sat_z2, theta_fcap_z2, theta_wp,
-                                                  self.heavymass_z2, frac="H", sor_deg_factor=1)
-
-                self.lightmass_z2 = z2_deg_light["mass_tot_new"]
-                z2_light_deg = z2_deg_light.get("mass_deg_aq") + z2_deg_light.get("mass_deg_ads")
-                self.heavymass_z2 = z2_deg_heavy["mass_tot_new"]
-
-        # Update state variable
-        self.theta_z2 = z2_moisture["theta_final"]
-
         # Storage hydro
         ch_storage_z2_m3 = (self.theta_z2 * self.layer_depth[2] * cellarea() / 1000) - \
                            (self.theta_z2_ini * self.layer_depth[2] * cellarea() / 1000)
         self.theta_z2_ini = self.theta_z2
 
-        # Storage pest
-        if self.PEST:
-            # Change in storage - Pesticide Mass
-            # self.conc_z2 = self.pestmass_z2 / (self.theta_z2 * self.layer_depth[2])  # mg/mm
-            ch_storage_z2_light = self.lightmass_z2 - self.lightmass_z2_ini
-            self.lightmass_z2_ini = self.lightmass_z2
-
-        ######################################################################################
-        # Basement layer: depth z3
-        layer = 3
-        # State functions
-        #########################
-        # Temperature, z3
-        temp_dict_z3 = getLayerTemp(self, layer, bio_cover, temp_bare_soil)
-        self.temp_z3_fin = temp_dict_z3["temp_layer"]
-        z3_moisture = getLayerMoisture(self, layer,
-                                       precip, theta_wp, CN2, crop_type,  #soil_group,
-                                       jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage,
-                                       root_depth, pot_evapor, pot_transpir, depletable_water,
-                                       k_sat_z2z3, root_depth_z3,
-                                       theta_fcap_z3, theta_sat_z3,
-                                       percolate=percolation_z2, isPermeable=self.bsmntIsPermeable)
-        percolation_z3 = z3_moisture["percolate"]
-        lat_netflow_z3 = z3_moisture["lat_flow"]
-        lat_outflow_z3 = z3_moisture["cell_lat_outflow"]
-        lat_inflow_z3 = z3_moisture["upstream_lat_inflow"]
-        overflow_height_z3 = z3_moisture["overflow_height"]
-        etp_z3 = z3_moisture["ETP"]
-
-        if self.PEST:
-            #########################
-            # Mass Transfer, z3
-            # Mass volatilized = not relevant @z2!
-            # Mass runoff = not relevant @z2!
-            # Mass & delta leached (Deep Percolation - DP, z2)
-            if self.TRANSPORT:
-                self.lightmass_z3 += z2_light_leached
-                self.heavymass_z3 += z2_heavy_leached
-
-                z3_light_leached = getLeachedMass(self, layer, theta_sat_z3, theta_fcap_z3,
-                                                  percolation_z3,
-                                                  z3_moisture["theta_after_percolate"],
-                                                  self.lightmass_z3,
-                                                  sorption_model="linear",
-                                                  leach_model="mcgrath", gas=True)
-                z3_heavy_leached = getLeachedMass(self, layer, theta_sat_z3, theta_fcap_z3,
-                                                  percolation_z3,
-                                                  z3_moisture["theta_after_percolate"],
-                                                  self.heavymass_z3,
-                                                  sorption_model="linear",
-                                                  leach_model="mcgrath", gas=True)
-
-                self.lightmass_z3 -= z3_light_leached
-                self.heavymass_z3 -= z3_heavy_leached
-
-                # No artificial drainage in z3
-
-                # Mass & delta latflux (LF), z3
-                z3_light_latflux = getLatMassFlux(self, layer, theta_sat_z3, theta_fcap_z3,
-                                                  self.lightmass_z3,
-                                                  sorption_model="linear", gas=True)
-                z3_heavy_latflux = getLatMassFlux(self, layer, theta_sat_z3, theta_fcap_z3,
-                                                  self.heavymass_z3,
-                                                  sorption_model="linear", gas=True)
-
-                self.lightmass_z3 += z3_light_latflux['net_mass_latflux']
-                self.heavymass_z3 += z3_heavy_latflux['net_mass_latflux']
-
-            # Degradation
-            if self.DEGRADE:
-                z3_deg_light = getMassDegradation(self, layer,
-                                                  theta_sat_z3, theta_fcap_z3, theta_wp,
-                                                  self.lightmass_z3, frac="L", sor_deg_factor=1)
-                z3_deg_heavy = getMassDegradation(self, layer,
-                                                  theta_sat_z3, theta_fcap_z3, theta_wp,
-                                                  self.heavymass_z3, frac="H", sor_deg_factor=1)
-
-                self.lightmass_z3 = z3_deg_light["mass_tot_new"]
-                z3_light_deg = z3_deg_light.get("mass_deg_aq") + z3_deg_light.get("mass_deg_ads")
-                self.heavymass_z3 = z3_deg_heavy["mass_tot_new"]
-
-        # Update state variable
-        self.theta_z3 = z3_moisture["theta_final"]
-
-        # Baseflow
-        # self.baseflow = (self.theta_z3 * self.layer_depth[3] * self.gw_factor) / self.k_g  # [mm/d]
-
-        if self.PEST:
-            # if self.TRANSPORT:
-                # conc_aq_light_z3 = getConcAq(self, layer, self.theta_z3, self.lightmass_z3,
-                #                              sorption_model="linear", gas=True)  # ug/L
-                # conc_aq_heavy_z3 = getConcAq(self, layer, self.theta_z3, self.heavymass_z3,
-                #                              sorption_model="linear", gas=True)  # ug/L
-
-                # baseflow_light = self.baseflow * conc_aq_light_z3 * cellarea()  # ug
-                # baseflow_heavy = self.baseflow * conc_aq_heavy_z3 * cellarea()  # ug
-
-                # self.lightmass_z3 -= baseflow_light
-                # self.heavymass_z3 -= baseflow_heavy
-
-            self.delta_z3 = ((self.heavymass_z3 / self.lightmass_z3 - self.r_standard) /
-                             self.r_standard) * 1000  # [permille]
-            # self.report(self.delta_z2, 'az2dC')
-            # self.report(self.lightmass_z2, 'az2ML')
 
         # State Update
         # self.theta_z3 -= self.baseflow / self.layer_depth[3]
@@ -1691,7 +1397,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                            out_etp_m3 - out_runoff_m3 -
                            out_percol_m3 + catch_n_latflow_m3 - of_latflow_m3 -
                            out_drain_m3 -  # o_drain_z1_m3 -
-                           out_ch_storage_m3 # - out_baseflow_m3
+                           out_ch_storage_m3  # - out_baseflow_m3
                            )
 
         self.global_mb_water_tss.sample(global_mb_water)
@@ -1801,7 +1507,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 # self.out_baseflow_L_tss.sample(out_baseflow_light)
 
                 # Total mass export
-                outlet_light_export = (out_runoff_light + out_drain_light + outlet_cell_lightflux # +
+                outlet_light_export = (out_runoff_light + out_drain_light + outlet_cell_lightflux  # +
                                        # out_baseflow_light
                                        )
                 self.cum_exp_L_g += outlet_light_export
@@ -1816,7 +1522,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 light_mb_pest = (out_app_light - out_deg_light -
                                  out_volat_light - out_runoff_light -
                                  out_leach_light -
-                                 out_drain_light + net_latflux_light - #
+                                 out_drain_light + net_latflux_light -  #
                                  # out_baseflow_light -
                                  out_ch_storage_light)
                 self.global_mb_pest_tss.sample(light_mb_pest)
@@ -1883,18 +1589,18 @@ class BeachModel(DynamicModel, MonteCarloModel):
             1 - (conc_north_diff/var_north +  valley + south)
             """
             conc_north_obs = timeinputscalar('northConc.tss', ordinal("north_ave"))
-            self.northConc_diff += ifthenelse(conc_north_obs > 0, (north_ave_conc-conc_north_obs)**2, scalar(0))
-            self.northConc_var += ifthenelse(conc_north_obs > 0, (north_ave_conc - scalar(1.909193))**2,
+            self.northConc_diff += ifthenelse(conc_north_obs > 0, (north_ave_conc - conc_north_obs) ** 2, scalar(0))
+            self.northConc_var += ifthenelse(conc_north_obs > 0, (north_ave_conc - scalar(1.909193)) ** 2,
                                              scalar(0))  # ug/g
             conc_valley_obs = timeinputscalar('valleyConc.tss', ordinal("valley_ave"))
-            self.valleyConc_diff += ifthenelse(conc_valley_obs > 0, (valley_ave_conc-conc_valley_obs)**2, scalar(0))
-            self.valleyConc_var += ifthenelse(conc_valley_obs > 0, (valley_ave_conc - scalar(2.261839))**2,
-                                             scalar(0))  # ug/g
+            self.valleyConc_diff += ifthenelse(conc_valley_obs > 0, (valley_ave_conc - conc_valley_obs) ** 2, scalar(0))
+            self.valleyConc_var += ifthenelse(conc_valley_obs > 0, (valley_ave_conc - scalar(2.261839)) ** 2,
+                                              scalar(0))  # ug/g
             conc_south_obs = timeinputscalar('southConc.tss', ordinal("south_ave"))
-            self.southConc_diff += ifthenelse(conc_south_obs > 0, (south_ave_conc-conc_south_obs)**2, scalar(0))
-            self.southConc_var += ifthenelse(conc_south_obs > 0, (south_ave_conc - scalar(2.389668))**2,
+            self.southConc_diff += ifthenelse(conc_south_obs > 0, (south_ave_conc - conc_south_obs) ** 2, scalar(0))
+            self.southConc_var += ifthenelse(conc_south_obs > 0, (south_ave_conc - scalar(2.389668)) ** 2,
                                              scalar(0))  # ug/g
-            nash_compConc_L = 1 - ((self.northConc_diff/self.northConc_var) * 1/3 +
+            nash_compConc_L = 1 - ((self.northConc_diff / self.northConc_var) * 1 / 3 +
                                    (self.valleyConc_diff / self.valleyConc_var) * 1 / 3 +
                                    (self.southConc_diff / self.southConc_var) * 1 / 3)
             self.nash_compConc_L_tss.sample(nash_compConc_L)
@@ -1942,9 +1648,8 @@ t1 = datetime.now()
 duration = t1 - t0
 tot_min = duration.total_seconds() / 60
 print("Total minutes: ", tot_min)
-print("Minutes/monte carlo", tot_min/int(runs))
+print("Minutes/monte carlo", tot_min / int(runs))
 print("Minutes/Yr: ", (duration.total_seconds() / 60) / (nTimeSteps - firstTimeStep) * 365)
-
 
 if morris:
     # First test of soil-water holding capacity on:
