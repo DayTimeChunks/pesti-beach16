@@ -73,8 +73,9 @@ def runoff_SCS(model, rain,
 
     # SFCD0=thetaFCD0*self.depth0 # conversion of percentage moisture to mm of water
     layer = 0
-    SFC1 = model.theta_fc[layer] * (
-        model.layer_depth[layer + 1] + model.layer_depth[layer])  # conversion of percentage moisture to mm of water
+    # Soil water content at field capacity (mm)
+    SFC1 = (model.theta_fc[layer] * model.layer_depth[layer] +
+            model.theta_fc[layer + 1] * model.layer_depth[layer + 1])
 
     # SWPD0=theta_wp*self.depth0
     SWP = theta_wp * (model.layer_depth[layer + 1] + model.layer_depth[layer])
@@ -114,8 +115,8 @@ def runoff_SCS(model, rain,
     # SW=self.theta_z1*(D1+10)-SWP;
 
     # Moisture content [-] of first two depths -> avoids excessive runoff
-    theta_d0d1 = (model.layer_depth[layer] * model.layer_depth[layer] +
-                  model.layer_depth[layer + 1] * model.layer_depth[layer + 1]) / (
+    theta_d0d1 = (model.theta[layer] * model.layer_depth[layer] +
+                  model.theta[layer + 1] * model.layer_depth[layer + 1]) / (
                      model.layer_depth[layer] + model.layer_depth[layer + 1])
 
     # Soil Water content in mm (soil column of first two depths) -> avoid excessive runoff
@@ -148,6 +149,8 @@ def getTopLayerInfil(model, precip,
     # Infiltration [mm] based on
     # retention parameter "S" with depth = z0 + z1
     infil = precip - roff_z0  # Potential infiltration only
+    model.report(infil, 'aINFini')
+    model.report(roff_z0, 'aROini')
     # Step 2. Check own capacity
     theta_check_own = theta_layer + (infil / model.layer_depth[layer])
     satex = ifthenelse(theta_check_own > model.theta_sat[layer],
@@ -215,29 +218,41 @@ def getLateralFlow(model, layer):
     # Cell outflow (mm)
     cell_moisture_outflow = max(c * (depth * model.theta[layer] - depth * model.theta_fc[layer]), scalar(0))  # [mm]
 
-    # Cell inflow (mm)
+    # Cell inflow (mm)  <- Subtract excess inflow
     upstream_cell_inflow = (model.wetness *
                             accuflux(model.ldd_subs, cell_moisture_outflow)) / accuflux(model.ldd_subs, model.wetness)
-    # Cell inflow - cell outflow
-    lateral_flow_layer = upstream_cell_inflow - cell_moisture_outflow  # [mm]
 
-    # Water Mass Balance & Moisture Update #######
-    theta_check_layer = deepcopy(model.theta[layer])
-    theta_check_layer += lateral_flow_layer / depth
-    overflow = ifthenelse(theta_check_layer > model.theta_sat[layer], theta_check_layer - model.theta_sat[layer],
-                          scalar(0))
-    if mapmaximum(overflow > 0):
+    # check_lateral_flow_layer = model.zero_map
+    overflow = deepcopy(model.theta_sat[layer])
+    loops = 0
+    while mapmaximum(overflow) > 10e-06:
+        loops += 1
+        # print('layer z' + str(layer) + 'loop: ' + str(loops))
+        # Cell inflow - cell outflow
+        check_lateral_flow_layer = upstream_cell_inflow - cell_moisture_outflow  # [mm]
+        theta_check_layer = deepcopy(model.theta[layer])
+        theta_check_layer += check_lateral_flow_layer / depth
+
+        overflow = ifthenelse(theta_check_layer > model.theta_sat[layer],
+                              (theta_check_layer - model.theta_sat[layer]) * depth,
+                              scalar(0))
+        # If overflow (i.e. if at saturation), cell can only accept what it looses.
+        upstream_cell_inflow -= overflow
+
+    if mapmaximum(overflow) > 0.001:
+        print('layer z' + str(layer) + ' loops: ' + str(loops))
         print("Satex reached on Lateral Flow!, layer: z" + str(layer))
-        model.report(overflow * depth * cellarea() / 1000, 'aOFz' + str(layer))  # m3
+        model.report(overflow, 'aOFz' + str(layer))  # m3
+        model.report(upstream_cell_inflow, 'aInz' + str(layer))
+        model.report(cell_moisture_outflow, 'aOutz' + str(layer))
 
-    return {"cell_moisture_outflow": cell_moisture_outflow,
+    return {"cell_outflow": cell_moisture_outflow,
             "upstream_cell_inflow": upstream_cell_inflow,
-            "lateral_flow_layer": lateral_flow_layer}
+            "lateral_flow_layer": check_lateral_flow_layer}  # mm
 
 
-def getActualTransp(model, layer, root_depth_tot, pot_transpir,
+def getActualTransp(model, layer, root_depth_tot, root_depth, pot_transpir,
                     theta_wp, depletable_water):
-    root_depth = model.root_depth[layer]
 
     pot_transpir_layer = ifthenelse(root_depth_tot > scalar(0),
                                     2 * (1 - (root_depth / float(2)) / root_depth_tot) *
@@ -395,3 +410,10 @@ def getPotET(model, sow_yy, sow_mm, sow_dd,
     depletable_water = p_tab + 0.04 * (5 - pot_et)
     dictionary = {"Tp": pot_transpir, "Ep": pot_evapor, "P": depletable_water, "f": frac_soil_cover}
     return dictionary
+
+
+def getTotalDischarge(runoff, outlet_cells, drainage, baseflow=None):
+    # m3
+    # out_baseflow_m3 +
+    tot_vol_disch_m3 = (runoff + outlet_cells + drainage)
+    return tot_vol_disch_m3
