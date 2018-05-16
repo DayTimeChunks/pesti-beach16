@@ -13,6 +13,11 @@ def checkLayerDepths(model, layer):
 
 #  aguila --scenarios='{1}' aDepth0 aDepth1 aDepth2 aDepth3
 
+def checkRootDepths(model, root_depth_arr):
+    for layer in range(len(root_depth_arr)):
+        root_length = root_depth_arr[layer] / 10 ** 3  # Convert back to m
+        model.report(root_length, 'aRDz'+str(layer))
+
 def checkMoistureProps(model, prop_list, name):
     for i in range(len(prop_list)):
         mapname = str(name) + str(i)
@@ -33,7 +38,7 @@ def checkMoisture(model, moisture_maps, name):
         model.report(moisture_maps[layer], name + str(layer))
 
 #  aguila --scenarios='{1}' --timesteps=[2,300,2] athz0 athz1 athz2 athz3
-
+# aguila d14_theta_z0
 
 # Water balance and reporting
 def recordInfiltration(model, infiltration, layer):
@@ -51,11 +56,12 @@ def recordPercolation(model, percolation, layer):
 
 
 def recordRunOff(model, runoff, unit='m3'):
-    if unit == 'mm':
-        model.report(runoff, 'aROmm')
-    else:
+    if unit == 'm3':
         ro_m3 = runoff * cellarea() / 1000  # m3
         model.report(ro_m3, 'aROm3')
+    else:
+        model.report(runoff, 'aROmm')
+
 
 # aguila --scenarios='{1}' --timesteps=[2,300,2] aROm3
 # aguila --scenarios='{1}' --timesteps=[2,300,2] aROmm

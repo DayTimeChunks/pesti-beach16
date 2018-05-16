@@ -72,10 +72,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.DEBUG = False
         self.TEST = True
         self.TEST_depth = False
+        self.TEST_roots = False
         self.TEST_Ksat = False
         self.TEST_thProp = False
         self.TEST_theta = True
-        self.TEST_IPR = True
+        self.TEST_IR = True
+        self.TEST_PERC = False
 
         self.PEST = False
         self.TRANSPORT = True
@@ -332,10 +334,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.gamma = []  # coefficient to calibrate Ksat1
         self.s = []
         self.c_lf = []
-        for i in range(self.num_layers):
-            self.gamma.append(scalar(self.ini_param.get("gamma" + str(i))))  # percolation coefficient
-            self.s.append(scalar(self.ini_param.get("s" + str(i))))  # calibrate Ksat, mm/day
-            self.c_lf.append(scalar(self.ini_param.get("c" + str(i))))  # subsurface flow coefficient)
+        for layer in range(self.num_layers):
+            self.gamma.append(scalar(self.ini_param.get("gamma" + str(layer))))  # percolation coefficient
+            self.s.append(scalar(self.ini_param.get("s" + str(layer))))  # calibrate Ksat, mm/day
+            self.c_lf.append(scalar(self.ini_param.get("c" + str(layer))))  # subsurface flow coefficient)
 
         self.fc_adj = scalar(self.ini_param.get("fc_adj"))  # Adjusting Paul's FC (equivalent so far)
         self.root_adj = scalar(self.ini_param.get("root_adj"))  # Adjust Root Depth factor
@@ -345,18 +347,18 @@ class BeachModel(DynamicModel, MonteCarloModel):
         if m_state == 0:
             pass
         elif m_state == 1:
-            # for i in range(self.num_layers):
-            #     self.c_lf[i] += 0.1
+            # for layer in range(self.num_layers):
+            #     self.c_lf[layer] += 0.1
             # z3_factor = scalar(0.7)
-            self.c_adr *= 0.5
+            self.c_adr /= 2
             # self.root_adj *= 0.7
             # epsilon = -1 * 1.369  # high deg
             # self.gamma[3] *= 0.5
         elif m_state == 2:
-            # for i in range(self.num_layers):
-            #     self.c_lf[i] += 0.2
+            # for layer in range(self.num_layers):
+            #     self.c_lf[layer] += 0.2
             # z3_factor = scalar(0.4)
-            self.c_adr *= 0.25
+            self.c_adr /= 3
             # self.root_adj *= 0.5
             # epsilon = -1 * 1.476  # mid deg
             # self.gamma[2] *= 0.5
@@ -433,18 +435,18 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         self.layer_depth = []
         self.tot_depth = deepcopy(self.zero_map)
-        for i in range(self.num_layers):
-            if i < self.num_layers - 1:
+        for layer in range(self.num_layers):
+            if layer < self.num_layers - 1:
                 self.layer_depth.append(self.zero_map +
-                                        scalar(self.ini_param.get('z' + str(i))))
-                self.tot_depth += self.layer_depth[i]
+                                        scalar(self.ini_param.get('z' + str(layer))))
+                self.tot_depth += self.layer_depth[layer]
             else:
                 self.layer_depth.append((self.datum_depth +  # total height
-                                         scalar(self.ini_param.get('z' + str(i)))  # plus a min-depth
+                                         scalar(self.ini_param.get('z' + str(layer)))  # plus a min-depth
                                          - self.tot_depth) * z3_factor)  # minus:(z0, z1, z2)*decreasing depth factor
-                self.tot_depth += self.layer_depth[i]
+                self.tot_depth += self.layer_depth[layer]
             if self.TEST_depth:
-                checkLayerDepths(self, i)
+                checkLayerDepths(self, layer)
 
         self.smp_depth = self.layer_depth[0]
 
@@ -455,7 +457,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.theta = []
         if start_jday() < 166:
             self.theta.append(readmap('d14_theta_z0'))  # map of initial soil moisture in top layer (-)
-            self.theta.append(readmap('d14_theta_z1'))
+            self.theta.append(readmap('d14_theta_z0'))  # d14_theta_z1
             self.theta.append(readmap('d14_theta_z2'))
             self.theta.append(readmap("d14_theta_z3"))  # * z3_factor + scalar(0.6) * self.gw_factor
         else:
@@ -479,9 +481,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # g = ug * 10e-06
         self.sm_background = []
         mean_back_conc = [0.06, 0.03, 0.001, 0.001]
-        for i in range(self.num_layers):
-            background = ((self.zero_map + mean_back_conc[i]) * self.p_b * scalar(10 ** 6 / 10 ** 3) *
-                          self.layer_depth[i] * cellarea() * 10e-06)  # Based on detailed soils
+        for layer in range(self.num_layers):
+            background = ((self.zero_map + mean_back_conc[layer]) * self.p_b * scalar(10 ** 6 / 10 ** 3) *
+                          self.layer_depth[layer] * cellarea() * 10e-06)  # Based on detailed soils
             self.sm_background.append(background)
 
         # Fraction masses and Delta (Background)
@@ -495,64 +497,62 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.light_back = []
         self.heavy_back = []
 
-        for i in range(self.num_layers):
+        for layer in range(self.num_layers):
             # Initial deltas assume theoretical max @99% deg Streitwieser Semiclassical Limits
             self.delta.append(self.zero_map - 23.7)
             self.delta_ini.append(self.zero_map - 23.7)
-            self.light_back.append(self.sm_background[i] /
-                                   (1 + self.r_standard * (self.delta[i] / 1000 + 1)))
-            self.heavy_back.append(self.sm_background[i] - self.light_back[i])
+            self.light_back.append(self.sm_background[layer] /
+                                   (1 + self.r_standard * (self.delta[layer] / 1000 + 1)))
+            self.heavy_back.append(self.sm_background[layer] - self.light_back[layer])
 
             # Set mass fractions <- background fractions
-            self.lightmass.append(deepcopy(self.light_back[i]))
-            self.lightmass_ini.append(deepcopy(self.light_back[i]))
-            self.heavymass.append(deepcopy(self.heavy_back[i]))
-            self.heavymass_ini.append(deepcopy(self.heavy_back[i]))
+            self.lightmass.append(deepcopy(self.light_back[layer]))
+            self.lightmass_ini.append(deepcopy(self.light_back[layer]))
+            self.heavymass.append(deepcopy(self.heavy_back[layer]))
+            self.heavymass_ini.append(deepcopy(self.heavy_back[layer]))
 
         # Assign dosages based on Farmer-Crop combinations [g/m2]
         fa_cr = readmap("crop_burn")  # Contains codes to assign appropriate dosage
-        apps = getApplications(self, fa_cr)
-        self.app1 = apps[0]
-        self.app2 = apps[1]
-        self.app3 = apps[2]
+        apps = getApplications(self, fa_cr)  # returns list of applied masses
 
         # Applications delta
         # Use map algebra to produce a initial signature map,
         # ATT: Need to do mass balance on addition of new layer.
         # where app1 > 0, else background sig. (plots with no new mass will be 0)
         # where app1 > 0, else background sig. (plots with no new mass will be 0)
-        self.app1delta = ifthenelse(self.app1 > 0, scalar(-32.3), scalar(-23.7))
-        self.app2delta = ifthenelse(self.app2 > 0, scalar(-32.3), scalar(-23.7))
-        self.app3delta = ifthenelse(self.app3 > 0, scalar(-32.3), scalar(-23.7))
+        appDelta = []
+        appDelta.append( ifthenelse(apps[0] > 0, scalar(-32.3), scalar(-23.7)) )
+        appDelta.append( ifthenelse(apps[1] > 0, scalar(-32.3), scalar(-23.7)) )
+        appDelta.append( ifthenelse(apps[2] > 0, scalar(-32.3), scalar(-23.7)) )
 
         # Cumulative maps
         # self.light_ini_storage_ug = self.lightmass_z0_ini + self.lightmass_z1_ini + self.lightmass_z2_ini
         # self.cum_appl_g = self.zero_map
-        self.cum_runoff_ug = self.zero_map
-        self.cum_leached_ug_z0 = self.zero_map
-        self.cum_leached_ug_z1 = self.zero_map
-        self.cum_leached_ug_z2 = self.zero_map
-        self.cum_leached_ug_z3 = self.zero_map
+        self.cum_runoff_ug = deepcopy(self.zero_map)
+        self.cum_leached_ug_z0 = deepcopy(self.zero_map)
+        self.cum_leached_ug_z1 = deepcopy(self.zero_map)
+        self.cum_leached_ug_z2 = deepcopy(self.zero_map)
+        self.cum_leached_ug_z3 = deepcopy(self.zero_map)
 
-        self.cum_latflux_ug_z0 = self.zero_map
-        self.cum_latflux_ug_z1 = self.zero_map
-        self.cum_latflux_ug_z2 = self.zero_map
-        self.cum_latflux_ug_z3 = self.zero_map
+        self.cum_latflux_ug_z0 = deepcopy(self.zero_map)
+        self.cum_latflux_ug_z1 = deepcopy(self.zero_map)
+        self.cum_latflux_ug_z2 = deepcopy(self.zero_map)
+        self.cum_latflux_ug_z3 = deepcopy(self.zero_map)
 
-        self.cum_baseflx_ug_z3 = self.zero_map
+        self.cum_baseflx_ug_z3 = deepcopy(self.zero_map)
 
-        self.cum_degZ0_L_g = self.zero_map
-        self.cum_roZ0_L_g = self.zero_map
-        self.cum_lchZ0_L_g = self.zero_map
-        self.cum_adr_L_g = self.zero_map
-        self.cum_latflux_L_g = self.zero_map
-        self.cum_exp_L_g = self.zero_map
-        self.northConc_diff = self.zero_map
-        self.northConc_var = self.zero_map
-        self.valleyConc_diff = self.zero_map
-        self.valleyConc_var = self.zero_map
-        self.southConc_diff = self.zero_map
-        self.southConc_var = self.zero_map
+        self.cum_degZ0_L_g = deepcopy(self.zero_map)
+        self.cum_roZ0_L_g = deepcopy(self.zero_map)
+        self.cum_lchZ0_L_g = deepcopy(self.zero_map)
+        self.cum_adr_L_g = deepcopy(self.zero_map)
+        self.cum_latflux_L_g = deepcopy(self.zero_map)
+        self.cum_exp_L_g = deepcopy(self.zero_map)
+        self.northConc_diff = deepcopy(self.zero_map)
+        self.northConc_var = deepcopy(self.zero_map)
+        self.valleyConc_diff = deepcopy(self.zero_map)
+        self.valleyConc_var = deepcopy(self.zero_map)
+        self.southConc_diff = deepcopy(self.zero_map)
+        self.southConc_var = deepcopy(self.zero_map)
 
         """
         Temperature maps and params
@@ -561,7 +561,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Generating initial surface temp map (15 deg is arbitrary)
         self.temp_fin = []
         self.temp_surf_fin = self.zero_map + 15
-        for i in range(self.num_layers):
+        for layer in range(self.num_layers):
             self.temp_fin.append(self.zero_map + 15)
 
         # Maximum damping depth (dd_max)
@@ -595,7 +595,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Analysis
         self.water_balance = []  # mm
-        for i in range(self.num_layers):
+        for layer in range(self.num_layers):
             self.water_balance.append(deepcopy(self.zero_map))
         self.days_cum = 0  # Track no. of days with data
         self.q_diff = 0
@@ -786,6 +786,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
             else:
                 root_depth.append(scalar(0))
 
+        if self.TEST_roots:
+            checkRootDepths(root_depth)
         # calculation of leaf area index
         LAI = ifthenelse(jd_sim < jd_plant, scalar(0),
                          ifthenelse(jd_sim < jd_mid,
@@ -844,21 +846,21 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Volatilization (on application days only)
         if self.currentTimeStep() in self.app_days:
             mass_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
-                                      self.app1,
-                                      ifthenelse(self.currentTimeStep() == self.app_days[1], self.app2,
-                                                 ifthenelse(self.currentTimeStep() == self.app_days[2], self.app3,
+                                      apps[0],
+                                      ifthenelse(self.currentTimeStep() == self.app_days[1], apps[1],
+                                                 ifthenelse(self.currentTimeStep() == self.app_days[2], apps[2],
                                                             scalar(0))))
 
             self.aged_days = ifthenelse(mass_applied > 0, scalar(0), self.aged_days)
 
             light_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
-                                       mass_applied / (1 + self.r_standard * (self.app1delta / 1000 + 1)),
+                                       mass_applied / (1 + self.r_standard * (appDelta[0] / 1000 + 1)),
                                        ifthenelse(self.currentTimeStep() == self.app_days[1],
                                                   mass_applied / (
-                                                      1 + self.r_standard * (self.app2delta / 1000 + 1)),
+                                                      1 + self.r_standard * (appDelta[1] / 1000 + 1)),
                                                   ifthenelse(self.currentTimeStep() == self.app_days[2],
                                                              mass_applied / (
-                                                                 1 + self.r_standard * (self.app3delta / 1000 + 1)),
+                                                                 1 + self.r_standard * (appDelta[2] / 1000 + 1)),
                                                              scalar(0))))
             heavy_applied = mass_applied - light_applied
 
@@ -889,62 +891,71 @@ class BeachModel(DynamicModel, MonteCarloModel):
         heavy_leached = []
         permeable = True
         # # Infiltration, runoff, & percolation (all layers)
-        for i in range(self.num_layers):
-            if i == 0:  # Layer 0
+        for layer in range(self.num_layers):
+            if layer == 0:  # Layer 0
                 z0_IRO = getTopLayerInfil(self, precip, theta_wp, CN2, crop_type,
                                           jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage)
-
-                infil_z0 = z0_IRO.get("infil")  # [mm]
+                # Partition infiltration
+                infil_z0 = z0_IRO.get("infil_z0")  # [mm]
+                infil_z1 = z0_IRO.get("infil_z1")  # [mm]
                 runoff_z0 = z0_IRO.get("roff")  # [mm]
-                self.theta[i] += infil_z0 / self.layer_depth[i]  # [-]
+
+                # Distribute to layer 0
+                self.theta[layer] += infil_z0 / self.layer_depth[layer]  # [-]
+                # Distribution to layer 1 needed here, bc. getPercolation(layer = 0) will check below's capacity
+                self.theta[layer + 1] += infil_z1 / self.layer_depth[layer + 1]  # [-]
 
                 # RunOff Mass
                 # Mass & delta run-off (RO)
-                mass_runoff.append(getRunOffMass(self, precip, runoff_z0, self.lightmass[i],
+                mass_runoff.append(getRunOffMass(self, precip, runoff_z0, self.lightmass[layer],
                                                  transfer_model="simple-mt", sorption_model="linear",
                                                  gas=True, run=self.PEST))
-                mass_runoff.append(getRunOffMass(self, precip, runoff_z0, self.heavymass[i],
+                mass_runoff.append(getRunOffMass(self, precip, runoff_z0, self.heavymass[layer],
                                                  transfer_model="simple-mt", sorption_model="linear",
                                                  gas=True, run=self.PEST))
-                self.lightmass[i] -= mass_runoff[0]  # light
-                self.heavymass[i] -= mass_runoff[1]  # heavy
+                self.lightmass[layer] -= mass_runoff[0]  # light
+                self.heavymass[layer] -= mass_runoff[1]  # heavy
 
-                percolation.append(getPercolation(self, i, k_sat[i], isPermeable=permeable))  # [mm]
-                light_leached.append(getLeachedMass(self, i, infil_z0, self.lightmass[i],
+                percolation.append(getPercolation(self, layer, k_sat[layer], isPermeable=permeable))  # [mm]
+                water_flux = infil_z0 + infil_z1 + percolation[layer]
+
+                light_leached.append(getLeachedMass(self, layer, water_flux, self.lightmass[layer],
                                                     sorption_model="linear", leach_model="mcgrath", gas=True,
                                                     debug=self.DEBUG, run=self.PEST))
-                heavy_leached.append(getLeachedMass(self, i, infil_z0, self.heavymass[i],
+                heavy_leached.append(getLeachedMass(self, layer, water_flux, self.heavymass[layer],
                                                     sorption_model="linear", leach_model="mcgrath", gas=True,
                                                     debug=self.DEBUG, run=self.PEST))
-                self.theta[i] -= percolation[i] / self.layer_depth[i]
-                self.lightmass[i] -= light_leached[i]
-                self.heavymass[i] -= heavy_leached[i]
+                self.theta[layer] -= percolation[layer] / self.layer_depth[layer]
+                self.lightmass[layer] -= light_leached[layer]
+                self.heavymass[layer] -= heavy_leached[layer]
 
             else:  # Layers 1, 2 & 3
-                if i == (self.num_layers - 1):
+                if layer == (self.num_layers - 1):
                     permeable = self.bsmntIsPermeable
-                self.theta[i] += percolation[i - 1] / self.layer_depth[i - 1]
-                self.lightmass[i] += light_leached[i - 1]
-                self.heavymass[i] += heavy_leached[i - 1]
-                percolation.append(getPercolation(self, i, k_sat[i], isPermeable=permeable))
-                light_leached.append(getLeachedMass(self, i, percolation[i], self.lightmass[i],
+                self.theta[layer] += percolation[layer - 1] / self.layer_depth[layer - 1]
+                self.lightmass[layer] += light_leached[layer - 1]
+                self.heavymass[layer] += heavy_leached[layer - 1]
+                percolation.append(getPercolation(self, layer, k_sat[layer], isPermeable=permeable))
+                light_leached.append(getLeachedMass(self, layer, percolation[layer], self.lightmass[layer],
                                                     sorption_model="linear", leach_model="mcgrath", gas=True,
                                                     debug=self.DEBUG, run=self.PEST))
-                heavy_leached.append(getLeachedMass(self, i, percolation[i], self.heavymass[i],
+                heavy_leached.append(getLeachedMass(self, layer, percolation[layer], self.heavymass[layer],
                                                     sorption_model="linear", leach_model="mcgrath", gas=True,
                                                     debug=self.DEBUG, run=self.PEST))
-                self.theta[i] -= percolation[i] / self.layer_depth[i]
-                self.lightmass[i] -= light_leached[i]
-                self.heavymass[i] -= heavy_leached[i]
+                self.theta[layer] -= percolation[layer] / self.layer_depth[layer]
+                self.lightmass[layer] -= light_leached[layer]
+                self.heavymass[layer] -= heavy_leached[layer]
 
-            if self.TEST_IPR:
+            if self.TEST_IR:
                 if layer == 0:
-                    recordInfiltration(self, infil_z0, i)
-                    recordPercolation(self, percolation[i], i)
+                    recordInfiltration(self, infil_z0, layer)
                     recordRunOff(self, runoff_z0)
                 else:
-                    recordInfiltration(self, percolation[i-1], i)
-                    recordPercolation(self, percolation[i], i)
+                    recordInfiltration(self, percolation[layer-1], layer)
+
+            if self.TEST_PERC:
+                recordPercolation(self, percolation[layer], layer)
+
 
         # Artificial drainage (relevant layer)
         drained_layers = [n for n, x in enumerate(self.drainage_layers) if x is True]  # <- list of indexes
@@ -1054,7 +1065,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         ######################
         # Water Balance
         ######################
-        if self.TEST_theta and self.currentTimeStep() % 2 == 0:
+        if self.TEST_theta and self.currentTimeStep() % 10 == 0:
             checkMoisture(self, self.theta, 'athz')
 
         # Precipitation total

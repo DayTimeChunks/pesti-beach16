@@ -149,6 +149,7 @@ def getTopLayerInfil(model, precip,
                      ):
     layer = 0
     theta_layer = model.theta[layer]
+    theta_layer_below = model.theta[layer + 1]
     # Step 1. Receive
     roff_z0 = runoff_SCS(model, precip,
                          theta_wp, CN2, crop_type,
@@ -163,11 +164,19 @@ def getTopLayerInfil(model, precip,
     theta_check_own = theta_layer + (infil / model.layer_depth[layer])
     satex = ifthenelse(theta_check_own > model.theta_sat[layer],
                        theta_check_own - model.theta_sat[layer], scalar(0))
-    # Step 3. Reject excess
-    infil -= satex * model.layer_depth[layer]
-    roff_z0 += satex * model.layer_depth[layer]
+    satex_mm = satex * model.layer_depth[layer]
+    infil_z0 = infil - satex_mm
+    # Step 3. Pass satex in mm to 2nd layer
+    theta_check_below = theta_layer_below + (satex_mm / model.layer_depth[layer + 1])
+    satex_below = ifthenelse(theta_check_below > model.theta_sat[layer + 1],
+                             theta_check_below - model.theta_sat[layer + 1], scalar(0))
+    satex_below_mm = satex_below * model.theta_sat[layer + 1]
+    infil_z1 = infil - satex_mm - satex_below_mm
 
-    return {"infil": infil, "roff": roff_z0}
+    # Step 4. Reject excess
+    roff_z0 = precip - infil_z0 - infil_z1
+
+    return {"infil_z0": infil_z0, "infil_z1": infil_z1, "roff": roff_z0}
 
 
 def getPercolation(model, layer, k_sat, isPermeable=True):
