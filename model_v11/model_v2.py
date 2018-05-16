@@ -1,21 +1,19 @@
 # -*- coding: utf-8 -*-
 
 # from time import *
-import time
+import os
+from copy import deepcopy
 from datetime import datetime
-
-from pesti_v2 import *
-from hydro_v2 import *
-from applications import getApplications
-from soil_samples import *
-from nash import *
-from test_suite import *
 
 from pcraster._pcraster import *
 from pcraster.framework import *
-from copy import deepcopy
 
-import os
+from applications import getApplications
+from hydro_v2 import *
+from nash import *
+from pesti_v2 import *
+from soil_samples import *
+from test_suite import *
 
 print(os.getcwd())
 
@@ -26,13 +24,16 @@ morris = False
 if morris:
     from morris_test import *
 else:
-    runs = 2
+    runs = 3
+
+"""
+Testing decreases in gamma2 and gamma3,
+with SCN accounting ofr 3 layers depth
+"""
 
 # 1st
 # - Generate the set of input parameters (see: morris_analysis.py)
 # - Make input parameters a global numpy array (for model access)
-
-import numpy as np
 
 
 # def getTimeStamp(timestep, sep=','):
@@ -70,6 +71,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
     def premcloop(self):
         self.DEBUG = False
         self.TEST = True
+        self.TEST_depth = False
+        self.TEST_Ksat = False
+        self.TEST_thProp = False
+        self.TEST_theta = True
+        self.TEST_IPR = True
+
         self.PEST = False
         self.TRANSPORT = True
         self.DEGRADE = True
@@ -315,7 +322,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
     def initial(self):
         self.num_layers = int(self.ini_param.get("layers"))
         # Hydrological scenarios
-        self.bsmntIsPermeable = False  # basement percolation (DP)
+        self.bsmntIsPermeable = True  # basement percolation (DP)
         self.ADLF = True
 
         # Morris tests
@@ -335,22 +342,25 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.c_adr = scalar(self.ini_param.get("c_adr"))
         self.drainage_layers = [False, False, True, False]  # z2 turned on!!
         z3_factor = scalar(self.ini_param.get("z3_factor"))  # Represents top proportion of bottom-most layer
-        # if m_state == 0:
-        #     pass
-        # elif m_state == 1:
-        #     for i in range(self.num_layers):
-        #         self.c_lf[i] += 0.1
-        #     # z3_factor = scalar(0.7)
-        #     # self.c_adr = scalar(0.15)
-        #     # self.root_adj *= 0.7
-        #     # epsilon = -1 * 1.369  # high deg
-        # elif m_state == 2:
-        #     for i in range(self.num_layers):
-        #         self.c_lf[i] += 0.2
-        #     # z3_factor = scalar(0.4)
-        #     # self.c_adr = scalar(0.25)
-        #     # self.root_adj *= 0.5
-        #     # epsilon = -1 * 1.476  # mid deg
+        if m_state == 0:
+            pass
+        elif m_state == 1:
+            # for i in range(self.num_layers):
+            #     self.c_lf[i] += 0.1
+            # z3_factor = scalar(0.7)
+            self.c_adr *= 0.5
+            # self.root_adj *= 0.7
+            # epsilon = -1 * 1.369  # high deg
+            # self.gamma[3] *= 0.5
+        elif m_state == 2:
+            # for i in range(self.num_layers):
+            #     self.c_lf[i] += 0.2
+            # z3_factor = scalar(0.4)
+            self.c_adr *= 0.25
+            # self.root_adj *= 0.5
+            # epsilon = -1 * 1.476  # mid deg
+            # self.gamma[2] *= 0.5
+            # self.gamma[3] *= 0.25
 
         self.k = scalar(self.ini_param.get("k"))  # coefficient of declining LAI in end stage
 
@@ -433,7 +443,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                          scalar(self.ini_param.get('z' + str(i)))  # plus a min-depth
                                          - self.tot_depth) * z3_factor)  # minus:(z0, z1, z2)*decreasing depth factor
                 self.tot_depth += self.layer_depth[i]
-            if self.TEST:
+            if self.TEST_depth:
                 checkLayerDepths(self, i)
 
         self.smp_depth = self.layer_depth[0]
@@ -683,10 +693,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.theta_fc[1] = deepcopy(self.theta_fc[0])
         theta_wp = self.theta_wp  # scalar(0.19)  # lookupscalar('croptable.tbl', 21, fields)  # wilting point moisture
 
-        if self.TEST:
-            pass
-            # checkMoistureProps(self, self.theta_sat, 'aSATz')
-            # checkMoistureProps(self, self.theta_fc, 'aFCz')
+        if self.TEST_thProp:
+            checkMoistureProps(self, self.theta_sat, 'aSATz')
+            checkMoistureProps(self, self.theta_fc, 'aFCz')
 
         k_sat_z0z1 = timeinputscalar('ksats.tss', nominal(self.landuse))
         k_sat_z2z3 = lookupscalar('croptable.tbl', 17, fields)  # saturated conductivity of the second layer
@@ -696,7 +705,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         CN2_B = lookupscalar('croptable.tbl', 19, fields)  # curve number of moisture condition II
         CN2_C = lookupscalar('croptable.tbl', 20, fields)  # curve number of moisture condition II
 
-        if self.TEST:
+        if self.TEST_Ksat:
             reportKsatEvolution(self, k_sat)
 
         """
@@ -928,7 +937,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.lightmass[i] -= light_leached[i]
                 self.heavymass[i] -= heavy_leached[i]
 
-            if self.TEST:
+            if self.TEST_IPR:
                 if layer == 0:
                     recordInfiltration(self, infil_z0, i)
                     recordPercolation(self, percolation[i], i)
@@ -1045,7 +1054,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         ######################
         # Water Balance
         ######################
-        if self.TEST and self.currentTimeStep() % 2 == 0:
+        if self.TEST_theta and self.currentTimeStep() % 2 == 0:
             checkMoisture(self, self.theta, 'athz')
 
         # Precipitation total
@@ -1057,8 +1066,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         runoff_m3 = runoff_z0 * cellarea() / 1000  # m3
         accu_runoff_m3 = accuflux(self.ldd_subs, runoff_m3)
         out_runoff_m3 = areatotal(accu_runoff_m3, self.outlet_multi)
-        if self.currentTimeStep() % 2 == 0:
-            self.report(accu_runoff_m3, 'aROm3')
         self.out_runoff_m3_tss.sample(out_runoff_m3)  # save to outlet
         # self.obs_cum_runoff_m3_tss.sample(out_runoff_m3)  # save to sample locations
 

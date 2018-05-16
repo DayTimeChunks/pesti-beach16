@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from pcraster.framework import *
 
+# interval = 2
+# def getPrintInterval(model, interval):
+#     if model.currentTimeStep() % interval == 0:
 
 
 # Layer depths
@@ -38,7 +41,7 @@ def recordInfiltration(model, infiltration, layer):
     model.report(infiltration, 'aINFz' + str(layer))
 
 #  aguila --scenarios='{1}' --timesteps=[2,300,2] aINFz0 aINFz1 aINFz2 aINFz3
-#  aguila --scenarios='{1}' --timesteps=[2,300,2] aINFini
+#  aguila --scenarios='{1}' --timesteps=[2,300,2] aROm3
 
 def recordPercolation(model, percolation, layer):
     model.water_balance[layer] -= percolation
@@ -47,4 +50,12 @@ def recordPercolation(model, percolation, layer):
 #  aguila --scenarios='{1}' --timesteps=[2,300,2] aPERz0 aPERz1 aPERz2 aPERz3
 
 
-# def recordRunOff(model, )
+def recordRunOff(model, runoff, unit='m3'):
+    if unit == 'mm':
+        model.report(runoff, 'aROmm')
+    else:
+        ro_m3 = runoff * cellarea() / 1000  # m3
+        model.report(ro_m3, 'aROm3')
+
+# aguila --scenarios='{1}' --timesteps=[2,300,2] aROm3
+# aguila --scenarios='{1}' --timesteps=[2,300,2] aROmm

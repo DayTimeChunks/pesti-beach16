@@ -107,7 +107,7 @@ cn_conditions = [
 ]
 
 
-def getCN2(letter, quality='poor'):
+def getCN2(letter, quality='good'):
     # Assumed Poor hydrologic conditions (HC)
     # Hydraulic condition is based on combination factors that affect infiltration and runoff, including
     # (a) density and canopy of vegetative areas,
@@ -115,19 +115,33 @@ def getCN2(letter, quality='poor'):
     # (c) amount of grass or close-seeded legumes,
     # (d) percent of residue cover on the land surface (good gt 20%),and
     # (e) degree of surface roughness.
-    if quality == 'poor': # # poor Hydrological condition
+    if quality == 'poor':  # poor Hydrological condition
         CN2 = {"Corn": {"A": 72, "B": 81, "C": 88, "D": 91},
-               "Wheat": {"A": 72, "B": 81, "C": 88, "D": 91},
+               "Wheat": {"A": 65, "B": 76, "C": 84, "D": 88},
                "Beet": {"A": 72, "B": 81, "C": 88, "D": 91},
                "Greenery": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
                "Dirt Road": {"A": 72, "B": 82, "C": 87, "D": 89},  # Table 2-2a
                "Grass Road": {"A": 59, "B": 74, "C": 82, "D": 86},  # Farmsteads, # Table 2-2c
-               "Paved Road": {"A": 98, "B": 98, "C": 98, "D": 98},  # Table 2-2a
+               "Paved Road": {"A": 83, "B": 89, "C": 92, "D": 93},  # Table 2-2a
                "Ditch": {"A": 35, "B": 56, "C": 70, "D": 77},  # Same as hedge.
                "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
                "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
                "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82},  # Woods-grass, fair HC, # Table 2-2c
                "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-2b, but Bare Soil treatment
+               }
+    else:  # Good Hydrological condition
+        CN2 = {"Corn": {"A": 67, "B": 78, "C": 85, "D": 89},
+               "Wheat": {"A": 63, "B": 75, "C": 83, "D": 87},
+               "Beet": {"A": 67, "B": 78, "C": 85, "D": 89},
+               "Greenery": {"A": 30, "B": 48, "C": 65, "D": 73},  # Brush, fair HC, # Table 2-2c
+               "Dirt Road": {"A": 72, "B": 82, "C": 87, "D": 89},  # Table 2-2a
+               "Grass Road": {"A": 59, "B": 74, "C": 82, "D": 86},  # Farmsteads, # Table 2-2c
+               "Paved Road": {"A": 83, "B": 89, "C": 92, "D": 93},  # Table 2-2a
+               "Ditch": {"A": 30, "B": 48, "C": 65, "D": 73},  # Same as hedge.
+               "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
+               "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
+               "Orchard": {"A": 32, "B": 58, "C": 72, "D": 79},  # Woods-grass, fair HC, # Table 2-2c
+               "Bare Soil": {"A": 74, "B": 83, "C": 88, "D": 90}  # Fallow on Table, 2-2b, but Bare Soil treatment
                }
 
     group = [CN2["Corn"][letter],

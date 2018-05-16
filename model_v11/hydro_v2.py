@@ -75,10 +75,14 @@ def runoff_SCS(model, rain,
     layer = 0
     # Soil water content at field capacity (mm)
     SFC1 = (model.theta_fc[layer] * model.layer_depth[layer] +
-            model.theta_fc[layer + 1] * model.layer_depth[layer + 1])
+            model.theta_fc[layer + 1] * model.layer_depth[layer + 1] +
+            model.theta_fc[layer + 2] * model.layer_depth[layer + 2]
+            )
 
     # SWPD0=theta_wp*self.depth0
-    SWP = theta_wp * (model.layer_depth[layer + 1] + model.layer_depth[layer])
+    SWP = theta_wp * (model.layer_depth[layer] +
+                      model.layer_depth[layer + 1] +
+                      model.layer_depth[layer + 2])
 
     # TODO: Check if improvements can be done with adapting below to stage...
     # adjusting CN values based on crop
@@ -107,7 +111,8 @@ def runoff_SCS(model, rain,
 
     # SSD0=thetaSD0*self.depth0
     SS1 = (model.theta_sat[layer] * model.layer_depth[layer] +
-           model.theta_sat[layer + 1] * model.layer_depth[layer + 1])
+           model.theta_sat[layer + 1] * model.layer_depth[layer + 1] +
+           model.theta_sat[layer + 2] * model.layer_depth[layer + 2] )
 
     # Calculation of w1 and w2 parameters for obtaining CN values related to moisture content
     w2 = (ln(SFC1 / (1 - (S3 / Smax)) - SFC1) - ln(SS1 / (1 - (2.54 / Smax)) - SS1)) / (SS1 - SFC1)
@@ -116,11 +121,15 @@ def runoff_SCS(model, rain,
 
     # Moisture content [-] of first two depths -> avoids excessive runoff
     theta_d0d1 = (model.theta[layer] * model.layer_depth[layer] +
-                  model.theta[layer + 1] * model.layer_depth[layer + 1]) / (
-                     model.layer_depth[layer] + model.layer_depth[layer + 1])
+                  model.theta[layer + 1] * model.layer_depth[layer + 1] +
+                  model.theta[layer + 2] * model.layer_depth[layer + 2]) / (
+                     model.layer_depth[layer] + model.layer_depth[layer + 1] +
+                     model.layer_depth[layer + 2])
 
     # Soil Water content in mm (soil column of first two depths) -> avoid excessive runoff
-    SW = max((theta_d0d1 - theta_wp) * (model.layer_depth[0] + model.layer_depth[1]), scalar(0))
+    SW = max((theta_d0d1 - theta_wp) * (model.layer_depth[0] +
+                                        model.layer_depth[1] +
+                                        model.layer_depth[2]), scalar(0))
 
     # Retention parameter
     S = Smax * (1 - (SW / (SW + exp(w1 - w2 * SW))))
@@ -149,8 +158,7 @@ def getTopLayerInfil(model, precip,
     # Infiltration [mm] based on
     # retention parameter "S" with depth = z0 + z1
     infil = precip - roff_z0  # Potential infiltration only
-    model.report(infil, 'aINFini')
-    model.report(roff_z0, 'aROini')
+
     # Step 2. Check own capacity
     theta_check_own = theta_layer + (infil / model.layer_depth[layer])
     satex = ifthenelse(theta_check_own > model.theta_sat[layer],
@@ -274,8 +282,8 @@ def getActualTransp(model, layer, root_depth_tot, root_depth, pot_transpir,
 def getActualEvap(model, layer, theta_wp, pot_evapor):
     assert layer < 2  # No evaporation in deeper layers
     depth = model.layer_depth[layer]
-    if layer == 1:
-        depth *= 0.5  # Act only on half of the second layer.
+    # if layer == 1:
+    #     depth *= 0.5  # Act only on half of the second layer.
 
     # Evaporation reduction parameter
     # Moisture content of air-dry soil = 0.33 * theta_wp [@Allen 1998 in @Sheikh2009]
