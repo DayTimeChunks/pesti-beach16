@@ -513,17 +513,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Assign dosages based on Farmer-Crop combinations [g/m2]
         fa_cr = readmap("crop_burn")  # Contains codes to assign appropriate dosage
-        apps = getApplications(self, fa_cr)  # returns list of applied masses
+        self.apps = getApplications(self, fa_cr)  # returns list of applied masses
 
         # Applications delta
         # Use map algebra to produce a initial signature map,
         # ATT: Need to do mass balance on addition of new layer.
         # where app1 > 0, else background sig. (plots with no new mass will be 0)
         # where app1 > 0, else background sig. (plots with no new mass will be 0)
-        appDelta = []
-        appDelta.append( ifthenelse(apps[0] > 0, scalar(-32.3), scalar(-23.7)) )
-        appDelta.append( ifthenelse(apps[1] > 0, scalar(-32.3), scalar(-23.7)) )
-        appDelta.append( ifthenelse(apps[2] > 0, scalar(-32.3), scalar(-23.7)) )
+        self.appDelta = []
+        self.appDelta.append( ifthenelse(self.apps[0] > 0, scalar(-32.3), scalar(-23.7)) )
+        self.appDelta.append( ifthenelse(self.apps[1] > 0, scalar(-32.3), scalar(-23.7)) )
+        self.appDelta.append( ifthenelse(self.apps[2] > 0, scalar(-32.3), scalar(-23.7)) )
 
         # Cumulative maps
         # self.light_ini_storage_ug = self.lightmass_z0_ini + self.lightmass_z1_ini + self.lightmass_z2_ini
@@ -846,21 +846,21 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Volatilization (on application days only)
         if self.currentTimeStep() in self.app_days:
             mass_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
-                                      apps[0],
-                                      ifthenelse(self.currentTimeStep() == self.app_days[1], apps[1],
-                                                 ifthenelse(self.currentTimeStep() == self.app_days[2], apps[2],
+                                      self.apps[0],
+                                      ifthenelse(self.currentTimeStep() == self.app_days[1], self.apps[1],
+                                                 ifthenelse(self.currentTimeStep() == self.app_days[2], self.apps[2],
                                                             scalar(0))))
 
             self.aged_days = ifthenelse(mass_applied > 0, scalar(0), self.aged_days)
 
             light_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
-                                       mass_applied / (1 + self.r_standard * (appDelta[0] / 1000 + 1)),
+                                       mass_applied / (1 + self.r_standard * (self.appDelta[0] / 1000 + 1)),
                                        ifthenelse(self.currentTimeStep() == self.app_days[1],
                                                   mass_applied / (
-                                                      1 + self.r_standard * (appDelta[1] / 1000 + 1)),
+                                                      1 + self.r_standard * (self.appDelta[1] / 1000 + 1)),
                                                   ifthenelse(self.currentTimeStep() == self.app_days[2],
                                                              mass_applied / (
-                                                                 1 + self.r_standard * (appDelta[2] / 1000 + 1)),
+                                                                 1 + self.r_standard * (self.appDelta[2] / 1000 + 1)),
                                                              scalar(0))))
             heavy_applied = mass_applied - light_applied
 
