@@ -36,7 +36,7 @@ crop_conditions = [  # landuse codes
 ]
 sow_yy = [2016, 2015, 2016, 2015, 2000]
 sow_mm = [4, 10, 3, 8, 4]  # Apr, Oct, March, Sept(cut grass), April(orchard?)
-sow_dd = [10, 15, 25, 1, 1]
+sow_dd = [10, 15, 20, 1, 1]
 
 # Corn, Wheat, Beet
 len_grow_stage_ini = [28, 160, 50, 0, 0]  # (days)
@@ -107,7 +107,7 @@ cn_conditions = [
 ]
 
 
-def getCN2(letter, quality='good'):
+def getCN2(letter, quality='poor'):
     # Assumed Poor hydrologic conditions (HC)
     # Hydraulic condition is based on combination factors that affect infiltration and runoff, including
     # (a) density and canopy of vegetative areas,
@@ -158,10 +158,11 @@ def getCN2(letter, quality='good'):
              ]
     return group
 
-# Columns 18 to 20
+# Columns 18 to 21
 croptable.loc[1:, 'CN2_A'] = np.select(cn_conditions, getCN2('A'), default=98)
 croptable.loc[1:, 'CN2_B'] = np.select(cn_conditions, getCN2('B'), default=98)
 croptable.loc[1:, 'CN2_C'] = np.select(cn_conditions, getCN2('C'), default=98)
+croptable.loc[1:, 'CN2_D'] = np.select(cn_conditions, getCN2('D'), default=98)
 
 if PC:
     saved = "D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource/croptable_end.csv"

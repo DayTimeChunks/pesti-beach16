@@ -5,29 +5,58 @@ import os
 
 print(os.getcwd())
 
-landuse = readmap("landuse")
+landuse = readmap("landuse2016")
 # aguila(landuse)
 clone = readmap("clone")
 
 
+generate_maps = {
+    "outlets": False,
+    "weekly_soils": False,
+    "applications": True,
+    "create_ldd": False
+}
 
-create_outlet = False
+create_outlet = generate_maps['outlets']
 if create_outlet:
-    out_burn = readmap("dem_ldd_burn2")
+    # Burned to account for a connected ditch
+    out_burn = readmap("dem_ldd_burn3")
 
+    # Build the ldd that generates the outlet(s)
     out_ditch_ldd = lddcreate(out_burn, 1E35, 1E35, 1E35, 1E35)
     out_ditch = pit(out_ditch_ldd)
-    # Save
-    report(out_ditch, 'outlet_multi') # 0 to 67 nominal outlets
 
-    out_true = readmap('outlet_true')
-    # aguila(out_ditch, out_true)
+    # Get true outlet (to sum all outlet outputs)
+    out_true = ifthenelse(out_ditch == 33, nominal(1), nominal(0))
+
+    # Convert to nominal 0's and 1's for all outlets
     multi_out_bool = boolean(out_ditch)  # True False outlets
-    multi_out_nom = ifthenelse(multi_out_bool, nominal(1), nominal(0)) # 0 to 1 nominal outlets
-    aguila(out_ditch, multi_out_bool, multi_out_nom)
+    multi_out_nom = ifthenelse(multi_out_bool, nominal(1), nominal(0))
+
+    # View
+    aguila(out_ditch, out_true, multi_out_nom)
+
     # Save
-    report(multi_out_bool, 'out_multi_bool')
-    report(multi_out_nom, 'out_multi_nom')
+    report(out_ditch, 'outlet_multi_v3.map')  # 0 to 67 nominal outlets
+    report(out_true, 'outlet_v3.map')
+    report(multi_out_nom, 'out_multi_nom_v3.map')
+
+# ldd1 = readmap("ldd")
+# Surface
+create_ldd = generate_maps['create_ldd']
+if create_ldd:
+    out_burn = readmap("dem_ldd_burn3")
+
+    # Burnt for Runoff routing:
+    # dem = readmap("dem_slope")
+    # dem_ldd = readmap("dem_ldd")
+    # slope_rad = sin(atan(max(slope(dem), 0.001)))
+    # ldd1 = lddcreate(dem_ldd, 1e31, 1e31, 1e31, 1e31)
+
+    # Subsurface
+    ldd_subs = lddcreate(out_burn, 1E35, 1E35, 1E35, 1E35)  # Now using the burn3_ldd
+    aguila(ldd_subs)
+    # report(ldd_subs, 'ldd_subs_v3.map')
 
 # Test for radians vs degrees
 # aguila(slope_rad)
@@ -37,7 +66,7 @@ if create_outlet:
 # aguila(slope_deg)
 
 
-create_weekly = False
+create_weekly = generate_maps['weekly_soils']
 if create_weekly:
     weekly = readmap("weekly_smp")
     weekly = order(weekly)
@@ -73,7 +102,7 @@ if create_weekly:
     # report(south_nom, 'south_nom.map')
     # aguila(south_nom, south)
 
-detailed_s11 = True
+detailed_s11 = False
 if detailed_s11:
     detail_ord = order(readmap("detailed_smp"))
     ts = ifthen(detail_ord > 34, detail_ord)
@@ -238,28 +267,12 @@ if detailed:
     aguila(t8, t8_out, landuse)
 
 
-# ldd1 = readmap("ldd")
-# Surface
-create_ldd = False
-if create_ldd:
-    out_burn = readmap("dem_ldd_burn2")
-    out_ditch_ldd = lddcreate(out_burn, 1E35, 1E35, 1E35, 1E35)
-    # report(out_ditch_ldd, 'ldd_subs')
-
-    # Burnt for Runoff routing:
-    dem = readmap("dem_slope")
-    dem_ldd = readmap("dem_ldd")
-    slope_rad = sin(atan(max(slope(dem), 0.001)))
-    ldd1 = lddcreate(dem_ldd, 1e31, 1e31, 1e31, 1e31)  # second param = "outflowdepth" ??
-    # Subsurface
-    ldd2 = lddcreate(dem, 1e31, 1e31, 1e31, 1e31)  # Now using the burn2_ldd
-
-
-create_apps = False
+# Have not run it yet!
+create_apps = generate_maps['applications']
 if create_apps:
     dem = readmap("dem_slope")
     mask = dem / dem
-    out_burn = readmap("dem_ldd_burn2")
+    out_burn = readmap("dem_ldd_burn3")
 
     # Applications Mass
     # Product concentration (active ing.)
@@ -311,6 +324,7 @@ if create_apps:
     new = defined(out_burn)
     burn_farmcrop = ifthen(new, fa_cr)
     # report(burn_farmcrop, 'crop_burn.map')
-    aguila(fa_cr, app_conc, out_burn, new, burn_farmcrop)
+    # old_farm = readmap("farmcrop")
+    report(burn_farmcrop, 'farm_burn_v3.map')
 
 
