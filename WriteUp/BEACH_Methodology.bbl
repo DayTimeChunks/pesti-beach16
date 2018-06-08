@@ -1,4 +1,4 @@
-\begin{thebibliography}{15}
+\begin{thebibliography}{17}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -28,17 +28,6 @@ C.O. Bennet and J.E. Myers.
 \newblock \emph{{Momentum, heat and mass transfer}}.
 \newblock McGraw-Hill, New York, 3rd ed. edition, 1982.
 
-\bibitem[Beven and Kirby(1979)]{Beven1979}
-K.~J. Beven and M.~J. Kirby.
-\newblock {A physically based, variable contributing area model of basin
-  hydrology}.
-\newblock \emph{Hydrological Sciences Bulletin}, 24\penalty0 (1):\penalty0
-  43--69, 1979.
-\newblock ISSN 0303-6936.
-\newblock \doi{10.1080/02626667909491834}.
-\newblock URL
-  \url{http://www.tandfonline.com/doi/abs/10.1080/02626667909491834}.
-
 \bibitem[Currie(1960)]{Currie1960}
 J.A. Currie.
 \newblock {Gaseous diffusion in porous media. 2. Dry granular materials.}
@@ -66,6 +55,15 @@ M.~Leistra, A.~M.~A. van~der Linden, J.~J. T.~I. Boesten, A.~Tiktak, and
 \newblock {PEARL model for pesticide behaviour and emissions in soil-plant
   systems; Description of the processes in FOCUS PEARL v 1.1.1.}
 \newblock Technical report, 2001.
+
+\bibitem[Lim et~al.(2006)Lim, Engel, Muthukrishnan, and Harbor]{Lim2006}
+Kyoung~Jae Lim, Bernard~A Engel, Suresh Muthukrishnan, and Jon Harbor.
+\newblock {Effects of initial abstraction and urbanization on estimated runoff
+  using CN technology}.
+\newblock \emph{JOURNAL OF THE AMERICAN WATER RESOURCES ASSOCIATION},
+  42\penalty0 (3):\penalty0 629--643, 2006.
+\newblock ISSN 1093-474X.
+\newblock \doi{10.1111/j.1752-1688.2006.tb04481.x}.
 
 \bibitem[Manfreda et~al.(2005)Manfreda, Fiorentino, and
   Iacobellis]{Manfreda2005}
@@ -105,6 +103,24 @@ Rama Prasad.
   1988.
 \newblock ISSN 00221694.
 \newblock \doi{10.1016/0022-1694(88)90055-8}.
+
+\bibitem[Raes(2002)]{Raes2002}
+D.~Raes.
+\newblock {BUDGET: a Soil Water and Salt Balance Model. Reference manual.
+  Version 5.0.}
+\newblock Technical report, Catholic University of Leuven, Leuven, Belgium,
+  2002.
+
+\bibitem[Schroll et~al.(2006)Schroll, Becher, D{\"{o}}rfler, Gayler, Grundmann,
+  Hartmann, and Ruoss]{Schroll2006}
+Reiner Schroll, Hans~Heinrich Becher, Ulrike D{\"{o}}rfler, Sebastian Gayler,
+  Sabine Grundmann, Hans~Peter Hartmann, and J{\"{u}}rgen Ruoss.
+\newblock {Quantifying the effect of soil moisture on the aerobic microbial
+  mineralization of selected pesticides in different soils}.
+\newblock \emph{Environmental Science and Technology}, 40\penalty0
+  (10):\penalty0 3305--3312, 2006.
+\newblock ISSN 0013936X.
+\newblock \doi{10.1021/es052205j}.
 
 \bibitem[Sheikh et~al.(2009)Sheikh, Visser, and Stroosnijder]{Sheikh2009}
 Vahedberdi Sheikh, Saskia Visser, and Leo Stroosnijder.

@@ -182,8 +182,6 @@ where the relevant layer and processes is selected:
         \ControlFlowTok{pass}
     \ControlFlowTok{elif} \NormalTok{process }\OperatorTok{==} \StringTok{"leach"}\NormalTok{:}
         \ControlFlowTok{pass}
-    \ControlFlowTok{elif} \NormalTok{process }\OperatorTok{==} \StringTok{"latflux"}\NormalTok{:}
-        \ControlFlowTok{pass}
     \ControlFlowTok{else}\NormalTok{:}
         \ControlFlowTok{raise} \PreprocessorTok{NotImplementedError}
     
@@ -223,19 +221,15 @@ process process=\textbf{``volat''} is chosen and the updated
         \ControlFlowTok{pass}
     \ControlFlowTok{elif} \NormalTok{process }\OperatorTok{==} \StringTok{"leach"}\NormalTok{:}
         \ControlFlowTok{pass}
-    \ControlFlowTok{elif} \NormalTok{process }\OperatorTok{==} \StringTok{"latflux"}\NormalTok{:}
-        \ControlFlowTok{pass}
     \ControlFlowTok{else}\NormalTok{:}
         \ControlFlowTok{raise} \PreprocessorTok{NotImplementedError}
 
-    \ControlFlowTok{if} \NormalTok{process }\OperatorTok{==} \StringTok{"latflux"}\NormalTok{:}
-        \ControlFlowTok{pass}
-    \ControlFlowTok{else}\NormalTok{:}
-        \NormalTok{mass_tot }\OperatorTok{=} \NormalTok{mass_before_transport }\OperatorTok{+} \NormalTok{mass_gain }\OperatorTok{-} \NormalTok{mass_loss}
-        \NormalTok{delta_int }\OperatorTok{=} \NormalTok{((}\DecValTok{1}\OperatorTok{/}\NormalTok{mass_tot) }\OperatorTok{*}
-                     \NormalTok{(delta_layer }\OperatorTok{*} \NormalTok{mass_before_transport }\OperatorTok{+}  \CommentTok{# initial}
-                      \NormalTok{delta_gain }\OperatorTok{*} \NormalTok{mass_gain }\OperatorTok{-}  \CommentTok{# mass_in}
-                      \NormalTok{delta_loss }\OperatorTok{*} \NormalTok{mass_loss))  }\CommentTok{# mass_out}
+    \NormalTok{mass_tot }\OperatorTok{=} \NormalTok{mass_before_transport }\OperatorTok{+} \NormalTok{mass_gain }\OperatorTok{-} \NormalTok{mass_loss}
+    \NormalTok{delta_int }\OperatorTok{=} \NormalTok{((}\DecValTok{1}\OperatorTok{/}\NormalTok{mass_tot) }\OperatorTok{*}
+                 \NormalTok{(delta_layer }\OperatorTok{*} \NormalTok{mass_before_transport }\OperatorTok{+}  \CommentTok{# initial}
+                  \NormalTok{delta_gain }\OperatorTok{*} \NormalTok{mass_gain }\OperatorTok{-}  \CommentTok{# mass_in}
+                  \NormalTok{delta_loss }\OperatorTok{*} \NormalTok{mass_loss))  }\CommentTok{# mass_out}
+                  
     \ControlFlowTok{return} \NormalTok{delta_int}
                        
 \end{Highlighting}
@@ -272,57 +266,8 @@ W_{j/i} \sum^{N(t)}_{i=1}max[ \delta ^{13}C_{i} \cdot C_{i,aq}\cdot\Big(c_{z}(SW
 \delta ^{13}C_{j(t)} \cdot M_{loss,j(t)}  \Big)
 \]
 
-The \emph{update\_layer\_delta} functions, takes
-process=\textbf{``latflux''} and implements the above equations as:
-
-\begin{Shaded}
-\begin{Highlighting}[]
-
-\KeywordTok{def} \NormalTok{update_layer_delta(model, layer, process, mass_process, mass_before_transport):}
-    \ControlFlowTok{if} \NormalTok{layer }\OperatorTok{==} \DecValTok{0}\NormalTok{:}
-      \NormalTok{delta_layer }\OperatorTok{=} \NormalTok{model.delta_z0}
-      \NormalTok{delta_layer_above }\OperatorTok{=} \DecValTok{0}
-      \NormalTok{mass_layer }\OperatorTok{=} \NormalTok{model.pestmass_z0}
-    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{1}\NormalTok{:}
-        \NormalTok{delta_layer }\OperatorTok{=} \NormalTok{model.delta_z1}
-        \NormalTok{delta_layer_above }\OperatorTok{=} \NormalTok{model.delta_z0}
-        \NormalTok{mass_layer }\OperatorTok{=} \NormalTok{model.pestmass_z1}
-    \ControlFlowTok{elif} \NormalTok{layer }\OperatorTok{==} \DecValTok{2}\NormalTok{:}
-        \NormalTok{delta_layer }\OperatorTok{=} \NormalTok{model.delta_z2}
-        \NormalTok{delta_layer_above }\OperatorTok{=} \NormalTok{model.delta_z1}
-        \NormalTok{mass_layer }\OperatorTok{=} \NormalTok{model.pestmass_z2}
-        
-    \ControlFlowTok{if} \NormalTok{process }\OperatorTok{==} \StringTok{"volat"}\NormalTok{:}
-        \ControlFlowTok{pass}
-    \ControlFlowTok{elif} \NormalTok{process }\OperatorTok{==} \StringTok{"runoff"}\NormalTok{:}
-        \ControlFlowTok{pass}
-    \ControlFlowTok{elif} \NormalTok{process }\OperatorTok{==} \StringTok{"leach"}\NormalTok{:}
-        \ControlFlowTok{pass}
-    \ControlFlowTok{elif} \NormalTok{process }\OperatorTok{==} \StringTok{"latflux"}\NormalTok{:}
-        \NormalTok{mass_latflux }\OperatorTok{=} \NormalTok{mass_process[}\StringTok{"net_mass_latflux"}\NormalTok{]  }\CommentTok{# mg}
-        \NormalTok{mass_loss }\OperatorTok{=} \NormalTok{mass_process[}\StringTok{"cell_mass_loss_downstream"}\NormalTok{]}
-        \NormalTok{mass_gain }\OperatorTok{=} \NormalTok{mass_process[}\StringTok{"upstream_mass_inflow"}\NormalTok{]}
-        \NormalTok{mass_tot }\OperatorTok{=} \NormalTok{mass_before_transport }\OperatorTok{+} \NormalTok{mass_gain }\OperatorTok{-} \NormalTok{mass_loss}
-        \CommentTok{# Proof of first fraction, i.e., f1 > 1}
-        \NormalTok{f1 }\OperatorTok{=} \NormalTok{mass_before_transport }\OperatorTok{/} \NormalTok{mass_tot}
-        \CommentTok{# Proof of 2nd (inflow) fraction, f2 < 1}
-        \CommentTok{# f2 = accuflux(model.ldd, mass_gain)/accuflux(model.ldd, mass_tot)}
-        \NormalTok{f3 }\OperatorTok{=} \NormalTok{mass_loss }\OperatorTok{/} \NormalTok{mass_tot  }\CommentTok{# Proof of third (leaving) mass fraction, f3 < 1}
-    \ControlFlowTok{else}\NormalTok{:}
-        \ControlFlowTok{raise} \PreprocessorTok{NotImplementedError}
-
-    \ControlFlowTok{if} \NormalTok{process }\OperatorTok{==} \StringTok{"latflux"}\NormalTok{:}
-        \NormalTok{delta2_f2 }\OperatorTok{=} \NormalTok{accuflux(model.ldd_subs, mass_gain}\OperatorTok{*}\NormalTok{delta_layer)}\OperatorTok{/}\NormalTok{accuflux(model.ldd_subs, mass_tot)}
-        \NormalTok{delta_int }\OperatorTok{=} \NormalTok{(delta_layer }\OperatorTok{*} \NormalTok{f1) }\OperatorTok{+} \NormalTok{delta2_f2 }\OperatorTok{-} \NormalTok{(delta_layer }\OperatorTok{*} \NormalTok{f3)}
-    \ControlFlowTok{else}\NormalTok{:}
-        \ControlFlowTok{pass}
-        
-    \ControlFlowTok{return} \NormalTok{delta_int}
-                       
-\end{Highlighting}
-\end{Shaded}
-
-Full function:
+The \emph{getLatMassDeltaFlux} implements the above equation for lateral
+mass flux as:
 
 \begin{Shaded}
 \begin{Highlighting}[]
@@ -398,6 +343,13 @@ Full function:
                        
 \end{Highlighting}
 \end{Shaded}
+
+\section{\texorpdfstring{Converting \(\delta ^{13}C_{i}\) to individual
+species}{Converting \textbackslash{}delta \^{}\{13\}C\_\{i\} to individual species}}\label{converting-delta-13c_i-to-individual-species}
+
+\[
+\delta ^{13}C_{i} = \frac{R_s - R_{std}}{R_{std}}
+\]
 
 \bibliography{library.bib}
 

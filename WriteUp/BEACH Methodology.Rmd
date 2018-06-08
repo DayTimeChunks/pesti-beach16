@@ -1,12 +1,12 @@
 ---
 title: "BEACH Formalisms"
-header-includes: \usepackage{natbib} \usepackage{mathtools}
+header-includes: \usepackage{mathtools} \usepackage{natbib}
 output:
   pdf_document:
     citation_package: natbib
     keep_tex: yes
   word_document: default
-bibliography: ../../../library.bib
+bibliography: library.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -21,6 +21,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r include=FALSE}
 # automatically create a bib database for R packages
 # knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
+knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
 ```
 
 # Methodology
@@ -160,6 +161,22 @@ where $D_z$ is the soil profile depth of layer $z$ and $\tau$ is a dimensionless
 \end{equation}
 
 where $K_{sat}$ is the saturated hydraulic conductivity.
+
+
+#### Program steps
+
+Consider first layer z0 (with immediate update on z1, due to low thickness of z0)
+
+1. Get surface layer infiltration ,
+  - which yields infiltration to z0 and z1, and 
+  - updates moisture content on those layers
+
+2. Subtract z0 percolation
+
+Now layers z1, z2, z3
+
+1. Add percolation from above layer -> Exceeds capacity for z2!
+2. 
 
 ### Lateral/subsurface flow
 
@@ -927,9 +944,6 @@ def getLatMassFlux(model, layer, theta_sat, theta_fcap,
 
 ## Degradation
 
-### Photodegradation
-
-...to code and document.
 
 ```{r include=FALSE}
 # Note: Only first 24 hrs or first 5 mm cummulative rainfall?
