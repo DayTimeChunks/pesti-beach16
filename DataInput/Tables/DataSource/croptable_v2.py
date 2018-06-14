@@ -50,7 +50,7 @@ max_LAI = [7, 6.3, 4.5, 7, 4]  # (-)
 mu = [3.5, 1.5, 1.8, 1, 1]  # (g biomass / MJ), not used, see: getBiomassCover()
 max_height = [2.43, 0.79, 0.45, 0.2, 3.0]  # m  (SWAT needs 'm')
 max_root_depth = [1, 1.4, 1, 0.2, 1]  # m (convert to mm on run())
-p_tab = [0.55, 0.55, 0.55, 0.55, 0.55]  # Depletion coeff (-) assumed total from FAO.
+p_tab = [0.5, 0.55, 0.30, 0.40, 0.5]  # Depletion coeff (-) assumed total from FAO. http://www.fao.org/docrep/X0490E/x0490e0e.htm
 
 # Column 1 to 16 (0th indexed)
 croptable.loc[1:, 'sow_yy'] = np.select(crop_conditions, sow_yy, default=0)

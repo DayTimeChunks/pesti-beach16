@@ -43,8 +43,11 @@ def checkMoisture(model, moisture_maps, name):
     for layer in range(len(moisture_maps)):
         model.report(moisture_maps[layer], name + str(layer))
 
-#  aguila --scenarios='{1}' --timesteps=[1,300,1] athz0 athz1 athz2 athz3
-# aguila d14_theta_z0
+#  aguila --scenarios='{1}' --timesteps=[1,300,1] athz0 athz1 athz2 athz3 out_multi_nom_v3
+# aguila --scenarios='{1}' --timesteps=[1,300,1] preTheZ0 posTheZ0 out_multi_nom_v3 cellOut0 athz0
+# aguila --scenarios='{1}' --timesteps=[1,300,1] preTheZ3 posTheZ3 out_multi_nom_v3 cellOut3 athz3
+# aguila --scenarios='{1}' --timesteps=[1,300,1] fxm30 fxm31 fxm32 fxm33
+
 
 # Water balance and reporting
 def recordInfiltration(model, infiltration, layer):

@@ -121,10 +121,6 @@ def runoff_SCS(model, rain,
     return runoff
 
 
-def getNewLayerMoisture():
-    pass
-
-
 def getTopLayerInfil(model, precip,
                      theta_wp, CN2, crop_type,
                      jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage
@@ -150,8 +146,6 @@ def getTopLayerInfil(model, precip,
     satex_mm = max(scalar(0), theta_check_mm - model.theta_sat[layer] * depth_z0)
     infil_z0 = max(infil - satex_mm, scalar(0))
 
-
-
     # Step 3. Pass satex in mm to 2nd layer
     theta_check_below = theta_layer_below * depth_z1 + satex_mm
     satex_below_mm = max(scalar(0), theta_check_below - model.theta_sat[layer + 1] * depth_z1)
@@ -166,7 +160,7 @@ def getTopLayerInfil(model, precip,
 def getPercolation(model, layer, k_sat, isPermeable=True):
     depth = model.layer_depth[layer]
     gamma = model.gamma[layer]
-    s = model.s[layer]
+    s = model.s[layer]  # Not used now
     tau = max(0, min(0.0866 * exp(gamma * log10(s * k_sat)), 1))  # dimensionless drainage param.
 
     # Step 4. Percolate
@@ -184,10 +178,12 @@ def getPercolation(model, layer, k_sat, isPermeable=True):
 
         sw_check_again = model.theta[layer + 1] * model.layer_depth[layer + 1] + percolation
         exceed2_mm = max(sw_check_again - model.theta_sat[layer + 1] * model.layer_depth[layer + 1], scalar(0))
-        model.report(exceed2_mm, 'inEXz' + str(layer + 1))
 
-        if mapmaximum(sw_check_again) > mapmaximum(model.theta_sat[layer + 1]*model.layer_depth[layer + 1]):
-            print("Error at fn = Percolation(), SAT exceeded, layer " + str(layer + 1))
+        if mapmaximum(sw_check_again) > mapmaximum(model.theta_sat[layer + 1] * model.layer_depth[layer + 1]):
+            val = float(mapmaximum(sw_check_again/model.layer_depth[layer + 1])) - float(mapmaximum(model.theta_sat[layer + 1]))
+            if val > float(1e-06):
+                model.report(exceed2_mm, 'inEXz' + str(layer + 1))
+                print("Error at fn = Percolation(), SAT exceeded, layer " + str(layer + 1) + ' by ' + str(val))
 
     else:  # Basement layer
         if not isPermeable:
@@ -205,17 +201,89 @@ def getArtificialDrainage(model, adr_layer):
     return cell_drainge_outflow
 
 
-def getLateralFlow(model, layer, run=True):
+def getLateralFlow_Manfreda(model, layer, run=True):
     depth = model.layer_depth[layer]
     c = model.c_lf[layer]
 
-    # Lateral Flow
     ###############
     # In: Sheikh2009
     # Based on:
     # Manfreda, S., Fiorentino, M., Iacobellis, V., 2005.
     # DREAM: a distributed model for runoff, evapotranspiration, and
     # antecedent soil moisture simulation. Adv. Geosci. 2, 31–39.
+
+    # Good values for this structure:
+    """
+    c0 ,0.25
+    c1 ,0.25
+    c2 ,0.25
+    c3 ,0.25
+    c_adr ,0.0015
+    gamma0 ,1
+    gamma1 ,0.8063
+    gamma2 ,0.8063
+    gamma3 ,0.4031
+    """
+
+    # Cell outflow (mm)
+    if mapminimum(model.theta[layer]) < 0:
+        print("Error Negative Theta, before LF layer" + str(layer))
+
+    if mapmaximum(model.theta[layer]) > mapmaximum(model.theta_sat[layer]):
+        val = float(mapmaximum(model.theta[layer])) - float(mapmaximum(model.theta_sat[layer]))
+        if float(val) > float(1e-06):
+            print("Error before getLateralFlow(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
+        model.theta[layer] = ifthenelse(model.theta[layer] < 0, scalar(0), model.theta[layer])
+        model.theta[layer] = ifthenelse(model.theta[layer] > model.theta_sat[layer], model.theta_sat[layer],
+                                        model.theta[layer])
+
+    if not run:
+        cell_sw_outflow = scalar(0)
+        new_moisture = model.theta[layer]
+    else:
+        cell_sw_outflow = max(c * (depth * model.theta[layer] - depth * model.theta_fc[layer]), scalar(0))  # [mm]
+        # Cell inflow (mm)  <- Subtract excess inflow
+        upstream_cell_inflow = (model.wetness *
+                                accuflux(model.ldd_subs, cell_sw_outflow)) / accuflux(model.ldd_subs, model.wetness)
+
+        check_lateral_flow_layer = deepcopy(model.zero_map)
+        overflow = deepcopy(model.theta_sat[layer])
+        loops = 0
+        while mapmaximum(overflow) > 1e-06:
+            loops += 1
+            # print('layer z' + str(layer) + 'loop: ' + str(loops))
+            # Cell inflow - cell outflow
+            check_lateral_flow_layer = upstream_cell_inflow - cell_sw_outflow  # [mm]
+            theta_check_layer = deepcopy(model.theta[layer])
+            theta_check_layer += check_lateral_flow_layer / depth
+
+            overflow = ifthenelse(theta_check_layer > model.theta_sat[layer],
+                                  (theta_check_layer - model.theta_sat[layer]) * depth,
+                                  scalar(0))
+            # If overflow (i.e. if at saturation), cell can only accept what it looses.
+            upstream_cell_inflow -= overflow
+
+        SW = model.theta[layer] * depth + check_lateral_flow_layer  # mm
+        new_moisture = SW / depth
+
+        if mapmaximum(overflow) > 0.001:
+            print('layer z' + str(layer) + ' loops: ' + str(loops))
+            print("Satex reached on Lateral Flow!, layer: z" + str(layer))
+            model.report(overflow, 'aOFz' + str(layer))  # m3
+            model.report(upstream_cell_inflow, 'mmInz' + str(layer))
+            model.report(cell_sw_outflow, 'mmOutz' + str(layer))
+
+    return {"cell_outflow": cell_sw_outflow,
+            # "upstream_cell_inflow": resultflux,  # upstream_cell_inflow, # mm
+            # "lateral_flow_layer": check_lateral_flow_layer,
+            "new_moisture": new_moisture}
+
+
+def getLateralFlow(model, layer, run=True):
+    depth = model.layer_depth[layer]
+    c = model.c_lf[layer]
+
+    # Lateral Flow
     ################
     # PCRaster:
     # net_flux = accuflux(ldd, material)
@@ -223,12 +291,15 @@ def getLateralFlow(model, layer, run=True):
     # material = (in this case) effective moisture above field capacity
     # model.wetness = W index = (4m2*number of upstream cells)/slope
 
+
     # Cell outflow (mm)
     if mapminimum(model.theta[layer]) < 0:
         print("Error Negative Theta, before LF layer" + str(layer))
 
     if mapmaximum(model.theta[layer]) > mapmaximum(model.theta_sat[layer]):
-        print("Error before getLateralFlow(), SAT exceeded, layer " + str(layer))
+        val = float(mapmaximum(model.theta[layer])) - float(mapmaximum(model.theta_sat[layer]))
+        if float(val) > float(1e-06):
+            print("Error before getLateralFlow(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
         model.theta[layer] = ifthenelse(model.theta[layer] < 0, scalar(0), model.theta[layer])
         model.theta[layer] = ifthenelse(model.theta[layer] > model.theta_sat[layer], model.theta_sat[layer],
                                         model.theta[layer])
@@ -242,7 +313,7 @@ def getLateralFlow(model, layer, run=True):
         SW_space = max(depth * model.theta_sat[layer] - depth * model.theta[layer], scalar(0))
         SW_cap = model.theta_sat[layer]*depth
 
-        f_pot = max(model.theta[layer] - model.theta_fc[layer], scalar(0))  # [-]
+        f_pot = c * max(model.theta[layer] - model.theta_fc[layer], scalar(0))  # [-]
 
         is_contributor = ifthenelse(f_pot > 0, scalar(1), scalar(0))
         sum_contributors = upstream(model.ldd_subs, is_contributor)
@@ -267,6 +338,7 @@ def getLateralFlow(model, layer, run=True):
 
         flux_mm = fx
         new_moisture = st/depth
+        # model.report(flux_mm * cellarea()/1000, 'fxm3' + str(layer))
 
         # is_contributor = ifthenelse(model.theta[layer] >= model.theta_fc[layer], scalar(1), scalar(0))
         # sum_contributors = upstream(model.ldd_subs, is_contributor)
@@ -299,53 +371,29 @@ def getLateralFlow(model, layer, run=True):
         if mapminimum(new_moisture) < 0:
             print("Error on new moisture fn = getLateralFlow(), Negative Theta layer" + str(layer))
         if mapmaximum(new_moisture) > mapmaximum(model.theta_sat[layer]):
-            print("Error on new moisture fn = getLateralFlow(), SAT exceeded, layer " + str(layer))
-            error = ifthenelse(new_moisture > model.theta_sat[layer], scalar(1), scalar(0))
-            model.report(error, 'ErrZ' + str(layer))
-            model.report(f_pot, 'fpotz' + str(layer))
-            model.report(is_contributor, 'IsUpZ' + str(layer))
-            model.report(sum_contributors, 'SumUpZ' + str(layer))
-            model.report(downstream_capacity, 'DWNa' + str(layer))
-            model.report(downstream_capacity, 'DWNb' + str(layer))
-            model.report(fx1, 'fx1z' + str(layer))
-            model.report(fx2, 'fx2z' + str(layer))
-            model.report(downstream_capacity, 'DWNc' + str(layer))
-            model.report(SW_cap, 'CAPiniz' + str(layer))
-            model.report(st, 'STz' + str(layer))
-            model.report(SW, 'SWz' + str(layer))
-            model.report(fx, 'fxz' + str(layer))
+            val = float(mapmaximum(new_moisture)) - float(mapmaximum(model.theta_sat[layer]))
+            new_moisture = ifthenelse(new_moisture < 0, scalar(0),
+                                      ifthenelse(new_moisture > model.theta_sat[layer], model.theta_sat[layer],
+                                      new_moisture))
+            if float(val) > float(1e-06):
+                print("Error on new moisture fn = getLateralFlow(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
+                error = ifthenelse(new_moisture > model.theta_sat[layer], scalar(1), scalar(0))
+                model.report(error, 'ErrZ' + str(layer))
+                model.report(f_pot, 'fpotz' + str(layer))
+                model.report(is_contributor, 'IsUpZ' + str(layer))
+                model.report(sum_contributors, 'SumUpZ' + str(layer))
+                model.report(downstream_capacity, 'DWNa' + str(layer))
+                model.report(downstream_capacity, 'DWNb' + str(layer))
+                model.report(fx1, 'fx1z' + str(layer))
+                model.report(fx2, 'fx2z' + str(layer))
+                model.report(downstream_capacity, 'DWNc' + str(layer))
+                model.report(SW_cap, 'CAPiniz' + str(layer))
+                model.report(st, 'STz' + str(layer))
+                model.report(SW, 'SWz' + str(layer))
+                model.report(fx, 'fxz' + str(layer))
 
         # aguila --scenarios='{1}' --timesteps=[1,300,1]  ErrZ0 thEndZ0 f_potZ0 f_finZ0 CapZ0 SumUpZ0
         # aguila --scenarios='{1}' --timesteps=[1,300,1]  ErrZ3 thEndZ3 f_potZ0 f_finZ0 CapZ0 SumUpZ0
-
-        # cell_moisture_outflow = max(c * (depth * model.theta[layer] - depth * model.theta_fc[layer]), scalar(0))  # [mm]
-        # Cell inflow (mm)  <- Subtract excess inflow
-        # upstream_cell_inflow = (model.wetness *
-        #                         accuflux(model.ldd_subs, cell_moisture_outflow)) / accuflux(model.ldd_subs, model.wetness)
-
-        # check_lateral_flow_layer = model.zero_map
-        # overflow = deepcopy(model.theta_sat[layer])
-        # loops = 0
-        # while mapmaximum(overflow) > 1e-06:
-        #     loops += 1
-        #     # print('layer z' + str(layer) + 'loop: ' + str(loops))
-        #     # Cell inflow - cell outflow
-        #     check_lateral_flow_layer = upstream_cell_inflow - cell_moisture_outflow  # [mm]
-        #     theta_check_layer = deepcopy(model.theta[layer])
-        #     theta_check_layer += check_lateral_flow_layer / depth
-        #
-        #     overflow = ifthenelse(theta_check_layer > model.theta_sat[layer],
-        #                           (theta_check_layer - model.theta_sat[layer]) * depth,
-        #                           scalar(0))
-        #     # If overflow (i.e. if at saturation), cell can only accept what it looses.
-        #     upstream_cell_inflow -= overflow
-        #
-        # if mapmaximum(overflow) > 0.001:
-        #     print('layer z' + str(layer) + ' loops: ' + str(loops))
-        #     print("Satex reached on Lateral Flow!, layer: z" + str(layer))
-        #     model.report(overflow, 'aOFz' + str(layer))  # m3
-        #     model.report(upstream_cell_inflow, 'aInz' + str(layer))
-        #     model.report(cell_moisture_outflow, 'aOutz' + str(layer))
 
     return {"cell_outflow": flux_mm,
             # "upstream_cell_inflow": resultflux,  # upstream_cell_inflow, # mm
@@ -383,13 +431,12 @@ def getActualEvap(model, layer, theta_wp, pot_evapor, run=True):
     assert layer < 2  # No evaporation in deeper layers
     if run:
         depth = model.layer_depth[layer]
-        # if layer == 1:
-        #     depth *= 0.5  # Act only on half of the second layer.
+        if layer == 1:
+            depth *= 0.5  # Act only on fraction of the second layer.
 
         # Evaporation reduction parameter
         # Moisture content of air-dry soil = 0.33 * theta_wp [@Allen 1998 in @Sheikh2009]
-        kr_layer = max(scalar(0),
-                       min(1, (model.theta[layer] - 0.33 * theta_wp) / (model.theta_fc[layer] - 0.33 * theta_wp)))
+        kr_layer = max(scalar(0), (model.theta[layer] - 0.33 * theta_wp) / (model.theta_fc[layer] - 0.33 * theta_wp))
 
         # TODO: Verify:
         # Not sure why Samuel is using thetaR below instead of Field Capacity
@@ -499,7 +546,7 @@ def getPotET(model, sow_yy, sow_mm, sow_dd,
     # Pot. Transpiration
     # Due to Allen et al., 1998
     kcb_ratio = max((kcb - kcb_ini) / (kcmax - kcb_ini), scalar(0))
-    frac_soil_cover = min((kcb_ratio) ** (height * 0.5 + 1), scalar(0.99))
+    frac_soil_cover = min((kcb_ratio) ** (height * 0.5 + 1), scalar(0.80))
     # frac_soil_cover = ifthenelse(kcmax > kcb_ini, ((kcb - kcb_ini) / (kcmax - kcb_ini)) ** (height*0.5 + 1), scalar(0))
     # model.report(kcb, 'kcb')
     # model.report(kcb_ini, 'kcb_ini')
@@ -526,6 +573,9 @@ def getPotET(model, sow_yy, sow_mm, sow_dd,
 
 def getTotalDischarge(runoff, outlet_cells, drainage, baseflow=None):
     # m3
-    # out_baseflow_m3 +
-    tot_vol_disch_m3 = (runoff + outlet_cells + drainage)
+    if baseflow is None:
+        tot_vol_disch_m3 = (runoff + outlet_cells + drainage)
+    else:
+        tot_vol_disch_m3 = (runoff + outlet_cells + drainage + baseflow)
+
     return tot_vol_disch_m3

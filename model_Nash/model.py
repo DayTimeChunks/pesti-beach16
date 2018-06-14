@@ -1459,7 +1459,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # cell_drain_z1_m3 = drain_outflow_z1 * cellarea() / 1000  # m3
         # accu_o_drain_z1_m3 = accuflux(self.ldd_subs, cell_drain_z1_m3)  # m3
         # o_drain_z1_m3 = areatotal(accu_o_drain_z1_m3, self.outlet_multi)
-        # self.out_accu_drain_m3_tss.sample(o_drain_z1_m3)
+        # self.resW_o_accDrain_m3_tss.sample(o_drain_z1_m3)
 
         # Discharge due to z2 drainage
         cell_drain_z2_m3 = drain_outflow_z2 * cellarea() / 1000  # m3
