@@ -2,12 +2,17 @@
 from pcraster.framework import *
 
 
-def getApplications(model, fa_cr):
+def getApplications(model, fa_cr, massunit='g'):
+    if massunit == 'g':
+        factor = 1  # grams
+    else:
+        factor = 10**6  # micro grams
+
     # Applications Mass
     # Product concentration (active ing.)
     double = scalar(2.0)  # ~ Dosage for corn when growing beet
-    d_gold = scalar(915)  # g/L S-met # * 10 ** 6  # ug/L S-met
-    m_gold = scalar(960)  # g/L S-met # * 10 ** 6  # ug/L
+    d_gold = scalar(915) * factor  # g/L S-met # * 10 ** 6  # ug/L S-met
+    m_gold = scalar(960) * factor  # g/L S-met # * 10 ** 6  # ug/L
     
     # Dosages # L/Ha * 1Ha/1000m2 = L/m2
     d_beet = None
@@ -20,7 +25,7 @@ def getApplications(model, fa_cr):
     m_beet_Burger = scalar(0.6) * 1 / 10 ** 4 * (double + 1)  #
     m_beet_Kopp = scalar(0.6) * 1 / 10 ** 4 * (double + 1) 
     
-    app_conc = (  # [ug/m2] -> [g/m2]
+    app_conc = (  # [mass-unit/m2]
                 ifthenelse(fa_cr == 1111,  # 1111 (Friess, Beet)
                            m_beet_Friess * m_gold * model.mask,
                            ifthenelse(fa_cr == 1122,  # 1112 (Friess-Corn),
@@ -43,7 +48,7 @@ def getApplications(model, fa_cr):
                                                                                                  0 * model.mask))))))))
             )
 
-    # Pesticide applied (ug->g) on Julian day 177 (March 25, 2016).
+    # Pesticide applied (mass-unit) on Julian day 177 (March 25, 2016).
     # March 26th, Friess and Mathis
     app1 = ifthenelse(fa_cr == 1111, 1 * app_conc * cellarea(),
                            # 1111 (Friess, Beet), 1112 (Friess-Corn),
@@ -51,13 +56,13 @@ def getApplications(model, fa_cr):
                                       ifthenelse(fa_cr == 1711, 1 * app_conc * cellarea(),  # 1711 (Mathis-Beet)
                                                  0 * app_conc * cellarea())))
 
-    # Pesticide applied (ug->g) on Julian day 196 (April 13, 2016).
+    # Pesticide applied (mass-unit) on Julian day 196 (April 13, 2016).
     # April 13, Kopp and Burger
     app2 = ifthenelse(fa_cr == 1511, 1 * app_conc * cellarea(),  # 1511 (Burger-Beet)
                            ifthenelse(fa_cr == 1611, 1 * app_conc * cellarea(),  # 1611 (Kopp-Beet),
                                       0 * app_conc * cellarea()))
 
-    # Pesticide applied (ug->g) on Julian day 238 (May 25, 2016).
+    # Pesticide applied (mass-unit) on Julian day 238 (May 25, 2016).
     # May 25, Schmidt and Speich, and (out of transect): Friess and Mahler
     # Note: Speich could be 1 week later.
     app3 = ifthenelse(fa_cr == 1112, 1 * app_conc * cellarea(),  # 1112 (Friess-Corn)
@@ -68,4 +73,4 @@ def getApplications(model, fa_cr):
                                                             # 1312 (Mahler-Corn)
                                                             0 * app_conc * cellarea()))))
     
-    return [app1, app2, app3]
+    return [app1, app2, app3]  # default mass is grams

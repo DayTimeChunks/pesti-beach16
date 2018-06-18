@@ -524,7 +524,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         mean_back_conc = [0.06, 0.03, 0.001, 0.001]
         for layer in range(self.num_layers):
             background = ((self.zero_map + mean_back_conc[layer]) * self.p_b * scalar(10 ** 6 / 10 ** 3) *
-                          self.layer_depth[layer] * cellarea() * 10e-06)  # Based on detailed soils
+                          self.layer_depth[layer] * cellarea() * (10 ** -6))  # Based on detailed soils
             self.sm_background.append(background)
 
         # Fraction masses and Delta (Background)
@@ -561,7 +561,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Assign dosages based on Farmer-Crop combinations [g/m2]
         self.fa_cr = readmap("farm_burn_v3")  # Contains codes to assign appropriate dosage
-        self.apps = getApplications(self, self.fa_cr)  # returns list of applied masses
+        self.apps = getApplications(self, self.fa_cr, massunit='g')  # returns list of applied masses
 
         # Applications delta
         # Use map algebra to produce a initial signature map,

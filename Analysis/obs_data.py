@@ -19,6 +19,7 @@ def getTimeStamp(timestep, sep=','):
 day = getTimeStamp(177, ";")
 print(day.split("/")[2])
 
+
 def getWaterData(tss=True):
 
     path = "Data/"
@@ -28,6 +29,19 @@ def getWaterData(tss=True):
         obs = obs.rename(index=str, columns={0: "Jdays", 1: "Qm3"})
     else:
         path += "qmBlk_R.csv"
+        obs = pd.read_csv(path, sep=",")
+
+    return obs
+
+
+def getOutletData(name, var, tss=True):
+    path = "Data/BEACH_R/"
+    if tss:
+        path += name + ".tss"
+        obs = pd.read_table(path, header=None)
+        obs = obs.rename(index=str, columns={0: "Jdays", 1: var})
+    else:
+        path += name + ".csv"
         obs = pd.read_csv(path, sep=",")
 
     return obs
