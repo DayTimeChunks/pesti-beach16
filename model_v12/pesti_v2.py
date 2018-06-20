@@ -136,9 +136,9 @@ def getRunOffMass(model, precip, runoff_mm, mass,
                   transfer_model="simple-mt", sorption_model="linear",
                   gas=True, debug=False, run=True):
     if not run:
-        mass_ro = model.zero_map
+        mass_ro = deepcopy(model.zero_map)
     elif debug:
-        mass_ro = model.zero_map
+        mass_ro = deepcopy(model.zero_map)
     else:
         # Aqueous concentration
         layer = 0
@@ -153,13 +153,14 @@ def getRunOffMass(model, precip, runoff_mm, mass,
             # Adaptation replaces Precip by Runoff amount.
             b = 1  # [mm] Calibration constant, 1 >= b > 0 (b-ranges appear reasonable).
             # As b decreases, mass transfer increases, model.z0 in mm
-            mass_ro = (runoff_mm * cellarea()) * exp(-b * model.layer_depth[layer]) * conc_aq
+            mass_ro = conc_aq * (runoff_mm * cellarea()) * exp(-b * model.layer_depth[layer])
         elif transfer_model == "nu-mlm":
             # non-uniform-mixing-layer-model (nu-mlm)
             # Original from Ahuja and Lehman, 1983 in @Shi2011
             b = 1  # [mm] Calibration constant, 1 >= b > 0 (b-ranges appear reasonable).
             # As b decreases, mass transfer increases, model.z0 in mm
-            mass_ro = (precip * cellarea()) * exp(-b * model.layer_depth[layer]) * conc_aq
+            mass_ro = conc_aq * (precip * cellarea()) * exp(-b * model.layer_depth[layer])
+            mass_ro = ifthenelse(runoff_mm > scalar(0), mass_ro, scalar(0))
         elif transfer_model == "d-mlm":
             # distributed mixing-layer-model (d-mlm)
             # Adapted from Havis et al., 1992, and
@@ -255,7 +256,57 @@ def getLeachedMass(model, layer, water_flux,
     return mass_leached
 
 
-def getLatMassFlux(model, layer, mass, cell_moisture_outflow, upstream_cell_inflow,
+def getLatMassFlux(model, layer, mass, flux_map_mm,
+                   sorption_model='linear', gas=True,
+                   debug=False, run=True):
+    """
+    :param model:
+    :param layer:
+    :param mass:
+    :param sorption_model:
+    :param gas:
+    :param debug:
+    :param run:
+    :return:
+    """
+    if not run:
+        latflux_dict = {
+            'mass_loss': deepcopy(model.zero_map),
+            'mass_gain': deepcopy(model.zero_map),
+            'new_mass': deepcopy(mass)
+        }
+    else:
+        if mapminimum(model.theta[layer]) < scalar(1e-06) or layer == (model.num_layers - 1):
+            latflux_dict = {
+                'mass_loss': deepcopy(model.zero_map),
+                'mass_gain': deepcopy(model.zero_map),
+                'new_mass': deepcopy(mass)
+            }
+        else:
+
+            # Aqueous concentration  mass/L
+            conc_aq = getConcAq(model, layer, mass, sorption_model=sorption_model, gas=gas)
+
+            mass_loss = conc_aq * flux_map_mm * cellarea()  # mm * m2 = L
+            mass_gain = upstream(model.ldd_subs, mass_loss)
+            new_mass = mass - mass_loss + mass_gain
+            # http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_upstream.html
+
+            if debug:
+                model.report(mass, 'aMi' + str(layer))
+                model.report(mass_loss, 'aMloss' + str(layer))
+                model.report(mass_gain, 'aMgain' + str(layer))
+                # aguila --scenarios='{1}' --timesteps=[1,300,1] aMi0 aMloss0 aMgain0
+
+            latflux_dict = {
+                'mass_loss': mass_loss,
+                'mass_gain': mass_gain,
+                'new_mass': new_mass
+            }
+    return latflux_dict
+
+
+def getLatMassFluxManfreda(model, layer, mass, cell_moisture_outflow, upstream_cell_inflow,
                    sorption_model='linear', gas=True,
                    debug=False, run=True):
     """
@@ -278,7 +329,7 @@ def getLatMassFlux(model, layer, mass, cell_moisture_outflow, upstream_cell_infl
         }
     else:
         theta_layer = model.theta[layer]
-        if mapminimum(model.theta[layer]) < scalar(1e-06):
+        if mapminimum(model.theta[layer]) < scalar(1e-06) or layer == (model.num_layers - 1):
             latflux_dict = {
                 'mass_loss': deepcopy(model.zero_map),
                 'mass_gain': deepcopy(model.zero_map),
@@ -321,9 +372,9 @@ def getDrainMassFlux(model, layer, mass,
                      sorption_model='linear', gas=True,
                      debug=False, run=True):
     if not run:
-        mass_loss = model.zero_map
+        mass_loss = deepcopy(model.zero_map)
     elif debug:
-        mass_loss = model.zero_map
+        mass_loss = deepcopy(model.zero_map)
     else:
         # Aqueous concentration
         conc_aq = getConcAq(model, layer, mass, sorption_model=sorption_model, gas=gas)
@@ -339,11 +390,12 @@ def getMassDegradation(model, layer, theta_wp, mass,
                        sorption_model="linear",
                        gas=True, debug=False, run=True):
     if not run:
-        return {"mass_tot_new": mass,
-                "mass_deg_aq": model.zero_map,
-                "mass_deg_ads": model.zero_map}
+        return {"mass_tot_new": deepcopy(mass),
+                "mass_deg_aq": deepcopy(model.zero_map),
+                "mass_deg_ads": deepcopy(model.zero_map)}
     else:
         theta_layer = model.theta[layer]
+        theta_gas = max(model.theta_sat[layer] - theta_layer, scalar(0))
         depth = model.layer_depth[layer]
 
         # Mass compartment (bio-available fraction)
@@ -358,7 +410,7 @@ def getMassDegradation(model, layer, theta_wp, mass,
         bioa_mass = mass * exp(-model.aged_days / model.dt_50_ref)
         aged_mass = mass - bioa_mass
         # bioa_mass = deepcopy(mass)
-        # aged_mass = deepcopy(mass)
+        # aged_mass = deepcopy(model.zero_map)
 
         # F_Theta_1
         theta_factor = ifthenelse(theta_layer <= 0.5 * theta_wp, scalar(0),
@@ -393,25 +445,30 @@ def getMassDegradation(model, layer, theta_wp, mass,
         conc_aq = getConcAq(model, layer, bioa_mass,
                             sorption_model=sorption_model, gas=gas)  # mass/L
         conc_ads = getConcAds(model, layer, bioa_mass, gas=gas)  # mass/g soil
-        conc_gas = conc_aq / model.k_h
+        # conc_gas = conc_aq / model.k_h
 
         mass_aq = conc_aq * (theta_layer * depth * cellarea())
-        mass_ads = conc_ads * (depth * cellarea() * model.p_b)  # pb = g/cm3
+        mass_ads = conc_ads * (model.p_b * depth * cellarea())  # pb = g/cm3
+        # Check gas
+        mass_gas = bioa_mass - mass_aq - mass_ads
 
         # Step 1 - Degrade phase fractions
         # First order degradation kinetics
-        theta_gas = max(model.theta_sat[layer] - theta_layer, scalar(0))
         if frac == "H":
-            conc_aq_new = conc_aq * exp(-1 * model.alpha_iso * k_b * scalar(model.jd_dt))
-            conc_ads_new = conc_ads * exp(-1 * model.alpha_iso * k_bs * scalar(model.jd_dt))
-        else:  # Same for total conc as for "L"
-            conc_aq_new = conc_aq * exp(-1 * k_b * scalar(model.jd_dt))
-            conc_ads_new = conc_ads * exp(-1 * k_bs * scalar(model.jd_dt))
+            # conc_aq_new = conc_aq * exp(-1 * model.alpha_iso * k_b * scalar(model.jd_dt))
+            # conc_ads_new = conc_ads * exp(-1 * model.alpha_iso * k_bs * scalar(model.jd_dt))
+            mass_aq_new = mass_aq * exp(-1 * model.alpha_iso * k_b * scalar(model.jd_dt))
+            mass_ads_new = mass_ads * exp(-1 * model.alpha_iso * k_bs * scalar(model.jd_dt))
+        else:  # Same for total conc as for "L", but without alpha
+            # conc_aq_new = conc_aq * exp(-1 * k_b * scalar(model.jd_dt))
+            # conc_ads_new = conc_ads * exp(-1 * k_bs * scalar(model.jd_dt))
+            mass_aq_new = mass_aq * exp(-1 * k_b * scalar(model.jd_dt))
+            mass_ads_new = mass_ads * exp(-1 * k_bs * scalar(model.jd_dt))
 
-        # Step 2 - Convert to mass (i.e., after degradation in each phase)
-        mass_aq_new = conc_aq_new * (theta_layer * depth * cellarea())
-        mass_ads_new = conc_ads_new * (model.p_b * depth * cellarea())  # pb = g/cm3
-        mass_gas = conc_gas * (theta_gas * depth * cellarea())
+        # Step 2 - Convert back to mass (i.e., after degradation in each phase)
+        # mass_aq_new = conc_aq_new * (theta_layer * depth * cellarea())
+        # mass_ads_new = conc_ads_new * (model.p_b * depth * cellarea())  # pb = g/cm3
+        # mass_gas = conc_gas * (theta_gas * depth * cellarea())
         mass_tot_new = mass_aq_new + mass_ads_new + mass_gas + aged_mass
         mass_deg_aq = mass_aq - mass_aq_new
         mass_deg_ads = mass_ads - mass_ads_new

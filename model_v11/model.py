@@ -1678,7 +1678,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Baseflow discharge (basement)
         # accu_baseflow = accuflux(self.ldd_subs, self.baseflow * cellarea() / 1000)  # m3
         # out_baseflow_m3 = areatotal(accu_baseflow, self.outlet_multi)
-        # self.out_baseflow_m3_tss.sample(out_baseflow_m3)
+        # self.resW_accBaseflow_m3_tss.sample(out_baseflow_m3)
 
         # Change in storage
         ch_storage_m3 = ch_storage_z0_m3 + ch_storage_z1_m3 + ch_storage_z2_m3 + ch_storage_z3_m3
@@ -1794,11 +1794,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                       )
 
                 net_latflux_light = areatotal(mass_latflux_light, self.is_catchment)  # Needed for MB
-                # self.out_latflux_L_tss.sample(net_latflux_light)
+                # self.resM_accLF_L_tss.sample(net_latflux_light)
 
                 # Baseflow flux
                 # out_baseflow_light = areatotal(baseflow_light, self.is_catchment)
-                # self.out_baseflow_L_tss.sample(out_baseflow_light)
+                # self.resM_accBF_L_tss.sample(out_baseflow_light)
 
                 # Total mass export
                 outlet_light_export = (out_runoff_light + out_drain_light + outlet_cell_lightflux # +

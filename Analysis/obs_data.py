@@ -34,8 +34,10 @@ def getWaterData(tss=True):
     return obs
 
 
-def getOutletData(name, var, tss=True):
+def getOutletData(name, var=None, tss=True):
     path = "Data/BEACH_R/"
+    if var is None:
+        var = name
     if tss:
         path += name + ".tss"
         obs = pd.read_table(path, header=None)

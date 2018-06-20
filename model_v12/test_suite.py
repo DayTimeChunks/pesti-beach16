@@ -8,7 +8,7 @@ from pcraster.framework import *
 
 # Layer depths
 def checkLayerDepths(model, layer):
-    model.report(model.layer_depth[layer], 'aDepth' + str(layer))
+    model.report(model.layer_depth[layer], 'z' + str(layer) + 'Depth')
     # print('Mapminium, z' + str(layer) + ' ' + str(mapminimum(model.layer_depth[layer])))
 
 #  aguila --scenarios='{1}' aDepth0 aDepth1 aDepth2 aDepth3
@@ -31,7 +31,7 @@ def reportKsatEvolution(model, ksat_list):
         name = str('Ksatz') + str(i)
         model.report(ksat_list[i], name)
 
-#  aguila --scenarios='{1}' --timesteps=[2,300,2] Ksatz0 Ksatz1 Ksatz2 Ksatz3
+#  aguila --scenarios='{1}' --timesteps=[1,300,1] Ksatz0 Ksatz1 Ksatz2 Ksatz3
 
 def report_CN(model, CN2, cumulative_rain_mm):
     model.report(CN2, 'CN2')
@@ -80,7 +80,7 @@ def recordRunOff(model, runoff, unit='m3'):
 
 
 # aguila --scenarios='{1}' --timesteps=[2,300,2] aROm3
-# aguila --scenarios='{1}' --timesteps=[2,300,2] aROmm
+# aguila --scenarios='{1}' --timesteps=[1,300,1] MgasZ0 MgasZ1 MgasZ2 MgasZ3 MgasZ4
 
 
 # Mass after every process:

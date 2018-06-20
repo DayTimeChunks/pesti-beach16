@@ -1178,11 +1178,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                   ligth_latflow[2] + ligth_latflow[3])
 
             net_latflux_light = areatotal(mass_latflux_light, self.is_catchment)  # Needed for MB
-            # self.out_latflux_L_tss.sample(net_latflux_light)
+            # self.resM_accLF_L_tss.sample(net_latflux_light)
 
             # Baseflow flux
             # out_baseflow_light = areatotal(baseflow_light, self.is_catchment)
-            # self.out_baseflow_L_tss.sample(out_baseflow_light)
+            # self.resM_accBF_L_tss.sample(out_baseflow_light)
 
             # Total mass export
             outlet_light_export = (out_runoff_light + out_drain_light + outlet_cell_lightflux  # +

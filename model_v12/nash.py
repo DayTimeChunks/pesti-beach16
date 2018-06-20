@@ -17,12 +17,43 @@ def reportNashHydro(model, q_obs, tot_vol_disch_m3):
     model.q_sim_ave_tss.sample(model.q_sim_ave)
     
 
-def repNashOutConc():
-    pass
+def repNashOutConc(model, q_obs, outlet_light_export, 
+                   catch_latflux_light, catch_drain_light, catch_runoff_light, 
+                   catch_volat_light, catch_deg_light):
+    # TODO:
+    # Include nash computation
 
+    # Outlet-specific, Cumulative masses
+    model.cum_exp_L_g += ifthenelse(q_obs >= 0, outlet_light_export, scalar(0))
+    model.resM_cumEXP_Smet_g_tss.sample(model.cum_exp_L_g)
 
-def repNashOutIso():
-    pass
+    model.cum_latflux_L_g += ifthenelse(q_obs >= 0, catch_latflux_light, scalar(0))
+    model.cum_latflux_L_g_tss.sample(model.cum_latflux_L_g)
+
+    model.cum_adr_L_g += ifthenelse(q_obs >= 0, catch_drain_light, scalar(0)) 
+    model.cum_adr_L_g_tss.sample(model.cum_adr_L_g)
+
+    model.cum_roZ0_L_g += ifthenelse(q_obs >= 0, catch_runoff_light, scalar(0)) 
+    model.cum_roZ0_L_g_tss.sample(model.cum_roZ0_L_g)
+    
+    # Other sinks
+    model.cum_volatZ0_L_g += ifthenelse(q_obs >= 0, catch_volat_light, scalar(0)) 
+    model.cum_volatZ0_L_g_tss.sample(model.cum_volatZ0_L_g)
+
+    model.cum_deg_L_g += ifthenelse(q_obs >= 0, catch_deg_light, scalar(0)) 
+    model.cum_deg_L_g_tss.sample(model.cum_deg_L_g)
+    
+
+def repNashOutIso(model, 
+                  out_delta, 
+                  roff_delta, latflux_delta, drain_delta):
+    # TODO:
+    # Include nash computation
+
+    model.resM_outISO_d13C_tss.sample(out_delta)
+    model.resM_outISO_ROFF_d13C_tss.sample(roff_delta)
+    model.resM_outISO_LF_d13C_tss.sample(latflux_delta)
+    model.resM_outISO_ADR_d13C_tss.sample(drain_delta)
 
 
 def repNashOutCombined():

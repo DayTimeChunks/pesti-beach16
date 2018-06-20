@@ -36,10 +36,11 @@ def computeGlobalWaterBalance(model, ch_storage_m3, percolation, etp_m3,
                               catch_n_latflow_m3,
                               cell_lat_outflow_m3,
                               outlet_latflow_m3,
-                              tot_rain_m3, out_runoff_m3, q_obs, out_drain_m3):
+                              tot_rain_m3, out_runoff_m3, q_obs, out_drain_m3,
+                              out_baseflow_m3=None):
     # Percolation
-    percol_z3_m3 = percolation[-1] * cellarea() / 1000  # m3
-    out_percol_m3 = accuflux(model.ldd_subs, percol_z3_m3)
+    percol_basement_m3 = percolation[-1] * cellarea() / 1000  # m3
+    out_percol_m3 = accuflux(model.ldd_subs, percol_basement_m3)
     out_percol_m3 = areatotal(out_percol_m3, model.outlet_multi)
 
     # Evapotranspiration
@@ -53,7 +54,7 @@ def computeGlobalWaterBalance(model, ch_storage_m3, percolation, etp_m3,
     # Baseflow discharge (basement)
     # accu_baseflow = accuflux(model.ldd_subs, model.baseflow * cellarea() / 1000)  # m3
     # out_baseflow_m3 = areatotal(accu_baseflow, model.outlet_multi)
-    # model.out_baseflow_m3_tss.sample(out_baseflow_m3)
+    # model.resW_accBaseflow_m3_tss.sample(out_baseflow_m3)
 
     accu_ch_storage_m3 = accuflux(model.ldd_subs, ch_storage_m3)
     accu_ch_storage_m3 = areatotal(accu_ch_storage_m3, model.outlet_multi)
@@ -64,30 +65,42 @@ def computeGlobalWaterBalance(model, ch_storage_m3, percolation, etp_m3,
 
     reportGlobalWaterBalance(model, tot_rain_m3, out_runoff_m3, out_drain_m3,
                              outlet_latflow_m3, out_percol_m3,
-                             out_etp_m3, accu_ch_storage_m3)
+                             out_etp_m3, accu_ch_storage_m3, out_baseflow_m3=out_baseflow_m3)
 
 
 def reportGlobalWaterBalance(model, tot_rain_m3, out_runoff_m3, out_drain_m3,
                              outlet_latflow_m3, out_percol_m3,
-                             out_etp_m3, accu_ch_storage_m3):
+                             out_etp_m3, accu_ch_storage_m3, out_baseflow_m3=None):
     model.resW_accRain_m3_tss.sample(tot_rain_m3)
     model.resW_accEtp_m3_tss.sample(out_etp_m3)
     model.resW_accRunoff_m3_tss.sample(out_runoff_m3)  # save to outlet
-    model.resW_accPercol_z3_m3_tss.sample(out_percol_m3)  # Basement
+    model.resW_accPercol_Bsmt_m3_tss.sample(out_percol_m3)  # Basement
     model.resW_o_accDrain_m3_tss.sample(out_drain_m3)  # Outlet discharge - Drain
     model.resW_o_cellLatflow_m3_tss.sample(outlet_latflow_m3)  # Outlet discharge - LF
     model.resW_accChStorage_m3_tss.sample(accu_ch_storage_m3)
+    if out_baseflow_m3 is not None:
+        model.out_baseflow_m3_tss.sample(out_baseflow_m3)
     # model.out_accu_o_latflow_m3_tss.sample(catch_lat_outflow_m3)
     # model.resW_accChStorage_m3_tss.sample(out_ch_storage_m3)
 
     # GLOBAL Water
-    global_mb_water = (tot_rain_m3 -
-                       out_etp_m3 - out_runoff_m3 -
-                       out_percol_m3 -
-                       outlet_latflow_m3 -
-                       out_drain_m3 -
-                       accu_ch_storage_m3
-                       )
+    if out_baseflow_m3 is not None:
+        global_mb_water = (tot_rain_m3 -
+                           out_etp_m3 - out_runoff_m3 -
+                           out_percol_m3 -
+                           outlet_latflow_m3 -
+                           out_drain_m3 -
+                           accu_ch_storage_m3 -
+                           out_baseflow_m3
+                           )
+    else:
+        global_mb_water = (tot_rain_m3 -
+                           out_etp_m3 - out_runoff_m3 -
+                           out_percol_m3 -
+                           outlet_latflow_m3 -
+                           out_drain_m3 -
+                           accu_ch_storage_m3
+                           )
 
     model.global_mb_water_tss.sample(global_mb_water)
 
@@ -114,6 +127,28 @@ def reportGlobalWaterBalance(model, tot_rain_m3, out_runoff_m3, out_drain_m3,
     # model.out_accu_i_latflow_m3_tss.sample(catch_lat_inflow_m3)
 
 
+def reportGlobalPestBalance(model,
+                            catch_app_light,
+                            catch_deg_light,
+                            catch_volat_light,
+                            catch_runoff_light,
+                            catch_leach_light_Bsmt,
+                            catch_drain_light,
+                            catch_latflux_light,
+                            catch_ch_storage_light):
+
+    light_mb_pest = (catch_app_light -
+                     catch_deg_light -
+                     catch_volat_light -
+                     catch_runoff_light -
+                     catch_leach_light_Bsmt -
+                     catch_drain_light -
+                     catch_latflux_light -  #
+                     # out_baseflow_light -
+                     catch_ch_storage_light)
+    model.global_mb_pest_tss.sample(light_mb_pest)
+
+
 def getCatchmentStorage(model):
     cell_vol_tot_m3 = deepcopy(model.zero_map)
     for layer in range(model.num_layers):
@@ -135,9 +170,64 @@ def getAverageMoisture(model):
     model.resW_z1_thetaPropSat.sample(prop_sat_layers[1])
     model.resW_z2_thetaPropSat.sample(prop_sat_layers[2])
     model.resW_z3_thetaPropSat.sample(prop_sat_layers[3])
+    model.resW_Bsmt_thetaPropSat.sample(prop_sat_layers[-1])
 
 
 def getRestitution():
     # rest_obs = tot_rain_m3 / q_obs
     # model.rest_obs_tss.sample(rest_obs)
     pass
+
+
+def getLayerAnalysis(model, layer,
+                     percolation, latflow_out, evap, transp,
+                     root_depth, out_baseflow_m3=None):
+    # Report Basement layer fluxes
+    # Infil
+    infil_m3 = percolation[layer-1] * cellarea() / 1000  # m3
+    infil_m3 = areatotal(infil_m3, model.is_catchment)
+    # Latflow
+    latflow_m3 = latflow_out[layer] * cellarea() / 1000
+    latflow_m3 = areatotal(latflow_m3, model.outlet_multi)  # Only outlet cells
+    # Baseflow
+    # Already recorded...
+    if out_baseflow_m3 is None:
+        out_baseflow_m3 = deepcopy(model.zero_map)
+    # Evapotransp
+    evap_m3 = evap[layer] * cellarea() / 1000  # m3
+    transp_m3 = transp[layer] * cellarea() / 1000  # m3
+    evapotransp_m3 = evap_m3 + transp_m3
+    # model.report(evap_m3, 'z' + str(layer) + 'EVA')  # Check which cells
+    # model.report(transp_m3, 'z' + str(layer) + 'TRA')  # Check which cells
+    # model.report(root_depth[layer], 'z' + str(layer) + 'ROOT')
+    evapotransp_m3 = areatotal(evapotransp_m3, model.is_catchment)
+    # Storage
+    storage_m3 = model.theta[layer] * model.layer_depth[layer] * cellarea() / 1000
+    storage_m3 = areatotal(storage_m3, model.is_catchment)
+
+    # Change In storage
+    ch_storage_m3 = ((model.theta[layer] * model.layer_depth[layer] * cellarea() / 1000) -
+                     (model.theta_ini[layer] * model.layer_depth[layer] * cellarea() / 1000))
+    ch_storage_m3 = areatotal(ch_storage_m3, model.is_catchment)
+    balance_m3 = infil_m3 - latflow_m3 - out_baseflow_m3 - evapotransp_m3 - ch_storage_m3
+
+    if layer == 0:
+        model.resW_accVOL_z0_m3_tss.sample(storage_m3)
+    elif layer == 1:
+        model.resW_accVOL_z1_m3_tss.sample(storage_m3)
+    elif layer == 2:
+        model.resW_accVOL_z2_m3_tss.sample(storage_m3)
+    elif layer == 3:
+        # model.resW_accInfil_z3_m3_tss.sample(infil_m3)
+        # model.resW_accLF_z3_m3_tss.sample(latflow_m3)
+        # model.resW_accETP_z3_m3_tss.sample(evapotransp_m3)
+        model.resW_accVOL_z3_m3_tss.sample(storage_m3)
+        # model.resW_accBAL_z3_m3_tss.sample(balance_m3)
+    elif layer == (model.num_layers - 1):
+        model.resW_accInfil_Bsmt_m3_tss.sample(infil_m3)
+        model.resW_accLF_Bsmt_m3_tss.sample(latflow_m3)
+        model.resW_accETP_Bsmt_m3_tss.sample(evapotransp_m3)
+        model.resW_accVOL_Bsmt_m3_tss.sample(storage_m3)
+        model.resW_accBAL_Bsmt_m3_tss.sample(balance_m3)
+        # aguila --scenarios='{1}' --timesteps=[1,300,1] z3EVA z3TRA z3ROOT
+

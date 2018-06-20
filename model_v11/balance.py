@@ -53,7 +53,7 @@ def computeGlobalWaterBalance(model, ch_storage_m3, percolation, etp_m3,
     # Baseflow discharge (basement)
     # accu_baseflow = accuflux(model.ldd_subs, model.baseflow * cellarea() / 1000)  # m3
     # out_baseflow_m3 = areatotal(accu_baseflow, model.outlet_multi)
-    # model.out_baseflow_m3_tss.sample(out_baseflow_m3)
+    # model.resW_accBaseflow_m3_tss.sample(out_baseflow_m3)
 
     accu_out_ch_storage_m3 = accuflux(model.ldd_subs, ch_storage_m3)
     out_ch_storage_m3 = areatotal(accu_out_ch_storage_m3, model.outlet_multi)
