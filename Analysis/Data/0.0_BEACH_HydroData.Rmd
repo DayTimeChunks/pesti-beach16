@@ -98,6 +98,7 @@ names(mark)
 
 q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
 q$DayMoYr = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y", tz="EST"))
+q$Min = 2.0
 
 CHECKO = F
 if (CHECKO){
@@ -112,179 +113,27 @@ if (CHECKO){
 
 ```
 
-## Merge 2-min disch with sub-weekly markers
-
-- Convert to mass (and corresponding SD) discharged 
-
-
-```{r}
-qm = merge(q, mark, by.x = "SubWeeks", by.y = "WeekSubWeek", all = T)
-
-
-# Dissolved
-qm$SmetOut_ug.obs = qm$Vol.L*qm$Conc.mug.L
-qm$SmetOut_ug.sd = qm$Vol.L*qm$Conc.SD
-qm$OxaOut_ug.obs =  qm$Vol.L*qm$OXA_mean
-qm$OxaOut_ug.sd =  qm$Vol.L*qm$OXA_SD
-qm$EsaOut_ug.obs =  qm$Vol.L*qm$ESA_mean
-qm$EsaOut_ug.sd =  qm$Vol.L*qm$ESA_SD
-
-# Suspended Solids (SS)
-# Smet.ug in SS = ug/g * (MES [mg/L] * [1g/10^3mg])  * Vol [L]
-qm$SmetSS_ug.obs = qm$Conc.Solids.mug.gMES * (qm$MES.mg.L*1/10^3)  * qm$Vol.L 
-qm$SmetSS_ug.sd = qm$Conc.Solids.ug.gMES.SD * (qm$MES.sd*1/10^3)  * qm$Vol.L 
-
-qm$MassDelta.obs = qm$SmetOut_ug.obs*qm$diss.d13C
-qm$MassDelta.sd = qm$SmetOut_ug.sd*qm$SD.d13C
-
-
-names(qm)
-```
-
-## Compute by-day & by-subweek 
-
-- ignoring solids (for now)
-
-We need to obtain a bulk concentration for the day, not by taking the mean concentration, but rather the proportional mass contribution of each sub-sample, determined by the relative volume  such that the concentration of each daily sample $(C_i)$ is :
-
-\begin{equation}
-C_{bulk sample} = \frac{C_1 \cdot V_1 + C_2 \cdot V_2}{V_{tot}}
-\label{eq:conc_bulk}
-\end{equation}
-
-To obtain the bluk concentration (and because there are overlapps of some days across subsamples) we need to first to:
-
-1. Convert discharge mass to concentration
-2. Interpolate concentrations (and deltas) of only the duplicate days, where no sample was possible
-
-
-```{r}
-
-# Step 1
-qmDay <- qm %>%
-  group_by(DayMoYr, SubWeeks) %>%
-  dplyr::summarize(Volday.L = sum(Vol.L),
-                   SmOut_ug.obs = sum(SmetOut_ug.obs),
-                   SmOut_ug.sd = (sum(SmetOut_ug.sd^2))^0.5, # Cumulative SD
-                   OxOut_ug.obs = sum(OxaOut_ug.obs),
-                   OxOut_ug.sd = (sum(OxaOut_ug.sd^2))^0.5, # Cumulative SD
-                   EsOut_ug.obs = sum(EsaOut_ug.obs),
-                   EsOut_ug.sd = (sum(EsaOut_ug.sd^2))^0.5, # Cumulative SD
-                   ConcSmOut_ugL.obs = SmOut_ug.obs/Volday.L, # Smet
-                   ConcSmOut_ugL.sd = SmOut_ug.sd/Volday.L,
-                   ConcOxOut_ugL.obs = OxOut_ug.obs/Volday.L, # Oxa
-                   ConcOxOut_ugL.sd = OxOut_ug.sd/Volday.L,
-                   ConcEsOut_ugL.obs = EsOut_ug.obs/Volday.L, # Esa
-                   ConcEsOut_ugL.sd = EsOut_ug.sd/Volday.L,
-                   delta.obs = sum(MassDelta.obs)/(sum(SmetOut_ug.obs)),
-                   delta.sd = (sum(MassDelta.sd^2))^0.5/(sum(SmetOut_ug.sd^2))^0.5
-                   )
-
-
-# Step 2
-
-# Get all duplicated days
-allDup = qmDay %>%
-  group_by(DayMoYr) %>% 
-  filter(n()>1)
-
-# Assume same delta on the same day
-deltasDup = allDup %>%
-  group_by(DayMoYr) %>% 
-  dplyr::summarize(delta.obs = mean(delta.obs, na.rm = T),
-                   delta.sd = mean(delta.sd, na.rm = T))
-
-deltasDup$delta.obs = ifelse(deltasDup$delta.obs == "NaN", NA, deltasDup$delta.obs)
-deltasDup$delta.sd = ifelse(deltasDup$delta.sd == "NaN", NA, deltasDup$delta.sd)
-
-# Delete delta columns on allDup
-cols = ncol(allDup)-2
-allDup = allDup[, c(1:cols)]
-
-# Invert 1st two rows for na.approx
-allDup = allDup[c(2,1:nrow(allDup)), ]
-
-allDup$ConcSmOut_ugL.obs = na.approx(allDup$ConcSmOut_ugL.obs)
-allDup$ConcSmOut_ugL.sd = na.approx(allDup$ConcSmOut_ugL.sd)
-
-allDup$ConcOxOut_ugL.obs= na.approx(allDup$ConcOxOut_ugL.obs)
-allDup$ConcOxOut_ugL.sd = na.approx(allDup$ConcOxOut_ugL.sd)
-
-allDup$ConcEsOut_ugL.obs = na.approx(allDup$ConcEsOut_ugL.obs)
-allDup$ConcEsOut_ugL.sd = na.approx(allDup$ConcEsOut_ugL.sd)
-
-allDup = merge(allDup, deltasDup, by = "DayMoYr", all = T)
-
-ndup = qmDay %>%
-  group_by(DayMoYr) %>% 
-  filter(n()==1)
-
-
-qmDay = rbind.data.frame(ndup, allDup)
-
-qmDay = qmDay[order(qmDay$DayMoYr), ]
-
-# head(dupQm)
-```
-
-3. Apply eq. \ref{eq:conc_bulk} while grouping by day
-
-```{r}
-
-qmBlk = qmDay %>%
-  group_by(DayMoYr) %>%
-  dplyr::summarize(VolTot.L = sum(Volday.L),
-                   ConSmOut_ugL.blk = sum(ConcSmOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConSmOut_ugL.sd = sum(ConcSmOut_ugL.sd * Volday.L)/sum(Volday.L),
-                   ConOxOut_ugL.blk = sum(ConcOxOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConOxOut_ugL.sd = sum(ConcOxOut_ugL.sd * Volday.L)/sum(Volday.L),
-                   ConEsOut_ugL.blk = sum(ConcEsOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConEsOut_ugL.sd = sum(ConcEsOut_ugL.sd * Volday.L)/sum(Volday.L),
-                   deltaOut.blk = sum(delta.obs * Volday.L)/sum(Volday.L),         
-                   deltaOut.sd =  sum(delta.sd * Volday.L)/sum(Volday.L) 
-                   )
-
-```
-
-4. Merge markers
-
-```{r}
-m <- q %>%
-  group_by(DayMoYr) %>%
-  dplyr::summarise(SubWeeks = SubWeeks[1])
-  
-qmBlk = merge(qmBlk, m, by = "DayMoYr")
-
-qmBlk = merge(time, qmBlk, by = "DayMoYr", all = T)
-# qmBlk$JDay = seq.int(nrow(qmBlk)) + 176
-
-if (F) {
-  write.csv(qmBlk, "qmBlk_R.csv", row.names = F) # , sep = ";", dec = ".")  
-}
-
-```
-
 
 ## Prepare Volume Discharged Time Series (TSS)
 
 ```{r}
+qDay <- q %>%
+  group_by(DayMoYr) %>%
+  dplyr::summarize(Volday.L = sum(Vol.L))
 
-names(qmBlk)
-# Vol.L/day
-# qmBlk$time = seq.int(nrow(qmBlk)) 
+qDay$VolTot.m3 = round(qDay$Volday.L/10^3, 3)
 
-qmBlk$VolTot.m3 = round(qmBlk$VolTot.L/10^3, 3)
+qTime = merge(time, qDay, by = "DayMoYr", all = T)
 
-mean(qmBlk$VolTot.m3, na.rm = T)
-sd(qmBlk$VolTot.m3, na.rm = T)
-Volm3_tss = qmBlk[,c("Jdays", "VolTot.m3")] 
+mean(qTime$VolTot.m3, na.rm = T)
+sd(qTime$VolTot.m3, na.rm = T)
+Volm3_tss = qTime[,c("Jdays", "VolTot.m3")] 
 
 Volm3_tss$VolTot.m3 = ifelse(is.na(Volm3_tss$VolTot.m3), -1.0, Volm3_tss$VolTot.m3)
 
 if (F) {
   write.table(Volm3_tss, "BEACH_R/q_obs_m3day.tss", sep="\t", row.names = F, col.names = F)  
 }
-
 
 if (F) {
   
@@ -308,19 +157,215 @@ if (F) {
   
 }
 ```
-## Get S-met Concentrations Time Series (TSS)
+
+
+## Merge 2-min disch with sub-weekly markers
+
+- Convert to mass (and corresponding SD) discharged 
+
 
 ```{r}
-Conc_ugL_tss = qmBlk[,c("Jdays", "ConSmOut_ugL.blk")] 
-Conc_ugL_tss$ConSmOut_ugL.blk = ifelse(is.na(Conc_ugL_tss$ConSmOut_ugL.blk), -10**9, Conc_ugL_tss$ConSmOut_ugL.blk)
+qm = merge(q, mark, by.x = "SubWeeks", by.y = "WeekSubWeek", all = T)
+
+# Dissolved
+qm$SmetOut_ug.obs = qm$Vol.L*qm$Conc.mug.L
+qm$SmetOut_ug.sd = qm$Vol.L*qm$Conc.SD
+qm$OxaOut_ug.obs =  qm$Vol.L*qm$OXA_mean
+qm$OxaOut_ug.sd =  qm$Vol.L*qm$OXA_SD
+qm$EsaOut_ug.obs =  qm$Vol.L*qm$ESA_mean
+qm$EsaOut_ug.sd =  qm$Vol.L*qm$ESA_SD
+
+# Suspended Solids (SS)
+# Smet.ug in SS = ug/g * (MES [mg/L] * [1g/10^3mg])  * Vol [L]
+qm$SmetSS_ug.obs = qm$Conc.Solids.mug.gMES * (qm$MES.mg.L*1/10^3)  * qm$Vol.L 
+qm$SmetSS_ug.sd = qm$Conc.Solids.ug.gMES.SD * (qm$MES.sd*1/10^3)  * qm$Vol.L 
+
+qm$MassDelta.obs = qm$SmetOut_ug.obs*qm$diss.d13C
+qm$MassDelta.sd = qm$SmetOut_ug.sd*qm$SD.d13C
+
+
+names(qm)
+```
+
+
+## Compute by-day & by-subweek 
+
+- ignoring solids (for now)
+
+We need to obtain a bulk concentration for the day, not by taking the mean concentration, but rather the proportional mass contribution of each sub-sample, determined by the relative volume  such that the concentration of each daily sample $(C_i)$ is :
+
+\begin{equation}
+C_{bulk sample} = \frac{C_1 \cdot V_1 + C_2 \cdot V_2}{V_{tot}}
+\label{eq:conc_bulk}
+\end{equation}
+
+To obtain the bluk concentration (and because there are overlapps of some days across subsamples) we need to first to:
+
+1. Convert discharge mass to concentration
+2. Interpolate concentrations (and deltas) of only the duplicate days, where no sample was possible
+
+
+```{r}
+
+# Step 1
+# Sum masses by day, without mixing days from different samples (the latter will be 'duplicate' days)
+qmDay <- qm %>%
+  group_by(DayMoYr, SubWeeks) %>%
+  dplyr::summarize(Volday.L = sum(Vol.L),
+                   SmpHrs = sum(Min)/60,
+                   SmOut_ug.obs = sum(SmetOut_ug.obs),
+                   SmOut_ug.sd = (sum(SmetOut_ug.sd^2))^0.5, # Cumulative SD
+                   OxOut_ug.obs = sum(OxaOut_ug.obs),
+                   OxOut_ug.sd = (sum(OxaOut_ug.sd^2))^0.5, # Cumulative SD
+                   EsOut_ug.obs = sum(EsaOut_ug.obs),
+                   EsOut_ug.sd = (sum(EsaOut_ug.sd^2))^0.5, # Cumulative SD
+                   ConcSmOut_ugL.obs = SmOut_ug.obs/Volday.L, # Smet
+                   ConcSmOut_ugL.sd = SmOut_ug.sd/Volday.L,
+                   ConcOxOut_ugL.obs = OxOut_ug.obs/Volday.L, # Oxa
+                   ConcOxOut_ugL.sd = OxOut_ug.sd/Volday.L,
+                   ConcEsOut_ugL.obs = EsOut_ug.obs/Volday.L, # Esa
+                   ConcEsOut_ugL.sd = EsOut_ug.sd/Volday.L,
+                   delta.obs = sum(MassDelta.obs)/(sum(SmetOut_ug.obs)),
+                   delta.sd = (sum(MassDelta.sd^2))^0.5/(sum(SmetOut_ug.sd^2))^0.5
+                   )
+
+# Step 2
+# Get all duplicated days with data
+allDup = qmDay %>%
+  group_by(DayMoYr) %>% 
+  filter(n()>1 & !is.na(SmOut_ug.obs))
+
+# Do flow proportional average
+qmBlkDup = allDup %>%
+  group_by(DayMoYr) %>%
+  dplyr::summarize(VolTot.L = sum(Volday.L),
+                   TotHrs = sum(SmpHrs),
+                   ConSmOut_ugL.blk = sum(ConcSmOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConSmOut_ugL.sd = sum(ConcSmOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.blk = sum(ConcOxOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.sd = sum(ConcOxOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.blk = sum(ConcEsOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.sd = sum(ConcEsOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   deltaOut.blk = sum(delta.obs * Volday.L)/sum(Volday.L),         
+                   deltaOut.sd =  sum(delta.sd * Volday.L)/sum(Volday.L) 
+                   )
+
+# Removed rows - Only for reference (not used)
+removed = qmDay %>%
+  group_by(DayMoYr) %>% 
+  filter(n()>1 & is.na(SmOut_ug.obs))
+
+removedBlk = removed %>%
+  group_by(DayMoYr) %>%
+  dplyr::summarize(VolTot.L = sum(Volday.L),
+                   TotHrs = sum(SmpHrs),
+                   ConSmOut_ugL.blk = sum(ConcSmOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConSmOut_ugL.sd = sum(ConcSmOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.blk = sum(ConcOxOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.sd = sum(ConcOxOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.blk = sum(ConcEsOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.sd = sum(ConcEsOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   deltaOut.blk = sum(delta.obs * Volday.L)/sum(Volday.L),         
+                   deltaOut.sd =  sum(delta.sd * Volday.L)/sum(Volday.L) 
+                   )
+
+
+# Get all non-duplicated days. do average to get same variables
+ndup = qmDay %>%
+  group_by(DayMoYr) %>% 
+  filter(n()==1)
+
+qmBlk_nDup = ndup %>%
+  group_by(DayMoYr) %>%
+  dplyr::summarize(VolTot.L = sum(Volday.L),
+                   TotHrs = sum(SmpHrs),
+                   ConSmOut_ugL.blk = sum(ConcSmOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConSmOut_ugL.sd = sum(ConcSmOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.blk = sum(ConcOxOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.sd = sum(ConcOxOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.blk = sum(ConcEsOut_ugL.obs * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.sd = sum(ConcEsOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   deltaOut.blk = sum(delta.obs * Volday.L)/sum(Volday.L),         
+                   deltaOut.sd =  sum(delta.sd * Volday.L)/sum(Volday.L) 
+                   )
+
+
+# Bind Bulk samples
+qmBlk = rbind(qmBlkDup, qmBlk_nDup)
+
+qmBlk90 = qmBlk %>%
+  filter(TotHrs >= 21.6)
+
+qmBlk50 = qmBlk %>%
+  filter(TotHrs >= 12.0)
+
+# Get dates/markers column
+m <- q %>%
+  group_by(DayMoYr) %>%
+  dplyr::summarise(SubWeeks = SubWeeks[1])
+
+qmBlk90_obs = merge(qmBlk90, m, by = "DayMoYr", all = T)
+qmBlk50_obs = merge(qmBlk50, m, by = "DayMoYr", all = T)
+
+qmBlk90_obs = qmBlk90_obs[order(qmBlk90_obs$DayMoYr), ]
+qmBlk50_obs = qmBlk50_obs[order(qmBlk50_obs$DayMoYr), ]
+
+# Natural log (ln) for low concentrations
+qmBlk90$lnConSmOut_ugL.blk = log(qmBlk90$ConSmOut_ugL.blk)
+
+mean(qmBlk90$ConSmOut_ugL.blk, na.rm = T)  # = 1.9897
+mean(qmBlk90$lnConSmOut_ugL.blk, na.rm = T)  # -0.644
+mean(qmBlk90$deltaOut.blk, na.rm = T)  # -30.52
+
+```
+
+3. Obtain approximate total mass discharged (without interpolation)
+
+```{r}
+
+qmBlk_mass = merge(qmBlk, m, by = "DayMoYr", all = T)
+# Interpolate bulk concentrations to obtained a cumulative mass discharged 
+# Att:!!! not to use concentration as observation point, only as approximate loading totals
+# Convert to grams (to match model output)
+qmBlk_mass$MassSmOut_g = ((qmBlk_mass$ConSmOut_ugL.blk)/10**6)*qmBlk_mass$VolTot.L
+qmBlk_mass$MassSmOut_g = ifelse(is.na(qmBlk_mass$MassSmOut_g), 0, qmBlk_mass$MassSmOut_g)
+qmBlk_mass$CumMassSmOut_g = cumsum(qmBlk_mass$MassSmOut_g)
+
+```
+
+4. Incorporate Julian days before saving
+
+```{r}
+
+qmBlk90 = merge(time, qmBlk90, by = "DayMoYr", all = T)
+qmBlk_mass = merge(time, qmBlk_mass, by = "DayMoYr", all = T)
+
+if (F) {
+  # write.csv(qmBlk, "qmBlk_R.csv", row.names = F) # , sep = ";", dec = ".")  
+}
+
+```
+
+
+## Get S-met Concentrations ($\ge$ 90% of day samples) AND Mass export Time Series (TSS)
+
+```{r}
+Conc_ugL_tss = qmBlk90[,c("Jdays", "ConSmOut_ugL.blk")] 
+Conc_ugL_tss$ConSmOut_ugL.blk = ifelse(is.na(Conc_ugL_tss$ConSmOut_ugL.blk), -1e9, Conc_ugL_tss$ConSmOut_ugL.blk)
+
+Mass_g_tss = qmBlk_mass[,c("Jdays", "MassSmOut_g")] 
+Mass_g_tss$MassSmOut_g = ifelse(is.na(Mass_g_tss$MassSmOut_g), -1e9, Mass_g_tss$MassSmOut_g)
+
+CumMass_g_tss = qmBlk_mass[,c("Jdays", "CumMassSmOut_g")] 
+CumMass_g_tss$CumMassSmOut_g = ifelse(is.na(CumMass_g_tss$CumMassSmOut_g), -1e9, CumMass_g_tss$CumMassSmOut_g)
 ```
 
 
 ## Get $\delta^{13}C$ time series (TSS)
 
 ```{r}
-Delta_out_tss = qmBlk[,c("Jdays", "deltaOut.blk")] 
-Delta_out_tss$deltaOut.blk = ifelse(is.na(Delta_out_tss$deltaOut.blk), 10**9, Delta_out_tss$deltaOut.blk)
+Delta_out_tss = qmBlk90[,c("Jdays", "deltaOut.blk")] 
+Delta_out_tss$deltaOut.blk = ifelse(is.na(Delta_out_tss$deltaOut.blk), 1e9, Delta_out_tss$deltaOut.blk)
 ```
 
 ### Save time series
@@ -329,6 +374,11 @@ Delta_out_tss$deltaOut.blk = ifelse(is.na(Delta_out_tss$deltaOut.blk), 10**9, De
 if (F){
   write.table(Conc_ugL_tss, "BEACH_R/Conc_ugL.tss", sep="\t", row.names = F, col.names = F)
   write.table(Delta_out_tss, "BEACH_R/Delta_out.tss", sep="\t", row.names = F, col.names = F)
+}
+
+if (F){
+  write.table(Mass_g_tss, "BEACH_R/MassOut_g.tss", sep="\t", row.names = F, col.names = F)
+  write.table(CumMass_g_tss, "BEACH_R/CumMass_g.tss", sep="\t", row.names = F, col.names = F)
 }
 ```
 

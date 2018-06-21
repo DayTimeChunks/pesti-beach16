@@ -40,3 +40,7 @@ activation_e ,54
 r_gas ,0.008314
 r_standard ,0.0112372
 alpha_iso ,1
+ave_outlet_q_m3day ,260.07
+ave_outlet_conc_ugL ,2.304
+ave_outlet_lnconc_ugL ,-0.419
+ave_outlet_delta ,-30.52

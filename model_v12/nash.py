@@ -3,52 +3,43 @@ from pcraster.framework import *
 
 
 def reportNashHydro(model, q_obs, tot_vol_disch_m3):
+    # Global ave discharge of data range = 260.07 m3/day
     model.q_obs_cum += ifthenelse(q_obs >= 0, q_obs, 0)
-    model.days_cum += ifthenelse(q_obs >= 0, scalar(1), scalar(0))  # Total days with data
     model.q_sim_cum += ifthenelse(q_obs >= 0, tot_vol_disch_m3, 0)
-    model.q_sim_ave = model.q_sim_cum / model.days_cum
     model.q_diff += ifthenelse(q_obs >= 0, (tot_vol_disch_m3 - q_obs) ** 2, 0)
-    model.q_var += ifthenelse(q_obs >= 0, (q_obs - 260.07) ** 2, 0)  # Mean discharge of data range = 260.07 m3/day
+    model.q_var += ifthenelse(q_obs >= 0, (q_obs - model.q_m3day_mean) ** 2, 0)
     nash_q = 1 - (model.q_diff / model.q_var)
     model.nash_q_tss.sample(nash_q)
 
     model.q_obs_cum_tss.sample(model.q_obs_cum)
     model.q_sim_cum_tss.sample(model.q_sim_cum)
-    model.q_sim_ave_tss.sample(model.q_sim_ave)
-    
 
-def repNashOutConc(model, q_obs, outlet_light_export, 
-                   catch_latflux_light, catch_drain_light, catch_runoff_light, 
-                   catch_volat_light, catch_deg_light):
-    # TODO:
-    # Include nash computation
+    # Dynamic mean leads to incorrect variance calc. upon cumulative addition (omitted)
 
-    # Outlet-specific, Cumulative masses
-    model.cum_exp_L_g += ifthenelse(q_obs >= 0, outlet_light_export, scalar(0))
-    model.resM_cumEXP_Smet_g_tss.sample(model.cum_exp_L_g)
+    # model.q_sim_ave = model.q_sim_cum / model.days_cum
+    # model.q_sim_ave_tss.sample(model.q_sim_ave)
 
-    model.cum_latflux_L_g += ifthenelse(q_obs >= 0, catch_latflux_light, scalar(0))
-    model.cum_latflux_L_g_tss.sample(model.cum_latflux_L_g)
 
-    model.cum_adr_L_g += ifthenelse(q_obs >= 0, catch_drain_light, scalar(0)) 
-    model.cum_adr_L_g_tss.sample(model.cum_adr_L_g)
+def repNashOutConc(model, conc_outlet_obs, conc_ugL):
+    # Nash computation consider normal and ln-transformed concentrations,
+    # with the latter accounting for variance at low concentration ranges
+    model.out_conc_diff += ifthenelse(conc_outlet_obs >= 0, (conc_ugL - conc_outlet_obs) ** 2, 0)
+    model.out_conc_var += ifthenelse(conc_outlet_obs >= 0, (conc_ugL - model.conc_outlet_mean) ** 2, 0)
+    model.out_lnconc_diff += ifthenelse(conc_outlet_obs >= 0, (ln(conc_ugL) - ln(conc_outlet_obs)) ** 2, 0)
+    model.out_lnconc_var += ifthenelse(conc_outlet_obs >= 0, (ln(conc_ugL) - model.ln_conc_outlet_mean) ** 2, 0)
+    normal_term = model.out_conc_diff / model.out_conc_var
+    ln_term = model.out_lnconc_diff / model.out_lnconc_var
+    nash_outlet_conc = 1 - 0.5 * (normal_term + ln_term)
+    model.nash_outlet_conc_tss.sample(nash_outlet_conc)
 
-    model.cum_roZ0_L_g += ifthenelse(q_obs >= 0, catch_runoff_light, scalar(0)) 
-    model.cum_roZ0_L_g_tss.sample(model.cum_roZ0_L_g)
-    
-    # Other sinks
-    model.cum_volatZ0_L_g += ifthenelse(q_obs >= 0, catch_volat_light, scalar(0)) 
-    model.cum_volatZ0_L_g_tss.sample(model.cum_volatZ0_L_g)
 
-    model.cum_deg_L_g += ifthenelse(q_obs >= 0, catch_deg_light, scalar(0)) 
-    model.cum_deg_L_g_tss.sample(model.cum_deg_L_g)
-    
-
-def repNashOutIso(model, 
-                  out_delta, 
+def repNashOutIso(model, iso_outlet_obs, out_delta,
                   roff_delta, latflux_delta, drain_delta):
-    # TODO:
-    # Include nash computation
+
+    model.out_iso_diff += ifthenelse(iso_outlet_obs < 1e6, (out_delta - iso_outlet_obs) ** 2, 0)
+    model.out_iso_var += ifthenelse(iso_outlet_obs < 1e6, (out_delta - model.delta_outlet_mean) ** 2, 0)
+    nash_outlet_iso = 1 - (model.out_iso_diff / model.out_iso_var)
+    model.nash_outlet_iso_tss.sample(nash_outlet_iso)
 
     model.resM_outISO_d13C_tss.sample(out_delta)
     model.resM_outISO_ROFF_d13C_tss.sample(roff_delta)
@@ -99,3 +90,31 @@ def reportNashConcComposites(model, north_ave_conc, valley_ave_conc, south_ave_c
 
 def reportNashDeltaComposites():
     pass
+
+
+def repCumOutMass(model, conc_outlet_obs, outlet_light_export,
+                  catch_latflux_light, catch_drain_light, catch_runoff_light,
+                  catch_volat_light, catch_deg_light):
+    # Outlet-specific, Cumulative masses
+    model.cum_exp_L_g += ifthenelse(conc_outlet_obs > 0, outlet_light_export, scalar(0))
+    model.resM_cumEXP_Smet_g_tss.sample(model.cum_exp_L_g)
+
+    model.cum_latflux_L_g += ifthenelse(conc_outlet_obs > 0, catch_latflux_light, scalar(0))
+    model.cum_latflux_L_g_tss.sample(model.cum_latflux_L_g)
+
+    model.cum_adr_L_g += ifthenelse(conc_outlet_obs > 0, catch_drain_light, scalar(0))
+    model.cum_adr_L_g_tss.sample(model.cum_adr_L_g)
+
+    model.cum_roZ0_L_g += ifthenelse(conc_outlet_obs > 0, catch_runoff_light, scalar(0))
+    model.cum_roZ0_L_g_tss.sample(model.cum_roZ0_L_g)
+
+    # Not in outlet, but relevant cumulative sinks
+    model.cum_volatZ0_L_g += catch_volat_light
+    model.cum_volatZ0_L_g_tss.sample(model.cum_volatZ0_L_g)
+
+    model.cum_deg_L_g += catch_deg_light
+    model.cum_deg_L_g_tss.sample(model.cum_deg_L_g)
+
+    # TODO:
+    # Report outlet mass (not cumulative), and components
+

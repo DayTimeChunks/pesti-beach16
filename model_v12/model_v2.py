@@ -114,6 +114,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
             for row in reader:
                 self.ini_param[row[0].strip()] = float(row[1])
 
+        self.q_m3day_mean = scalar(self.ini_param.get("ave_outlet_q_m3day"))
+        self.conc_outlet_mean = scalar(self.ini_param.get("ave_outlet_conc_ugL"))
+        self.ln_conc_outlet_mean = scalar(self.ini_param.get("ave_outlet_lnconc_ugL"))
+        self.delta_outlet_mean = scalar(self.ini_param.get("ave_outlet_delta"))
+
         date_path = 'Time.csv'
         self.time_dict = {}
         with open(date_path, 'r') as file:
@@ -271,7 +276,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                           noHeader=False)
         self.resW_accVOL_Bsmt_m3_tss = TimeoutputTimeseries("resW_accVOL_Bsmt_m3", self, nominal("outlet_v3"),
                                                             noHeader=False)
-
         # PESTI
         # Pesticide
         self.global_mb_pest_tss = TimeoutputTimeseries("resM_global_mb_pest", self, nominal("outlet_v3"),
@@ -316,14 +320,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.cum_degZ0_L_g_tss = TimeoutputTimeseries("resM_cumDEGz0_L", self, nominal("outlet_v3"),
                                                       noHeader=False)  # Deg z0
         self.cum_deg_L_g_tss = TimeoutputTimeseries("resM_cumDEG_L", self, nominal("outlet_v3"),
-                                                      noHeader=False)  # Deg z0
+                                                    noHeader=False)  # Deg z0
         self.resM_cumLCHz0_L_g_tss = TimeoutputTimeseries("resM_cumLCHz0_L", self, nominal("outlet_v3"),
                                                           noHeader=False)  # Leaching z0
         self.cum_roZ0_L_g_tss = TimeoutputTimeseries("resM_cumROz0_L", self, nominal("outlet_v3"),
                                                      noHeader=False)  # Runoff
 
         self.cum_volatZ0_L_g_tss = TimeoutputTimeseries("resM_cumVOLATz0_L", self, nominal("outlet_v3"),
-                                                     noHeader=False)  # Runoff
+                                                        noHeader=False)  # Runoff
 
         self.cum_adr_L_g_tss = TimeoutputTimeseries("resM_cumADR_L", self, nominal("outlet_v3"),
                                                     noHeader=False)  # Art. drainage
@@ -402,6 +406,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                   noHeader=False)  # This is 'Nash_q' as time series.
         self.nash_q_tss = TimeoutputTimeseries("resNash_q_m3", self, nominal("outlet_v3"),
                                                noHeader=False)  # This is 'Nash_q' as time series.
+        self.nash_outlet_conc_tss = TimeoutputTimeseries("resNash_outConc_ugL", self, nominal("outlet_v3"),
+                                               noHeader=False)
+        self.nash_outlet_iso_tss = TimeoutputTimeseries("resNash_outIso_delta", self, nominal("outlet_v3"),
+                                               noHeader=False)
 
         # Theta average proportion to saturation
         self.resW_z0_thetaPropSat = TimeoutputTimeseries("resW_z0_thetaPropSat", self, nominal("outlet_v3"),
@@ -726,12 +734,24 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.water_balance = []  # mm
         for layer in range(self.num_layers):
             self.water_balance.append(deepcopy(self.zero_map))
+
+        # Nash discharge
         self.days_cum = 0  # Track no. of days with data
         self.q_diff = 0
         self.q_var = 0
         self.q_obs_cum = 0
         self.q_sim_cum = 0  # net total disch
         self.q_sim_ave = 0
+
+        # Nash concentration outlet
+        self.out_conc_diff = 0
+        self.out_conc_var = 0
+        self.out_lnconc_diff = 0
+        self.out_lnconc_var = 0
+
+        # Nash isotopes outlet
+        self.out_iso_diff = 0
+        self.out_iso_var = 0
 
         self.rain_cum_m3 = 0  # Rainfall
         self.rain_cum_mm = self.zero_map + scalar(400.0)  # Cum Rainfall
@@ -1443,6 +1463,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Water Balance  ##
         ###################
         q_obs = timeinputscalar('q_obs_m3day.tss', nominal("outlet_v3"))
+        conc_outlet_obs = timeinputscalar('Conc_ugL.tss', nominal("outlet_v3"))
+        iso_outlet_obs = timeinputscalar('Delta_out.tss', nominal("outlet_v3"))
 
         # Total discharge
         tot_vol_disch_m3 = getTotalDischarge(out_runoff_m3,
@@ -1456,9 +1478,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                   outlet_latflow_m3,
                                   tot_rain_m3, out_runoff_m3, q_obs, out_drain_m3,
                                   out_baseflow_m3=out_baseflow_m3)
-
-        # Analysis (NASH Discharge)
-        reportNashHydro(self, q_obs, tot_vol_disch_m3)
 
         if self.TEST_theta and self.currentTimeStep() % 2 == 0:
             checkMoisture(self, self.theta, 'athz')
@@ -1553,7 +1572,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         outlet_heavy_export = (catch_runoff_heavy + catch_drain_heavy + catch_latflux_heavy)
         self.resM_EXP_Smet_g_tss.sample(outlet_light_export)  # grams
 
-
         conc_ugL = (outlet_light_export + outlet_heavy_export) * 1e6 / (tot_vol_disch_m3 * 1e3)
         conc_ROFF_ug_L = (catch_runoff_light + catch_runoff_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
         conc_LF_ug_L = (catch_latflux_light + catch_latflux_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
@@ -1564,10 +1582,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.resM_oCONC_LF_ugL_tss.sample(conc_LF_ug_L)  # ug/L
         self.resM_oCONC_ADR_ugL_tss.sample(conc_ADR_ug_L)  # ug/L
 
-        repNashOutConc(self,
-                       q_obs, outlet_light_export,
-                       catch_latflux_light, catch_drain_light, catch_runoff_light,
-                       catch_volat_light, catch_deg_light)
+        repCumOutMass(self,
+                      conc_outlet_obs, outlet_light_export,
+                      catch_latflux_light, catch_drain_light, catch_runoff_light,
+                      catch_volat_light, catch_deg_light)
 
         # Isotope signature - outlet
         out_delta = ((outlet_heavy_export / outlet_light_export - self.r_standard) /
@@ -1579,10 +1597,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         drain_delta = ((catch_drain_heavy / catch_drain_light - self.r_standard) /
                        self.r_standard) * 1000  # [permille]
 
-        repNashOutIso(self,
-                      out_delta,
-                      roff_delta, latflux_delta, drain_delta)
-
         reportGlobalPestBalance(self,
                                 catch_app_light,
                                 catch_deg_light,
@@ -1593,11 +1607,21 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                 catch_latflux_light,
                                 catch_ch_storage_light)
 
-        # Analysis Pest
+        """
+        Nash computations
+        """
+        # Total days with data (needed for mean calculations)
+        self.days_cum += ifthenelse(q_obs >= 0, scalar(1), scalar(0))
+
+        # Analysis (NASH Discharge)
+        reportNashHydro(self, q_obs, tot_vol_disch_m3)
+
+        # Analysis (NASH Pest)
         if self.PEST:
+            repNashOutConc(self, conc_outlet_obs, conc_ugL)
+            repNashOutIso(self, iso_outlet_obs, out_delta,
+                          roff_delta, latflux_delta, drain_delta)
             # TODO:
-            # repNashOutConc()
-            # repNashOutIso()
             # repNashOutCombined()
 
             # TODO:
@@ -1611,6 +1635,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
             # repNashSoilConc()
             # repNashSoilIso()
+
 
     def postmcloop(self):
         pass
@@ -1643,7 +1668,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 300  # 360
+nTimeSteps = 180  # 360
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
