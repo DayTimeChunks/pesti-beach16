@@ -8,10 +8,10 @@ output: pdf_document
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL", "English")
 
-MAC = F
+MAC = T
 WIN = F
 
-SAVE = F
+SAVE = T
 ```
 
 # Purpose
@@ -30,8 +30,8 @@ if (MAC) {
     
   } else {
     # path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
-    path = file.path("/Users/DayTightChunks/Documents/PhD/HydroMonitor/.nosync/HydrologicalMonitoring")
-    time = read.csv2("/Users/DayTightChunks/Documents/PhD/Models/.nosync/pesti-beach16/Analysis/Data/Time.csv")
+    path = file.path("/Users/DayTightChunks/Documents/PhD/hydrological-monitoring")
+    time = read.csv2("/Users/DayTightChunks/Documents/PhD/Models/phd-model-master/Analysis/Data/Time.csv")
     time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
   }
 } else {
@@ -77,6 +77,7 @@ getwd()
 ```
 
 
+
 # Merge Transects with Time (Julian Days)
 
 ```{r}
@@ -84,8 +85,7 @@ s = read.csv2(file.path(path, "Data/MonitoringScopeSoils_R.csv"))
 
 #q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
 s$DayMoYr = as.POSIXct(strptime(s$Date.Soil, "%d/%m/%Y", tz="EST"))
-
-
+s = subset(s, s$Wnum > 0)
 
 north = subset(s, Transect == "N")
 valley = subset(s, Transect == "T")
@@ -103,33 +103,39 @@ norConc_tss = njd[, c("Jdays", "Conc.mug.g.dry.soil")]
 valConc_tss = vjd[, c("Jdays", "Conc.mug.g.dry.soil")]
 souConc_tss = sjd[, c("Jdays", "Conc.mug.g.dry.soil")]
 
-norConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(norConc_tss$Conc.mug.g.dry.soil), -1, norConc_tss$Conc.mug.g.dry.soil)
-valConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(valConc_tss$Conc.mug.g.dry.soil), -1, valConc_tss$Conc.mug.g.dry.soil)
-souConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(souConc_tss$Conc.mug.g.dry.soil), -1, souConc_tss$Conc.mug.g.dry.soil)
+norConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(norConc_tss$Conc.mug.g.dry.soil), 
+                                         -1e9, norConc_tss$Conc.mug.g.dry.soil)
+valConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(valConc_tss$Conc.mug.g.dry.soil), 
+                                         -1e9, valConc_tss$Conc.mug.g.dry.soil)
+souConc_tss$Conc.mug.g.dry.soil = ifelse(is.na(souConc_tss$Conc.mug.g.dry.soil), 
+                                         -1e9, souConc_tss$Conc.mug.g.dry.soil)
 
 norDelta_tss = njd[, c("Jdays", "comp.d13C")]
 valDelta_tss = vjd[, c("Jdays", "comp.d13C")]
 souDelta_tss = sjd[, c("Jdays", "comp.d13C")]
 
-norDelta_tss$comp.d13C = ifelse(is.na(norDelta_tss$comp.d13C), 0, norDelta_tss$comp.d13C)
-valDelta_tss$comp.d13C = ifelse(is.na(valDelta_tss$comp.d13C), 0, valDelta_tss$comp.d13C)
-souDelta_tss$comp.d13C = ifelse(is.na(souDelta_tss$comp.d13C), 0, souDelta_tss$comp.d13C)
+norDelta_tss$comp.d13C = ifelse(is.na(norDelta_tss$comp.d13C), 
+                                1e9, norDelta_tss$comp.d13C)
+valDelta_tss$comp.d13C = ifelse(is.na(valDelta_tss$comp.d13C), 
+                                1e9, valDelta_tss$comp.d13C)
+souDelta_tss$comp.d13C = ifelse(is.na(souDelta_tss$comp.d13C), 
+                                1e9, souDelta_tss$comp.d13C)
 
-
-if (SAVE) {
-  write.table(njd, "north.tss", sep="\t", row.names = F)
-  write.table(vjd, "valley.tss", sep="\t", row.names = F)
-  write.table(sjd, "south.tss", sep="\t", row.names = F)  
-  write.table(norConc_tss, "northConc.tss", sep="\t", row.names = F)
-  write.table(valConc_tss, "valleyConc.tss", sep="\t", row.names = F)
-  write.table(souConc_tss, "southConc.tss", sep="\t", row.names = F)  
-  write.table(norDelta_tss, "northDelta.tss", sep="\t", row.names = F)
-  write.table(valDelta_tss, "valleyDelta.tss", sep="\t", row.names = F)
-  write.table(souDelta_tss, "southDelta.tss", sep="\t", row.names = F)  
+if (F) {
+  write.table(njd, "BEACH_R/north.tss", sep="\t", row.names = F)
+  write.table(vjd, "BEACH_R/valley.tss", sep="\t", row.names = F)
+  write.table(sjd, "BEACH_R/south.tss", sep="\t", row.names = F)  
+  write.table(norConc_tss, "BEACH_R/northConc.tss", sep="\t", row.names = F)
+  write.table(valConc_tss, "BEACH_R/valleyConc.tss", sep="\t", row.names = F)
+  write.table(souConc_tss, "BEACH_R/southConc.tss", sep="\t", row.names = F)  
+  write.table(norDelta_tss, "BEACH_R/northDelta.tss", sep="\t", row.names = F)
+  write.table(valDelta_tss, "BEACH_R/valleyDelta.tss", sep="\t", row.names = F)
+  write.table(souDelta_tss, "BEACH_R/southDelta.tss", sep="\t", row.names = F)  
 }
 
 
 ```
+
 
 # Merge detail concentration and isotopes
 
@@ -219,6 +225,7 @@ sou = list(S11, S12, S13)
 ```{r}
 
 if (SAVE) {
+  
   counter = 0
   for (d in nor) {
     counter = counter + 1
@@ -238,7 +245,7 @@ if (SAVE) {
   counter = 3
   for (d in val) {
     counter = counter + 1
-    transect = "T"
+    transect = "V"
     if (counter < 6) {
       name = paste(transect, as.character(counter), ".tss", sep = "")
     }

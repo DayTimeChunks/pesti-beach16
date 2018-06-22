@@ -1,0 +1,171 @@
+---
+title: "0.2 XY - Calibration Soils"
+author: "PAZ"
+date: "21/06/2018"
+output: pdf_document
+---
+
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+Sys.setlocale("LC_ALL", "English")
+
+MAC = T
+WIN = F
+SAVE = F
+```
+
+# Purpose
+
+Generate 1:1 soil calibration data with:
+
+- Time.csv (Julian day marker)
+- Composite soils (MonitoringScopeSoils_R.csv)
+- Detailed soils (DetailConc.csv & DetailIsotopes.csv)
+
+
+```{r}
+if (MAC) {
+  if (WIN){
+    path = file.path("C:/Users/DayTimeChunks/Documents/PhD/HydrologicalMonitoring")
+    
+  } else {
+    # path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+    path = file.path("/Users/DayTightChunks/Documents/PhD/hydrological-monitoring")
+    time = read.csv2("/Users/DayTightChunks/Documents/PhD/Models/phd-model-master/Analysis/Data/Time.csv")
+    time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
+  }
+} else {
+  path = file.path("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring")
+  time = read.csv2("D:/Documents/these_pablo/Models/BEACH2016/Analysis/Data/Time.csv")
+  time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
+}
+# Lab parameters and field constants
+source(file.path(path, "global.R"))
+```
+
+
+
+# Packages
+
+```{r, message=FALSE}
+
+# Plotting functions
+library("scales")
+library("tidyr")
+
+library("reshape")
+library("zoo") # na.approx()
+
+library("plyr")
+library("dplyr")
+
+
+```
+
+
+# Merge detail concentration and isotopes
+
+## Steps
+- group isotope values by ID
+- evaluate standard deviations
+- compute means
+- merge with concentrations
+
+```{r}
+
+co = read.csv("DetailConc.csv")
+is = read.csv("DetailIsotopes.csv")
+
+if (length(is) == 1) {
+  is = read.csv("DetailIsotopes.csv", sep = ";")
+}
+
+
+if (length(co) == 1) {
+  co = read.csv("DetailConc.csv")
+}
+
+is = subset(is, !is.na(d13C))
+```
+
+### Group
+
+```{r}
+# Same procedure as in Book 06_MassSoils_Composite
+siso <- is[, c("ID", "d13C")]
+sumIS = ddply(siso, c("ID"), 
+              summarise,
+              N_detsoil = length(d13C),
+              d13C.SD = sd(d13C),
+              d13C = mean(d13C)
+              )
+sumIS = subset(sumIS, N_detsoil > 1 & d13C.SD < 0.8)
+```
+
+# Merge conc and isotopes
+
+```{r}
+ci = merge(co, sumIS, by = "ID", all = T)
+ci$DayMoYr = as.POSIXct(strptime(ci$Sampled, "%d/%m/%Y", tz="EST"))
+ci = subset(ci, !is.na(ci$DayMoYr))
+
+#ci$Transect = as.character(ci$Transect)
+#ci$Transect = ifelse(ci$Transect == 'T', 'V', ci$Transect)
+
+```
+
+```{r}
+ci$Plot = paste(ci$Transect, ci$Plot, sep = "")
+ci = ci[, c("DayMoYr", "ID", "Transect", "Plot", "ug.g", "d13C", "d13C.SD")]
+detailed = merge(time, ci, by = "DayMoYr", all = T)
+detailed$IDcal = paste(detailed$Plot, detailed$Jdays, sep = "-")
+
+conc_det_cal = detailed[, c("Jdays", "Transect", "IDcal", "ug.g")] 
+conc_det_cal = subset(conc_det_cal, !is.na(conc_det_cal$ug.g))
+
+delta_det_cal = detailed[, c("Jdays","Transect", "IDcal",  "d13C", "d13C.SD")] 
+delta_det_cal = subset(delta_det_cal, !is.na(delta_det_cal$d13C))
+
+if (F) {
+  write.table(conc_det_cal, "BEACH_R/conc_det_cal.tss", sep="\t", row.names = F)
+  write.table(delta_det_cal, "BEACH_R/delta_det_cal.tss", sep="\t", row.names = F)
+}
+
+```
+
+
+# Prepare composite soils (merging on Jupyter notebook)
+
+- Merge Transects with Time (Julian Days)
+
+
+```{r}
+s = read.csv2(file.path(path, "Data/MonitoringScopeSoils_R.csv"))
+
+#q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
+s$DayMoYr = as.POSIXct(strptime(s$Date.Soil, "%d/%m/%Y", tz="EST"))
+
+st = merge(time, s, by = "DayMoYr", all = T)
+st$IDcal = paste(st$Transect, st$Jdays, sep = "-")
+
+conc_tss = st[, c("Jdays", "Conc.mug.g.dry.soil")]
+delta_tss = st[, c("Jdays", "comp.d13C")]
+
+conc_cal = st[, c("Jdays", "Transect", "IDcal", "Conc.mug.g.dry.soil", "Conc.ComSoil.SD")] 
+names(conc_cal) <- c("Jdays", "Transect", "IDcal", "ug.g", "ug.g.SD")
+conc_cal = subset(conc_cal, !is.na(conc_cal$ug.g))
+delta_cal = st[, c("Jdays", "Transect", "IDcal", "comp.d13C", "comp.d13C.SD")]
+names(delta_cal) <- c("Jdays", "Transect", "IDcal", "d13C", "d13C.SD")
+delta_cal = subset(delta_cal, !is.na(delta_cal$d13C))
+
+if (F) {
+  write.table(conc_cal, "BEACH_R/conc_comp_cal.tss", sep="\t", row.names = F)
+  write.table(delta_cal, "BEACH_R/delta_comp_cal.tss", sep="\t", row.names = F)
+}
+
+```
+
+
+
+
+

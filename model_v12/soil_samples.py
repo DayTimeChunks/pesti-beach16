@@ -51,23 +51,23 @@ def reportNorthSoils(model, cell_mass, cell_massXdelta, sampling_pts):
 
     # Concentrations
     # Mass is converted to ug to compare against sampled data.
-    north_ave_conc = 10e6 * (north_ave_mass /
-                             (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
+    north_ave_conc = 1e6 * (north_ave_mass /
+                             (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e03)  # ug/g soil
 
-    n1_ave_conc = 10e6 * (n1_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    n2_ave_conc = 10e6 * (n2_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    n3_ave_conc = 10e6 * (n3_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    n4_ave_conc = 10e6 * (n4_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    n5_ave_conc = 10e6 * (n5_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    n7_ave_conc = 10e6 * (n7_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    n8_ave_conc = 10e6 * (n8_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
+    n1_ave_conc = 1e6 * (n1_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e03)  # ug/g soil
+    n2_ave_conc = 1e6 * (n2_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e03)  # ug/g soil
+    n3_ave_conc = 1e6 * (n3_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e03)  # ug/g soil
+    n4_ave_conc = 1e6 * (n4_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e03)  # ug/g soil
+    n5_ave_conc = 1e6 * (n5_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e03)  # ug/g soil
+    n7_ave_conc = 1e6 * (n7_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e03)  # ug/g soil
+    n8_ave_conc = 1e6 * (n8_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e03)  # ug/g soil
 
     # Record
     model.north_conc_tss.sample(north_ave_conc)  # 30 obs
@@ -118,20 +118,20 @@ def reportValleySoils(model, cell_mass, cell_massXdelta, sampling_pts):
     t9_ave_mass = t9_tot_mass / scalar(5)
     t10_ave_mass = t10_tot_mass / scalar(5)
 
-    valley_ave_conc = 10e6 * (valley_ave_mass /
-                              (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    t4_ave_conc = 10e6 * (t4_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    t5_ave_conc = 10e6 * (t5_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    t7_ave_conc = 10e6 * (t7_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    t8_ave_conc = 10e6 * (t8_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    t9_ave_conc = 10e6 * (t9_ave_mass /
-                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    t10_ave_conc = 10e6 * (t10_ave_mass /
-                           (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
+    valley_ave_conc = 1e6 * (valley_ave_mass /
+                              (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    t4_ave_conc = 1e6 * (t4_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    t5_ave_conc = 1e6 * (t5_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    t7_ave_conc = 1e6 * (t7_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    t8_ave_conc = 1e6 * (t8_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    t9_ave_conc = 1e6 * (t9_ave_mass /
+                          (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    t10_ave_conc = 1e6 * (t10_ave_mass /
+                           (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
 
     model.valley_conc_tss.sample(valley_ave_conc)  # 25 obs
     model.t4_conc_tss.sample(t4_ave_conc)  #
@@ -171,20 +171,20 @@ def reportSouthSoils(model, cell_mass, cell_massXdelta, sampling_pts):
     s12_ave_mass = s12_tot_mass / scalar(7)
     s13_ave_mass = s13_tot_mass / scalar(5)
 
-    south_ave_conc = 10e6 * (south_ave_mass /
-                             (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    s11_ave_conc = 10e6 * (s11_ave_mass /
-                           (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    s12_ave_conc = 10e6 * (s12_ave_mass /
-                           (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
-    s13_ave_conc = 10e6 * (s13_ave_mass /
-                           (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
+    south_ave_conc = 1e6 * (south_ave_mass /
+                             (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    s11_ave_conc = 1e6 * (s11_ave_mass /
+                           (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    s12_ave_conc = 1e6 * (s12_ave_mass /
+                           (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
+    s13_ave_conc = 1e6 * (s13_ave_mass /
+                           (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
     
     test = False
     if test:
         # Test for variation in sample points
-        cell_conc = 10e6 * (cell_mass /
-                            (cellarea() * model.smp_depth)) * 1 / (model.p_b * 10e03)  # ug/g soil
+        cell_conc = 1e6 * (cell_mass /
+                            (cellarea() * model.smp_depth)) * 1 / (model.p_b * 1e3)  # ug/g soil
         model.s11_smass_tss.sample(cell_mass)  # Should only increase due to upstream infux (if at all)
         model.s11_sconc_tss.sample(cell_conc)  # Should only increase after applciation
 

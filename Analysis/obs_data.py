@@ -49,6 +49,18 @@ def getOutletData(name, var=None, tss=True):
     return obs
 
 
+def getSoilDataCal(name, tss=True):
+    path = "Data/BEACH_R/"
+    if tss:
+        path += name + ".tss"
+        obs = pd.read_table(path)
+    else:
+        path += name + ".csv"
+        obs = pd.read_csv(path, sep=",")
+
+    return obs
+
+
 def getETP():
     path = "Data/"
     path += "ET0.tss"
@@ -58,7 +70,7 @@ def getETP():
 
 
 def getSoilData(transect, tss=True):
-    path = "Data/"
+    path = "Data/BEACH_R/"
 
     if tss:
         if transect == "North":
