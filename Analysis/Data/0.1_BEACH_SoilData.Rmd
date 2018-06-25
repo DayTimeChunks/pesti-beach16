@@ -95,6 +95,10 @@ mean(north$Conc.mug.g.dry.soil)
 mean(valley$Conc.mug.g.dry.soil)
 mean(south$Conc.mug.g.dry.soil)
 
+mean(north$comp.d13C, na.rm = T)
+mean(valley$comp.d13C, na.rm = T)
+mean(south$comp.d13C, na.rm = T)
+
 njd = merge(time, north, by = "DayMoYr", all = T)
 vjd = merge(time, valley, by = "DayMoYr", all = T)
 sjd = merge(time, south, by = "DayMoYr", all = T)

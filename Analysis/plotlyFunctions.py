@@ -45,7 +45,7 @@ def get_xy_line(df, obs, delta=False):
     return trace_bck
 
 
-def get_scatter(df, obs, sd):
+def get_scatter(df, obs, sd, name=None):
 
     labels = df['IDcal'].tolist()
     sim = df['SIM'].tolist()
@@ -55,6 +55,7 @@ def get_scatter(df, obs, sd):
     trace = go.Scatter(
         x=sim,
         y=obs,
+        name=name,
         error_y=dict(
             type='data',
             symmetric=True,
@@ -100,7 +101,7 @@ def get_layout(df, var, title='Title', x_jitter=0, y_jitter=0):
                 color='#7f7f7f'
             )
         ),
-        showlegend=False,
+        showlegend=True,
         annotations=[
             dict(
                 x=x,
