@@ -25,7 +25,7 @@ morris = False
 if morris:
     from morris_test import *
 else:
-    runs = 2
+    runs = 3
 
 """
 model_v12 -> mFix_v1
@@ -477,27 +477,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.c_adr = scalar(self.ini_param.get("c_adr"))
         self.drainage_layers = [False, False, True, False, False]  # z2 turned on!!
         z3_factor = scalar(self.ini_param.get("z3_factor"))  # Represents top proportion of bottom-most layer
-        if m_state == 0:
-            pass
-        elif m_state == 1:
-            # for layer in range(self.num_layers):
-            #     self.c_lf[layer] = 0.50
-            # z3_factor = scalar(0.7)
-            self.c_adr = 0.10
-            # self.root_adj *= 0.7
-            # epsilon = -1 * 1.369  # high deg
-            # self.bsmntIsPermeable = True
-            # self.gamma[3] = 0.02
-        elif m_state == 2:
-            # for layer in range(self.num_layers):
-            #     self.c_lf[layer] = 1
-            # z3_factor = scalar(0.4)
-            self.c_adr = 0.05
-            # self.root_adj *= 0.5
-            # epsilon = -1 * 1.476  # mid deg
-            # self.gamma[2] *= 0.5
-            # self.bsmntIsPermeable = True
-            # self.gamma[3] = 0.2
 
         self.k = scalar(self.ini_param.get("k"))  # coefficient of declining LAI in end stage
 
@@ -558,6 +537,33 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Degradation Scenarios
         epsilon_iso = scalar(self.ini_param.get("epsilon_iso"))  # 1 is no fractionation, -1.743 -> low deg
         self.alpha_iso = epsilon_iso / 1000 + 1
+
+        """
+        Scenarios
+        """
+        if m_state == 0:
+            pass
+        elif m_state == 1:
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_min"))
+            # for layer in range(self.num_layers):
+            #     self.c_lf[layer] = 0.50
+            # z3_factor = scalar(0.7)
+            # self.c_adr = 0.10
+            # self.root_adj *= 0.7
+            # epsilon = -1 * 1.369  # high deg
+            # self.bsmntIsPermeable = True
+            # self.gamma[3] = 0.02
+        elif m_state == 2:
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_max"))
+            # for layer in range(self.num_layers):
+            #     self.c_lf[layer] = 1
+            # z3_factor = scalar(0.4)
+            # self.c_adr = 0.05
+            # self.root_adj *= 0.5
+            # epsilon = -1 * 1.476  # mid deg
+            # self.gamma[2] *= 0.5
+            # self.bsmntIsPermeable = True
+            # self.gamma[3] = 0.2
 
         """
         Layer depths
