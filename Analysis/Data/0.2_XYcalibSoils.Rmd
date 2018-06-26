@@ -62,6 +62,41 @@ library("dplyr")
 
 ```
 
+# Prepare composite soils (merging on Jupyter notebook)
+
+- Merge Transects with Time (Julian Days)
+
+
+```{r}
+s = read.csv2(file.path(path, "Data/MonitoringScopeSoils_R.csv"))
+
+s$Transect = as.character(s$Transect)
+s$Transect = ifelse(s$Transect == 'T', 'V', s$Transect)
+#q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
+s$DayMoYr = as.POSIXct(strptime(s$Date.Soil, "%d/%m/%Y", tz="EST"))
+
+st = merge(time, s, by = "DayMoYr", all = T)
+st$IDcal = paste(st$Transect, st$Jdays, sep = "-")
+
+conc_tss = st[, c("Jdays", "Conc.mug.g.dry.soil")]
+delta_tss = st[, c("Jdays", "comp.d13C")]
+
+conc_cal = st[, c("Jdays", "Transect", "IDcal", "Conc.mug.g.dry.soil", "Conc.ComSoil.SD")] 
+names(conc_cal) <- c("Jdays", "Transect", "IDcal", "ug.g", "ug.g.SD")
+conc_cal = subset(conc_cal, !is.na(conc_cal$ug.g))
+delta_cal = st[, c("Jdays", "Transect", "IDcal", "comp.d13C", "comp.d13C.SD")]
+names(delta_cal) <- c("Jdays", "Transect", "IDcal", "d13C", "d13C.SD")
+delta_cal = subset(delta_cal, !is.na(delta_cal$d13C))
+
+
+
+if (F) {
+  write.table(conc_cal, "BEACH_R/conc_comp_cal.tss", sep="\t", row.names = F)
+  write.table(delta_cal, "BEACH_R/delta_comp_cal.tss", sep="\t", row.names = F)
+}
+
+```
+
 
 # Merge detail concentration and isotopes
 
@@ -109,8 +144,8 @@ ci = merge(co, sumIS, by = "ID", all = T)
 ci$DayMoYr = as.POSIXct(strptime(ci$Sampled, "%d/%m/%Y", tz="EST"))
 ci = subset(ci, !is.na(ci$DayMoYr))
 
-#ci$Transect = as.character(ci$Transect)
-#ci$Transect = ifelse(ci$Transect == 'T', 'V', ci$Transect)
+ci$Transect = as.character(ci$Transect)
+ci$Transect = ifelse(ci$Transect == 'T', 'V', ci$Transect)
 
 ```
 
@@ -134,36 +169,7 @@ if (F) {
 ```
 
 
-# Prepare composite soils (merging on Jupyter notebook)
 
-- Merge Transects with Time (Julian Days)
-
-
-```{r}
-s = read.csv2(file.path(path, "Data/MonitoringScopeSoils_R.csv"))
-
-#q$Date = as.POSIXct(strptime(q$DateCheck, "%d/%m/%Y %H:%M", tz="EST"))
-s$DayMoYr = as.POSIXct(strptime(s$Date.Soil, "%d/%m/%Y", tz="EST"))
-
-st = merge(time, s, by = "DayMoYr", all = T)
-st$IDcal = paste(st$Transect, st$Jdays, sep = "-")
-
-conc_tss = st[, c("Jdays", "Conc.mug.g.dry.soil")]
-delta_tss = st[, c("Jdays", "comp.d13C")]
-
-conc_cal = st[, c("Jdays", "Transect", "IDcal", "Conc.mug.g.dry.soil", "Conc.ComSoil.SD")] 
-names(conc_cal) <- c("Jdays", "Transect", "IDcal", "ug.g", "ug.g.SD")
-conc_cal = subset(conc_cal, !is.na(conc_cal$ug.g))
-delta_cal = st[, c("Jdays", "Transect", "IDcal", "comp.d13C", "comp.d13C.SD")]
-names(delta_cal) <- c("Jdays", "Transect", "IDcal", "d13C", "d13C.SD")
-delta_cal = subset(delta_cal, !is.na(delta_cal$d13C))
-
-if (F) {
-  write.table(conc_cal, "BEACH_R/conc_comp_cal.tss", sep="\t", row.names = F)
-  write.table(delta_cal, "BEACH_R/delta_comp_cal.tss", sep="\t", row.names = F)
-}
-
-```
 
 
 
