@@ -28,11 +28,6 @@ else:
     runs = 3
 
 """
-model_v12 -> mVar_v1
-Testing Variable degradation constant
-
-Planned changes:
-- R2 is not sensitive for calibration (use a nash version)
 
 """
 
@@ -1424,10 +1419,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
             # Degradation
             deg_light_dict = getMassDegradation(self, layer, theta_wp, self.lightmass[layer],
-                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, bimoass=self.biomass,
+                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, biomass=self.biomass,
                                                 debug=self.TEST_DEG, run=self.DEG)
             deg_heavy_dict = getMassDegradation(self, layer, theta_wp, self.heavymass[layer],
-                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, bimoass=self.biomass,
+                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, biomass=self.biomass,
                                                 debug=self.TEST_DEG, run=self.DEG)
 
             self.lightmass[layer] = deg_light_dict["mass_tot_new"]
