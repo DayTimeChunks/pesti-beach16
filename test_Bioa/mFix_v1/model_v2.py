@@ -28,12 +28,8 @@ else:
     runs = 3
 
 """
-model_v12 -> mVar_v1
-Testing Variable degradation constant
-
-Planned changes:
-- R2 is not sensitive for calibration (use a nash version)
-
+Fixed DT50, All mass is bioavailable (i.e. biomass = false)
+Testing 3 DT50s
 """
 
 
@@ -460,7 +456,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.bsmntIsPermeable = False  # basement percolation (DP)
         self.ADLF = True
         self.fixed_dt50 = True
-        self.biomass = True
+        self.biomass = False
 
         # Morris tests
         m_state = get_state(state)  # First run will return state = 0
@@ -520,7 +516,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # DT50 (foliar) = 5
         # DT50 (water-sediment) = 365
         # DT50 (water phase only) = 88
-        self.dt_50_ref = scalar(self.ini_param.get("dt_50_ref"))  # S-met (days)
+
 
         self.temp_ref = scalar(self.ini_param.get("temp_ref"))  # Temp.  reference
 
@@ -537,18 +533,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         self.r_standard = scalar(self.ini_param.get("r_standard"))  # VPDB
         # Degradation Scenarios
+        epsilon_iso = scalar(self.ini_param.get("epsilon_iso_ref"))
+        self.alpha_iso = epsilon_iso / 1000 + 1
 
         """
         Scenarios
         """
         if m_state == 0:
-            epsilon_iso = scalar(self.ini_param.get("epsilon_iso_min"))  # 2 is no fractionation, -2.743 -> low deg
-            self.alpha_iso = epsilon_iso / 1000 + 1
-            # self.dt_50_ref = scalar(self.ini_param.get("dt_50_min"))
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_min"))
             # pass
         elif m_state == 1:
-            epsilon_iso = scalar(self.ini_param.get("epsilon_iso_ref"))
-            self.alpha_iso = epsilon_iso / 1000 + 1
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_ref"))  # S-met (days)
             # for layer in range(self.num_layers):
             #     self.c_lf[layer] = 0.50
             # z3_factor = scalar(0.7)
@@ -558,9 +553,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # self.bsmntIsPermeable = True
             # self.gamma[3] = 0.02
         elif m_state == 2:
-            epsilon_iso = scalar(self.ini_param.get("epsilon_iso_max"))
-            self.alpha_iso = epsilon_iso / 1000 + 1
-            # self.dt_50_ref = scalar(self.ini_param.get("dt_50_max"))
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_max"))
             # for layer in range(self.num_layers):
             #     self.c_lf[layer] = 2
             # z3_factor = scalar(0.4)
