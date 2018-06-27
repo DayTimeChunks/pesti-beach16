@@ -225,5 +225,5 @@ def getLayerAnalysis(model, layer,
         model.resW_accETP_Bsmt_m3_tss.sample(evapotransp_m3)
         model.resW_accVOL_Bsmt_m3_tss.sample(storage_m3)
         model.resW_accBAL_Bsmt_m3_tss.sample(balance_m3)
-        # aguila --scenarios='{1}' --timesteps=[1,300,1] z3EVA z3TRA z3ROOT
+        # aguila --scenarios='{2}' --timesteps=[2,300,2] z3EVA z3TRA z3ROOT
 

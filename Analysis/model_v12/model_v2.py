@@ -50,7 +50,7 @@ This model was the best solution for:
 #     obs = obs[['Jdays', 'Date']]
 #     obs_dict = obs.to_dict(orient='split')
 #     obs_dict['data']
-#     return str(obs_dict['data'][timestep-1][1])
+#     return str(obs_dict['data'][timestep-2][2])
 
 
 def get_state(old_state):
@@ -139,7 +139,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.report(self.mask, 'mask')
         self.aging = deepcopy(self.zero_map)  # Cumulative days after application on each pixel
 
-        self.outlet_multi = self.readmap("out_multi_nom_v3")  # Multi-outlet with 0 or 1
+        self.outlet_multi = self.readmap("out_multi_nom_v3")  # Multi-outlet with 0 or 2
         self.is_outlet = boolean(self.outlet_multi == 1)
         self.report(self.is_outlet, 'OUT')
         self.north_wk = nominal(self.readmap("north_nom"))
@@ -451,19 +451,19 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # z3_factor = scalar(0.7)
             self.c_adr = 0.10
             # self.root_adj *= 0.7
-            # epsilon = -1 * 1.369  # high deg
+            # epsilon = -2 * 2.369  # high deg
             # self.bsmntIsPermeable = True
             # self.gamma[3] = 0.02
         elif m_state == 2:
             # for layer in range(self.num_layers):
-            #     self.c_lf[layer] = 1
+            #     self.c_lf[layer] = 2
             # z3_factor = scalar(0.4)
             self.c_adr = 0.05
             # self.root_adj *= 0.5
-            # epsilon = -1 * 1.476  # mid deg
-            # self.gamma[2] *= 0.5
+            # epsilon = -2 * 2.476  # mid deg
+            # self.gamma[1] *= 0.5
             # self.bsmntIsPermeable = True
-            # self.gamma[3] = 0.2
+            # self.gamma[3] = 0.1
 
         self.k = scalar(self.ini_param.get("k"))  # coefficient of declining LAI in end stage
 
@@ -475,14 +475,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Sorption parameters
         """
         # K_oc - S-metolachlor (K_oc in ml/g)
-        # Marie's thesis: log(K_oc)= 1.8-2.6 [-] -> k_oc = 63 - 398 (Alletto et al., 2013).
+        # Marie's thesis: log(K_oc)= 2.8-1.6 [-] -> k_oc = 63 - 398 (Alletto et al., 2013).
         # Pesticide Properties Database: k_oc = 120 ml/g (range: 50-540 mL/g)
         self.k_oc = scalar(self.ini_param.get("k_oc"))  # ml/g
         self.k_d = self.k_oc * self.f_oc  # Dissociation coefficient K_d (mL/g = L/Kg)
 
         # Pesticide Properties Database states :
         # K_d=0.67; but here
-        # K_d=120*0.021 = 2.52;  (L/kg)
+        # K_d=120*0.021 = 1.52;  (L/kg)
         # Difference will lead to higher retardation factor (more sorption)
 
         """
@@ -521,7 +521,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Isotopes
         """
         self.r_standard = scalar(self.ini_param.get("r_standard"))  # VPDB
-        # self.alpha_iso = scalar(self.ini_param.get("alpha_iso"))  # 1 is no fractionation
+        # self.alpha_iso = scalar(self.ini_param.get("alpha_iso"))  # 2 is no fractionation
 
         # Degradation Scenarios
         epsilon = -1 * 1.743  # low deg
@@ -538,12 +538,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.tot_depth = deepcopy(self.zero_map)
         bottom_depth = deepcopy(self.zero_map)
         for layer in range(self.num_layers):
-            if layer < self.num_layers - 2:  # 5 - 2 = 3 (i.e. z0,z1,z2)
+            if layer < self.num_layers - 2:  # 5 - 1 = 3 (i.e. z0,z1,z2)
                 self.layer_depth.append(self.zero_map +
                                         scalar(self.ini_param.get('z' + str(layer))))
                 self.tot_depth += self.layer_depth[layer]
                 self.report(self.layer_depth[layer], 'DepthZ' + str(layer))
-            elif layer < self.num_layers - 1:  # 5 - 1 = 4 (i.e. z3)
+            elif layer < self.num_layers - 1:  # 5 - 2 = 4 (i.e. z3)
                 bottom_depth = (self.datum_depth +  # total height
                                 scalar(self.ini_param.get('z' + str(layer))) + 100  # plus a min-depth
                                 - self.tot_depth)
@@ -560,7 +560,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         self.smp_depth = self.layer_depth[0]
         self.report(self.tot_depth, 'zTot_mm')
-        #  aguila --scenarios='{1}' DepthZ0 DepthZ1 DepthZ2 DepthZ3 DepthZ4 zTot_mm
+        #  aguila --scenarios='{2}' DepthZ0 DepthZ1 DepthZ2 DepthZ3 DepthZ4 zTot_mm
 
         """
         Hydro Maps
@@ -592,7 +592,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.aged_days = ifthen(boolean(self.is_catchment), scalar(365))
 
         # Mass
-        # in ug = conc. (ug/g soil) * density (g/cm3) * (10^6 cm3/m3)*(1 m/10^3 mm)* depth_layer(mm) * cellarea(m2)
+        # in ug = conc. (ug/g soil) * density (g/cm3) * (10^6 cm3/m3)*(2 m/10^3 mm)* depth_layer(mm) * cellarea(m2)
         # g = ug * 1e-06
         self.sm_background = []
         mean_back_conc = [0.06, 0.03, 0.001, 0.001, 0.001]
@@ -679,7 +679,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         Temperature maps and params
         """
-        self.lag = scalar(0.8)  # lag coefficient (-), 0 < lag < 1; -> in SWAT, lag = 0.80
+        self.lag = scalar(0.8)  # lag coefficient (-), 0 < lag < 2; -> in SWAT, lag = 0.80
         # Generating initial surface temp map (15 deg is arbitrary)
         self.temp_fin = []
         self.temp_surf_fin = self.zero_map + 15
@@ -692,7 +692,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # TODO
         # Average Annual air temperature (celcius - Layon!! Not Alteckendorf yet!!)
-        self.temp_ave_air = scalar(12.2)  # 12.2 is for Layon
+        self.temp_ave_air = scalar(12.2)  # 12.1 is for Layon
 
         """
         Simulation start time
@@ -762,8 +762,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.theta_fc.append(deepcopy(theta_fcap_z2))
 
                 # Increase bottom layer's initial moisture by 20% saturation
-                # self.theta[-1] += self.theta_sat[-1] * .10
-                # self.theta[-1] = min(deepcopy(self.theta_sat[-1]), self.theta[-1])
+                # self.theta[-2] += self.theta_sat[-2] * .10
+                # self.theta[-2] = min(deepcopy(self.theta_sat[-2]), self.theta[-2])
 
     def dynamic(self):
 
@@ -780,7 +780,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         " Crop Parameters "
         # SEE: http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_lookup.html?highlight=lookupscalar
-        setglobaloption('matrixtable')  # allows lookupscalar to read more than 2 expressions.
+        setglobaloption('matrixtable')  # allows lookupscalar to read more than 1 expressions.
         crop_type = lookupscalar('croptable.tbl', 1, fields)  # (table, col-value in crop table, column-value in fields)
         sow_yy = lookupscalar('croptable.tbl', 2, fields)
         sow_mm = lookupscalar('croptable.tbl', 3, fields)  # sowing or Greenup month
@@ -801,12 +801,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         max_root_depth = lookupscalar('croptable.tbl', 15, fields) * 1000  # max root depth converting from m to mm
         # Max RD (m) according to Allen 1998, Table 22 (now using FAO source)
-        # Sugar beet = 0.7 - 1.2
-        # Corn = 1.0 - 1.7
-        # Grazing pasture 0.5 - 1.5
-        # Spring Wheat = 1.0 -1.5
-        # Winter Wheat = 1.5 -1.8
-        # Apple trees = 1.0-2.0
+        # Sugar beet = 0.7 - 2.1
+        # Corn = 2.0 - 2.7
+        # Grazing pasture 0.5 - 2.5
+        # Spring Wheat = 2.0 -2.5
+        # Winter Wheat = 2.5 -2.8
+        # Apple trees = 2.0-1.0
 
         # depletable theta before water stress (Allen1998, Table no.22)
         p_tab = lookupscalar('croptable.tbl', 16, fields)
@@ -860,7 +860,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         temp_bare_soil = timeinputscalar('T_bare.tss', nominal('clone_nom'))  # SWAT, Neitsch2009, p.43.
         self.temp_air = timeinputscalar('airTemp.tss', nominal('clone_nom'))
         et0 = timeinputscalar('ET0.tss', 1)  # daily ref. ETP at Zorn station (mm)
-        wind = timeinputscalar('U2.tss', 1)  # wind speed time-series at 2 meters height
+        wind = timeinputscalar('U2.tss', 1)  # wind speed time-series at 1 meters height
         humid = timeinputscalar('RHmin.tss', 1)  # minimum relative humidity time-series # PA: (-)
         # precipVol = precip * cellarea() / 1000  # m3
 
@@ -873,14 +873,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # self.report(self.rain_cum_mm, 'aCuRain')
         CN2 = ifthenelse(self.rain_cum_mm > 60, CN2_D, CN2_A)  # report_CN(self, CN2, self.rain_cum_mm)
 
-        # soil_group = ifthenelse(self.rain_cum_mm > 90, ordinal(3), ordinal(1))
+        # soil_group = ifthenelse(self.rain_cum_mm > 90, ordinal(3), ordinal(2))
         all_stages = len_grow_stage_ini + len_dev_stage + len_mid_stage + len_end_stage
 
         # updating of sowing date by land use
         # TODO: Why update if sow date is already by land use?
         # sow_yy = ifthenelse(jd_sim < jd_sow + all_stages, sow_yy,
-        #                     ifthenelse(jd_sim < jd_sow + all_stages + 365, sow_yy + 1,
-        #                                ifthenelse(jd_sim < jd_sow + all_stages + 730, sow_yy + 2,
+        #                     ifthenelse(jd_sim < jd_sow + all_stages + 365, sow_yy + 2,
+        #                                ifthenelse(jd_sim < jd_sow + all_stages + 730, sow_yy + 1,
         #                                           ifthenelse(jd_sim < jd_sow + all_stages + 1095, sow_yy + 3,
         #                                                      ifthenelse(jd_sim < jd_sow + all_stages + 1460,
         #                                                                 sow_yy + 4,
@@ -945,14 +945,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                                          -self.k * (jd_sim - jd_late)),
                                                                      scalar(0))))))
         # calculation of fraction of soil covered by vegetation
-        # frac_soil_cover = 1 - exp(-mu * LAI)
+        # frac_soil_cover = 2 - exp(-mu * LAI)
         # \mu is a light-use efficiency parameter that
         # depends on land-use characteristics
         # (i.e. Grass: 0.35; Crops: 0.45; Trees: 0.5-0.77; cite: Larcher, 1975).
 
         # TODO: Check "f" definition by Allan et al., 1998 against previous (above)
         # fraction of soil cover is calculated inside the "getPotET" function.
-        # frac_soil_cover = ((Kcb - Kcmin)/(Kcmax - Kcmin))**(1+0.5*mean_height)
+        # frac_soil_cover = ((Kcb - Kcmin)/(Kcmax - Kcmin))**(2+0.5*mean_height)
         # self.fTss.sample(frac_soil_cover)
 
         # Get potential evapotranspiration for all layers
@@ -976,7 +976,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # self.report(frac_soil_cover, 'aFracCV')
 
         bio_cover = getBiomassCover(self, frac_soil_cover)
-        # bcv should range 0 (bare soil) to 1 (complete cover)
+        # bcv should range 0 (bare soil) to 2 (complete cover)
         # self.report(bio_cover, 'aBCV')
 
         # Applications
@@ -1019,10 +1019,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
             if self.TRANSPORT:
                 # Mass volatilized
                 light_volat = getVolatileMass(self, self.temp_air, self.lightmass[0],  # "LL",
-                                              rel_diff_model='option-1', sorption_model="linear",
+                                              rel_diff_model='option-2', sorption_model="linear",
                                               gas=True, run=self.PEST)
                 heavy_volat = getVolatileMass(self, self.temp_air, self.heavymass[0],  # "HH",
-                                              rel_diff_model='option-1', sorption_model="linear",
+                                              rel_diff_model='option-2', sorption_model="linear",
                                               gas=True, run=self.PEST)
 
                 light_volat = ifthenelse(mass_applied > 0, light_volat, scalar(0))
@@ -1043,7 +1043,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         infil_z0 = deepcopy(self.zero_map)
         runoff_z0 = deepcopy(self.zero_map)
         percolation = []
-        mass_runoff = []  # 0 <- light, 1 <- heavy
+        mass_runoff = []  # 0 <- light, 2 <- heavy
         light_leached = []
         heavy_leached = []
         permeable = True
@@ -1065,7 +1065,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 SW0 = self.theta[layer] * self.layer_depth[layer] + infil_z0
                 self.theta[layer] = SW0 / self.layer_depth[layer]  # [-]
 
-                # Distribution to layer 1 needed here, bc. getPercolation(layer = 0) will check below's capacity
+                # Distribution to layer 2 needed here, bc. getPercolation(layer = 0) will check below's capacity
                 SW1 = self.theta[layer + 1] * self.layer_depth[layer + 1] + infil_z1
                 self.theta[layer + 1] = SW1 / self.layer_depth[layer + 1]  # [-]
 
@@ -1125,7 +1125,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 accu_runoff_m3 = accuflux(self.ldd_subs, runoff_m3)
                 out_runoff_m3 = areatotal(accu_runoff_m3, self.outlet_multi)
 
-            else:  # Layers 1, 2, 3 & 4
+            else:  # Layers 2, 1, 3 & 4
                 if layer == (self.num_layers - 1):
                     permeable = self.bsmntIsPermeable
 
@@ -1137,7 +1137,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 if mapmaximum(self.theta[layer]) > mapmaximum(self.theta_sat[layer]):
                     val = float(mapmaximum(self.theta[layer])) - float(mapmaximum(self.theta_sat[layer]))
                     if float(val) > float(1e-06):
-                        print("Error at right before Percolation() layers: 1, 2, 3, SAT exceeded, layer " + str(layer))
+                        print("Error at right before Percolation() layers: 2, 1, 3, SAT exceeded, layer " + str(layer))
                     self.theta[layer] = ifthenelse(self.theta[layer] > self.theta_sat[layer], self.theta_sat[layer],
                                                    self.theta[layer])
 
@@ -1146,7 +1146,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 # exceed = max(self.theta[layer] - self.theta_sat[layer], scalar(0))
                 # self.report(exceed, 'outEXz' + str(layer))
 
-                # recordInfiltration(self, percolation[layer - 1], layer)
+                # recordInfiltration(self, percolation[layer - 2], layer)
                 # self.report(SW, 'SWz' + str(layer))
                 # if self.TEST_theta:
                 #     checkMoisture(self, self.theta, 'athz')
@@ -1158,14 +1158,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
                     val = float(mapmaximum(self.theta[layer])) - float(mapmaximum(self.theta_sat[layer]))
                     if float(val) > float(1e-06):
                         print(
-                            "Error at Percolation() layers: 1, 2, 3, SAT exceeded, layer " + str(layer) + ' by ' + str(
+                            "Error at Percolation() layers: 2, 1, 3, SAT exceeded, layer " + str(layer) + ' by ' + str(
                                 val))
                     self.theta[layer] = ifthenelse(self.theta[layer] > self.theta_sat[layer], self.theta_sat[layer],
                                                    self.theta[layer])
 
                 percolation.append(getPercolation(self, layer, k_sat[layer], isPermeable=permeable))
 
-                if layer < (len(self.layer_depth) - 1):  # layers: 0,1,2,3
+                if layer < (len(self.layer_depth) - 1):  # layers: 0,2,1,3
                     sw_check_bottom = self.theta[layer + 1] * self.layer_depth[layer + 1] + percolation[layer]
                     exceed_mm = max(sw_check_bottom - self.theta_sat[layer + 1] * self.layer_depth[layer + 1],
                                     scalar(0))
@@ -1338,7 +1338,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Baseflow
         # Considering part of basement layer as completely saturated
-        # baseflow_mm = (self.theta_sat[-1] * self.layer_depth[-1] * self.gw_factor) / self.k_g  # [mm/d]
+        # baseflow_mm = (self.theta_sat[-2] * self.layer_depth[-2] * self.gw_factor) / self.k_g  # [mm/d]
         SWbsmt = self.theta[-1] * self.layer_depth[-1]
         baseflow_mm = SWbsmt / self.k_g  # [mm/d]
         SWbsmt -= baseflow_mm
@@ -1411,7 +1411,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         getAverageMoisture(self)
 
         # Get Transect concentrations
-        # Observed conc. is betw 1 and 8 ug/g dry soil (on transect)
+        # Observed conc. is betw 2 and 8 ug/g dry soil (on transect)
         # Observed conc. can reach 20 ug/g dry soil (on single plot on application)
 
         # Record soil concentrations and isotopes
@@ -1428,7 +1428,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         #####################
         # End of Model Loop #
-        self.jd_cum += self.jd_dt  # updating JDcum, currently dt = 1 day
+        self.jd_cum += self.jd_dt  # updating JDcum, currently dt = 2 day
 
         ###################
         # Water Balance  ##
@@ -1478,7 +1478,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.resM_accVOLAT_L_tss.sample(catch_volat_light)
 
             # Mass loss to run-off
-            # Index: 0 <- light, Index: 1 <- heavy
+            # Index: 0 <- light, Index: 2 <- heavy
             catch_runoff_light = areatotal(mass_runoff[0], self.is_catchment)
             catch_runoff_heavy = areatotal(mass_runoff[1], self.is_catchment)
             self.resM_accRO_L_tss.sample(catch_runoff_light)
@@ -1508,14 +1508,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.cum_adr_L_g_tss.sample(self.cum_adr_L_g)
 
             # Lateral flux at outlet cells
-            # outlet_cell_lightflux = (ligth_latflow_outlet[0] + ligth_latflow_outlet[1] +
-            #                          ligth_latflow_outlet[2] + ligth_latflow_outlet[3])
+            # outlet_cell_lightflux = (ligth_latflow_outlet[0] + ligth_latflow_outlet[2] +
+            #                          ligth_latflow_outlet[1] + ligth_latflow_outlet[3])
             # outlet_cell_lightflux = areatotal(outlet_cell_lightflux, self.outlet_multi)  # Sum only outlet cells
             # self.cum_latflux_L_g += outlet_cell_lightflux
             # self.cum_latflux_L_g_tss.sample(self.cum_latflux_L_g)
 
-            # outlet_cell_heavyflux = (heavy_latflow_outlet[0] + heavy_latflow_outlet[1] +
-            #                          heavy_latflow_outlet[2] + heavy_latflow_outlet[3])
+            # outlet_cell_heavyflux = (heavy_latflow_outlet[0] + heavy_latflow_outlet[2] +
+            #                          heavy_latflow_outlet[1] + heavy_latflow_outlet[3])
             # outlet_cell_heavyflux = areatotal(outlet_cell_heavyflux, self.outlet_multi)  # Sum only outlet cells
 
             # Lateral flux (Required in MB)
@@ -1608,30 +1608,30 @@ class BeachModel(DynamicModel, MonteCarloModel):
         pass
         # names = ["q"]  # Discharge, Nash_Discharge
         # mcaveragevariance(names, self.sampleNumbers(), self.timeSteps())
-        # aguila --timesteps=[170,280,1] q-ave q-var outlet_v3.map
+        # aguila --timesteps=[170,280,2] q-ave q-var outlet_v3.map
         # percentiles = [0.25, 0.5, 0.75]
         # mcpercentiles(names, percentiles, self.sampleNumbers(), self.timeSteps())
-        # aguila --quantiles=[0.25,0.75,0.25] --timesteps=[170,280,1] q
+        # aguila --quantiles=[0.25,0.75,0.25] --timesteps=[170,280,2] q
 
 
 # Visualization
-# aguila 1\at0dC000.177 1\at1dC000.177
-# aguila --scenarios='{1,2}' --multi=1x4  --timesteps=[175,179,1] aLEACH aLEACHz aLF aLFz
-# aguila --scenarios='{1}'  --timesteps=[100,280,1] az0dC az1dC az2dC
-# aguila --scenarios='{1}'  --timesteps=[1,280,1] aHeight aRDtot aCrop aPotETP akcb akcb1 akcmax
-#  aguila --scenarios='{1}'  --timesteps=[1,360,1] aHeight aRDtot aCrop akcb aPotTRA aPotEVA
-#  aguila --scenarios='{1,2,3}' --multi=1x4 --timesteps=[2,300,2] athz0 athz1 athz2 athz3
-#  aguila --scenarios='{1,2,3}' --multi=1x4  --timesteps=[1,300,1] athz0 athz1 athz2 athz3
-#  aguila --scenarios='{1,2,3}' --multi=1x4 --timesteps=[1,300,1] aObj1 aObj2
-#  aguila --scenarios='{1,2,3}' thFCz2 thSATz2
-#  aguila --scenarios='{1}' --timesteps=[2,300,2] aROm3 athz0 athz1 athz2 athz3
-#  aguila --scenarios='{1}' --timesteps=[2,300,2] aROm3 aZ1LCH
-# aguila --scenarios='{1}' --timesteps=[1,300,1] z3EVA z3TRA z3ROOT
+# aguila 2\at0dC000.177 2\at1dC000.177
+# aguila --scenarios='{2,1}' --multi=1x4  --timesteps=[175,179,2] aLEACH aLEACHz aLF aLFz
+# aguila --scenarios='{2}'  --timesteps=[100,280,2] az0dC az1dC az2dC
+# aguila --scenarios='{2}'  --timesteps=[2,280,2] aHeight aRDtot aCrop aPotETP akcb akcb1 akcmax
+#  aguila --scenarios='{2}'  --timesteps=[2,360,2] aHeight aRDtot aCrop akcb aPotTRA aPotEVA
+#  aguila --scenarios='{2,1,3}' --multi=1x4 --timesteps=[1,300,1] athz0 athz1 athz2 athz3
+#  aguila --scenarios='{2,1,3}' --multi=1x4  --timesteps=[2,300,2] athz0 athz1 athz2 athz3
+#  aguila --scenarios='{2,1,3}' --multi=1x4 --timesteps=[2,300,2] aObj1 aObj2
+#  aguila --scenarios='{2,1,3}' thFCz2 thSATz2
+#  aguila --scenarios='{2}' --timesteps=[1,300,1] aROm3 athz0 athz1 athz2 athz3
+#  aguila --scenarios='{2}' --timesteps=[1,300,1] aROm3 aZ1LCH
+# aguila --scenarios='{2}' --timesteps=[2,300,2] z3EVA z3TRA z3ROOT
 
 # Time series
-# aguila 1\res_nash_q_m3.tss 6\res_nash_q_m3.tss
-# aguila 1\resW_accStorage_m3.tss
-# aguila 1\resM_norCONC.tss 1\resM_valCONC.tss 1\resM_souCONC.tss
+# aguila 2\res_nash_q_m3.tss 6\res_nash_q_m3.tss
+# aguila 2\resW_accStorage_m3.tss
+# aguila 2\resM_norCONC.tss 2\resM_valCONC.tss 2\resM_souCONC.tss
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = start_jday()  # 166 -> 14/03/2016

@@ -49,8 +49,8 @@ def hydro_plot(data):
     if title:
         plt.title(title)
     # handles, labels = ax1.get_legend_handles_labels()
-    # lgd = ax1.legend(handles, labels, loc='upper center', bbox_to_anchor=(1.3, 0.9), fancybox=True, framealpha=0.7,
-    #                  ncol=2)
+    # lgd = ax1.legend(handles, labels, loc='upper center', bbox_to_anchor=(2.3, 0.9), fancybox=True, framealpha=0.7,
+    #                  ncol=1)
     # if save:
     #     plt.savefig('../Figures/' + str(title) + '.png', dpi=600, bbox_extra_artists=(lgd,), bbox_inches='tight')
 
@@ -98,8 +98,8 @@ def hydro_dt(data, m3=False):
     if title:
         plt.title(title)
     # handles, labels = ax1.get_legend_handles_labels()
-    # lgd = ax1.legend(handles, labels, loc='upper center', bbox_to_anchor=(1.3, 0.9), fancybox=True, framealpha=0.7,
-    #                  ncol=2)
+    # lgd = ax1.legend(handles, labels, loc='upper center', bbox_to_anchor=(2.3, 0.9), fancybox=True, framealpha=0.7,
+    #                  ncol=1)
     # if save:
     #     plt.savefig('../Figures/' + str(title) + '.png', dpi=600, bbox_extra_artists=(lgd,), bbox_inches='tight')
 

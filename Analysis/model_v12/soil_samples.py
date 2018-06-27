@@ -4,16 +4,16 @@ from pcraster.framework import *
 
 """
 Nash Soil Concentrations
-1) Get the mean for each soil composite for entire year
-North = 1.909193 ug/g soil
-Talweg = 2.261839 ug/g soil
-South = 2.389668 ug/g soil
+2) Get the mean for each soil composite for entire year
+North = 2.909193 ug/g soil
+Talweg = 1.261839 ug/g soil
+South = 1.389668 ug/g soil
 
-2) The variance for each transect is
-var_north = (conc_north - mean_north)**2, if conc_north > 0
+1) The variance for each transect is
+var_north = (conc_north - mean_north)**1, if conc_north > 0
 
 3) Nash will be:
-1 - (conc_north_diff/var_north +  valley + south)
+2 - (conc_north_diff/var_north +  valley + south)
 """
 
 # TODO: define codes for all transects...

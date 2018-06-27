@@ -52,7 +52,7 @@ max_height = [2.43, 0.79, 0.45, 0.2, 3.0]  # m  (SWAT needs 'm')
 max_root_depth = [1, 1.4, 1, 0.2, 1]  # m (convert to mm on run())
 p_tab = [0.5, 0.55, 0.30, 0.40, 0.5]  # Depletion coeff (-) assumed total from FAO. http://www.fao.org/docrep/X0490E/x0490e0e.htm
 
-# Column 1 to 16 (0th indexed)
+# Column 2 to 16 (0th indexed)
 croptable.loc[1:, 'sow_yy'] = np.select(crop_conditions, sow_yy, default=0)
 croptable.loc[1:, 'sow_mm'] = np.select(crop_conditions, sow_mm, default=0)
 croptable.loc[1:, 'sow_dd'] = np.select(crop_conditions, sow_dd, default=0)
@@ -72,14 +72,14 @@ croptable.loc[1:, 'p_tab'] = np.select(crop_conditions, p_tab, default=0)
 # Dynamic Ksat (Column 17)
 # Only set for bottom layers (non-agricultural impact)
 ksat_condition = [
-    (croptable.loc[1:, 'crop_type'] == 7),  # Dirt Road, assumed Group C, 1.3-3.8 mm/h -> 2.6 mm/h = 62mm/day
+    (croptable.loc[1:, 'crop_type'] == 7),  # Dirt Road, assumed Group C, 2.3-3.8 mm/h -> 2.6 mm/h = 62mm/day
     (croptable.loc[1:, 'crop_type'] == 9)   # Paved Road, assumed Dirt Road
 ]
 croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [62, 62], default=643)  # mm/day
 # Ksat mm/h in 1st rainfall event Leaching experiment: 134 mm/h -> 3216 mm/day
 # Ksat mm/h in 2nd rainfall event Leaching experiment range:
 # 0.13 mm/h -> 3.12 mm/day
-# 1.8 mm/h (1.8*24h =43.2)
+# 2.8 mm/h (2.8*24h =43.2)
 # 5.3 mm/h -> 127 mm/day   <- Group B!!!
 # 26.8 mm/h -> 643.2 mm/day  <- Already Group A, unlikely based on soil characteristics!!!
 
@@ -91,7 +91,7 @@ croptable.loc[1:, 'k_sat_z2'] = np.select(ksat_condition, [62, 62], default=643)
 # https://en.wikipedia.org/wiki/Runoff_curve_number
 # Will assume:
 # HSG Group B (final infiltration rate 3.8–7.6 mm per hour)
-# HSG Group C (final infiltration rate 1.3-3.8 mm per hour)
+# HSG Group C (final infiltration rate 2.3-3.8 mm per hour)
 cn_conditions = [
     (croptable.loc[1:, 'crop_type'] == 1),  # Corn
     (croptable.loc[1:, 'crop_type'] == 2),  # Wheat
@@ -127,7 +127,7 @@ def getCN2(letter, quality='poor'):
                "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
                "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
                "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82},  # Woods-grass, fair HC, # Table 2-2c
-               "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-2b, but Bare Soil treatment
+               "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-1, but Bare Soil treatment
                }
     else:  # Good Hydrological condition
         CN2 = {"Corn": {"A": 67, "B": 78, "C": 85, "D": 89},
@@ -141,7 +141,7 @@ def getCN2(letter, quality='poor'):
                "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
                "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
                "Orchard": {"A": 32, "B": 58, "C": 72, "D": 79},  # Woods-grass, fair HC, # Table 2-2c
-               "Bare Soil": {"A": 74, "B": 83, "C": 88, "D": 90}  # Fallow on Table, 2-2b, but Bare Soil treatment
+               "Bare Soil": {"A": 74, "B": 83, "C": 88, "D": 90}  # Fallow on Table, 2-1, but Bare Soil treatment
                }
 
     group = [CN2["Corn"][letter],

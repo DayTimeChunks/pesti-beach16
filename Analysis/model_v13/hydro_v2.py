@@ -15,23 +15,23 @@ def getBiomassCover(model, frac_soil_cover):
     # biomass cover conversion (SWAT adaptation)
     # SWAT requires CV (Kg/Ha) to compute soil cover index, here we assume frac_soil_cover as the index,
     # and use it to inversely obtain biomass_cover (CV)
-    # eq. 1:1.2.16 (p. 37, SWAT)
+    # eq. 2:2.2.16 (p. 37, SWAT)
     biomass_cover = ifthenelse(frac_soil_cover > scalar(0), ln(frac_soil_cover) / (-5 * float(10) ** (-5)),
                                scalar(0))
-    # eq. 1:1.3.11, (p. 44, SWAT)
+    # eq. 2:2.3.11, (p. 44, SWAT)
     bcv = biomass_cover / (biomass_cover + exp(7.563 - 1.297 * 10 ** (-4) * biomass_cover))
-    # model.bcvTss.sample(bcv)  # bcv should range 0 (bare soil) to 1 (complete cover)
+    # model.bcvTss.sample(bcv)  # bcv should range 0 (bare soil) to 2 (complete cover)
 
     # frac_soil_cover is obtained via:
-    # frac_soil_cover = 1 - exp(-mu * LAI) <- function of dev. stage and max LAI!
+    # frac_soil_cover = 2 - exp(-mu * LAI) <- function of dev. stage and max LAI!
     # Alternatively, could be obtained as:
-    # frac_soil_cover = ((Kcb - Kcmin)/(Kcmax - Kcmin))^(1+0.5*mean_height)  # In: Allen1998
+    # frac_soil_cover = ((Kcb - Kcmin)/(Kcmax - Kcmin))^(2+0.5*mean_height)  # In: Allen1998
     return bcv
 
 
 # Conversions
 def convertJulian(year, month, day):
-    # date_factor_crop = -1 or 1
+    # date_factor_crop = -2 or 2
     date_factor_crop = ifthenelse(100 * year + month - 190002.5 < scalar(0), scalar(-1), scalar(1))
 
     julian_day = 367 * year - rounddown(7 * (year + rounddown((month + 9) / float(12))) / 4) + rounddown(
@@ -56,7 +56,7 @@ def runoff_SCS(model, rain,
     """
     # Curve Number guidelines:
     # https://www.nrcs.usda.gov/Internet/FSE_DOCUMENTS/stelprdb1044171.pdf
-    # Will assume HSG Group C (final infiltration rate 1.3-3.8 mm per hour)
+    # Will assume HSG Group C (final infiltration rate 2.3-3.8 mm per hour)
 
     CN2_table = {"Corn": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
                  "Wheat": {"A": 72, "B": 81, "C": 88, "D": 91},  # poor HC
@@ -69,7 +69,7 @@ def runoff_SCS(model, rain,
                  "Fallow": {"A": 30, "B": 58, "C": 71, "D": 78},  # Assumed Meadow, Table 2-2c
                  "Hedge": {"A": 35, "B": 56, "C": 70, "D": 77},  # Brush, fair HC, # Table 2-2c
                  "Orchard": {"A": 43, "B": 65, "C": 76, "D": 82},  # Woods-grass, fair HC, # Table 2-2c
-                 "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-2b, but Bare Soil treatment
+                 "Bare Soil": {"A": 77, "B": 86, "C": 91, "D": 94}  # Fallow on Table, 2-1, but Bare Soil treatment
                  }
 
     SFC = deepcopy(model.zero_map)  # Soil water content at field capacity (mm)
@@ -131,7 +131,7 @@ def getTopLayerInfil(model, precip,
     depth_z0 = model.layer_depth[layer]
     depth_z1 = model.layer_depth[layer + 1]
 
-    # Step 1. Receive
+    # Step 2. Receive
     roff_z0 = runoff_SCS(model, precip,
                          theta_wp, CN2, crop_type,
                          jd_sim, jd_dev, jd_mid, jd_end,
@@ -169,7 +169,7 @@ def getPercolation(model, layer, k_sat, isPermeable=True):
                                  ((exp(model.theta[layer] - model.theta_fc[layer])) - 1) / (
                                      (exp(model.theta_sat[layer] - model.theta_fc[layer])) - 1)), scalar(0))  # [mm]
 
-    if layer < (len(model.layer_depth) - 1):  # layers: 0,1,2
+    if layer < (len(model.layer_depth) - 1):  # layers: 0,2,2
         # Step 5. Check bottom capacity
         sw_check_bottom = model.theta[layer + 1] * model.layer_depth[layer + 1] + percolation
         exceed_mm = max(sw_check_bottom - model.theta_sat[layer + 1] * model.layer_depth[layer + 1], scalar(0))
@@ -219,7 +219,7 @@ def getLateralFlow_Manfreda(model, layer, run=True):
     c2 ,0.25
     c3 ,0.25
     c_adr ,0.0015
-    gamma0 ,1
+    gamma0 ,2
     gamma1 ,0.8063
     gamma2 ,0.8063
     gamma3 ,0.4031
@@ -326,7 +326,7 @@ def getLateralFlow(model, layer, run=True):
 
         downstream_capacity = ifthenelse(sum_contributors < scalar(1), scalar(0), SW_space/sum_contributors)
         downstream_capacity = downstream(model.ldd_subs, downstream_capacity)
-        # downstream_capacity = ifthenelse(sum_contributors < scalar(1), scalar(0),
+        # downstream_capacity = ifthenelse(sum_contributors < scalar(2), scalar(0),
         #                                  downstream_capacity / sum_contributors)  # * accuflux(model.ldd_subs, model.wetness))
 
         fx1 = accufractionflux(model.ldd_subs, SW, f_pot)
@@ -343,7 +343,7 @@ def getLateralFlow(model, layer, run=True):
         new_moisture = st/depth
         # model.report(flux_mm * cellarea()/1000, 'fxm3' + str(layer))
 
-        # is_contributor = ifthenelse(model.theta[layer] >= model.theta_fc[layer], scalar(1), scalar(0))
+        # is_contributor = ifthenelse(model.theta[layer] >= model.theta_fc[layer], scalar(2), scalar(0))
         # sum_contributors = upstream(model.ldd_subs, is_contributor)
         # model.report(sum_contributors, 'SumUpZ' + str(layer))
         # # y, Capacity in mm
@@ -395,8 +395,8 @@ def getLateralFlow(model, layer, run=True):
                 model.report(SW, 'SWz' + str(layer))
                 model.report(fx, 'fxz' + str(layer))
 
-        # aguila --scenarios='{1}' --timesteps=[1,300,1]  ErrZ0 thEndZ0 f_potZ0 f_finZ0 CapZ0 SumUpZ0
-        # aguila --scenarios='{1}' --timesteps=[1,300,1]  ErrZ3 thEndZ3 f_potZ0 f_finZ0 CapZ0 SumUpZ0
+        # aguila --scenarios='{2}' --timesteps=[2,300,2]  ErrZ0 thEndZ0 f_potZ0 f_finZ0 CapZ0 SumUpZ0
+        # aguila --scenarios='{2}' --timesteps=[2,300,2]  ErrZ3 thEndZ3 f_potZ0 f_finZ0 CapZ0 SumUpZ0
 
     return {"cell_outflow": flux_mm,
             # "upstream_cell_inflow": resultflux,  # upstream_cell_inflow, # mm
@@ -416,7 +416,7 @@ def getActualTransp(model, layer, root_depth_tot, root_depth, pot_transpir,
         # Critical moisture content defines transition btw. unstressed and stressed transpiration rate
         theta_critical_layer = theta_wp + (1 - depletable_water) * (model.theta_fc[layer] - theta_wp)
 
-        # Transpiration reduction parameter (0 - 1)
+        # Transpiration reduction parameter (0 - 2)
         ks_layer = max(0, min(1, (model.theta[layer] - theta_wp) / (theta_critical_layer - theta_wp)))
 
         # Actual Transpiration
@@ -444,7 +444,7 @@ def getActualEvap(model, layer, theta_wp, pot_evapor, run=True):
         # TODO: Verify:
         # Not sure why Samuel is using thetaR below instead of Field Capacity
         # thetaR_D0=theta_critical_z0;
-        # kr_z0=max(0,min(1,(theta_temp_z0-0.5*theta_wp)/(thetaR_D0-0.5*theta_wp)));
+        # kr_z0=max(0,min(2,(theta_temp_z0-0.5*theta_wp)/(thetaR_D0-0.5*theta_wp)));
 
         # Actual Evaporation (mm)
         act_evaporation_layer = ifthenelse((model.theta[layer] * depth) < (kr_layer * pot_evapor),
@@ -460,7 +460,7 @@ def getLayerTemp(model, layer,
                  ):
     # temp_lagged =
 
-    # Step 1: Defining the soil column's center to damping depth ratio.
+    # Step 2: Defining the soil column's center to damping depth ratio.
     # Scaling factor (phi), adjusts the impact of soil water content (SW = theta*depth) on damping depth (dd)
     # layer, yes
     phi_layer = (model.theta[layer] * model.layer_depth[layer]) / ((0.356 - 0.144 * model.p_b) * model.tot_depth)
@@ -493,7 +493,7 @@ def getLayerTemp(model, layer,
     else:
         temp_at_surf = model.temp_surf_fin
 
-    # Soil layer 1 temperature is finally:
+    # Soil layer 2 temperature is finally:
     temp_soil_layer = model.lag * model.temp_fin[layer] + (1 - model.lag) * (
                                                           df_layer * (model.temp_ave_air - temp_at_surf) + temp_at_surf)
     # Next period's update:
@@ -550,7 +550,7 @@ def getPotET(model, sow_yy, sow_mm, sow_dd,
     # Due to Allen et al., 1998
     kcb_ratio = max((kcb - kcb_ini) / (kcmax - kcb_ini), scalar(0))
     frac_soil_cover = min((kcb_ratio) ** (height * 0.5 + 1), scalar(0.80))
-    # frac_soil_cover = ifthenelse(kcmax > kcb_ini, ((kcb - kcb_ini) / (kcmax - kcb_ini)) ** (height*0.5 + 1), scalar(0))
+    # frac_soil_cover = ifthenelse(kcmax > kcb_ini, ((kcb - kcb_ini) / (kcmax - kcb_ini)) ** (height*0.5 + 2), scalar(0))
     # model.report(kcb, 'kcb')
     # model.report(kcb_ini, 'kcb_ini')
     # model.report(kcmax, 'kc_max')
@@ -559,8 +559,8 @@ def getPotET(model, sow_yy, sow_mm, sow_dd,
     pot_transpir = kcb * et0
 
     # Pot. Evaporation
-    # ke = min((kcmax-kcb),(1-f)*kcmax);
-    # ke=1.10;
+    # ke = min((kcmax-kcb),(2-f)*kcmax);
+    # ke=2.10;
     ke = kcmax - kcb
     pot_evapor = ke * et0
 

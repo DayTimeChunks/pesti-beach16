@@ -20,7 +20,7 @@ Generate BEACH soil calibration data with:
 
 
 ```{r}
-MAC = T
+MAC = F
 WIN = F
 if (MAC) {
   if (WIN){
@@ -178,7 +178,13 @@ if (length(co) == 1) {
   co = read.csv("DetailConc.csv")
 }
 
+
+# Remove likley GC-MS errors for individual plots > 19 ug/g
+co = subset(co, co$ug.g < 19)
+# Remove NA's
 is = subset(is, !is.na(d13C))
+
+
 ```
 
 ### Group
@@ -228,12 +234,12 @@ N5 = subset(detailed, is.na(TrPlot) | TrPlot == "N5")
 N7 = subset(detailed, is.na(TrPlot) | TrPlot == "N7")
 N8 = subset(detailed, is.na(TrPlot) | TrPlot == "N8")
 
-T4 = subset(detailed, is.na(TrPlot) | TrPlot == "T4")
-T5 = subset(detailed, is.na(TrPlot) | TrPlot == "T5")
-T7 = subset(detailed, is.na(TrPlot) | TrPlot == "T7")
-T8 = subset(detailed, is.na(TrPlot) | TrPlot == "T8")
-T9 = subset(detailed, is.na(TrPlot) | TrPlot == "T9")
-T10 = subset(detailed, is.na(TrPlot) | TrPlot == "T10")
+T4 = subset(detailed, is.na(TrPlot) | TrPlot == "V4")
+T5 = subset(detailed, is.na(TrPlot) | TrPlot == "V5")
+T7 = subset(detailed, is.na(TrPlot) | TrPlot == "V7")
+T8 = subset(detailed, is.na(TrPlot) | TrPlot == "V8")
+T9 = subset(detailed, is.na(TrPlot) | TrPlot == "V9")
+T10 = subset(detailed, is.na(TrPlot) | TrPlot == "V10")
 
 S11 = subset(detailed, is.na(TrPlot) | TrPlot == "S11")
 S12 = subset(detailed, is.na(TrPlot) | TrPlot == "S12")
@@ -248,7 +254,6 @@ sou = list(S11, S12, S13)
 ## Save TSS detailed
 
 ```{r}
-
 if (SAVE) {
   
   counter = 0

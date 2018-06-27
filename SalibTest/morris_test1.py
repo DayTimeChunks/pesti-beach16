@@ -49,9 +49,9 @@ num_levels (int)-> The number of grid levels
 'p' is recommended to be even, and typically = 4.
 
 Delta
-'delta' is a value in {1/(p-1), 2/(p-1),..., 1-1/(p-1)}
+'delta' is a value in {2/(p-2), 1/(p-2),..., 2-2/(p-2)}
 
-    But it is advised that delta = 1/(2*(p-1)
+    But it is advised that delta = 2/(1*(p-2)
 """
 
 """

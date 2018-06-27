@@ -6,7 +6,6 @@ import statsmodels.api as sm
 
 
 def get_xy_line(df, obs, delta=False):
-
     if delta:
         min_x = min(df['SIM'])
         min_y = min(df[obs])
@@ -18,6 +17,7 @@ def get_xy_line(df, obs, delta=False):
         trace_bck = go.Scatter(
             x=x_test,
             y=y_test,
+            name='y = x',
             mode='lines',
             marker=dict(
                 color='grey',
@@ -36,6 +36,7 @@ def get_xy_line(df, obs, delta=False):
         trace_bck = go.Scatter(
             x=x_test,
             y=y_test,
+            name='y = x',
             mode='lines',
             marker=dict(
                 color='grey',
@@ -46,7 +47,6 @@ def get_xy_line(df, obs, delta=False):
 
 
 def get_scatter(df, obs, sd, name=None):
-
     labels = df['IDcal'].tolist()
     sim = df['SIM'].tolist()
     obs = df[obs].tolist()
@@ -75,13 +75,52 @@ def get_scatter(df, obs, sd, name=None):
     return trace
 
 
-def get_layout(df, var, title='Title', x_jitter=0, y_jitter=0):
+def get_layout(df, var, folders, title='Title', delta=False, x_jitter=0, y_jitter=0):
+    # obs = df[var].tolist()
+    # sim = df['SIM'].tolist()
 
-    obs = df[var].tolist()
-    sim = df['SIM'].tolist()
+    r = ''
+    n = ''
+    for folder in range(1, folders + 1):
+        df1 = df.loc[df['IDsim'] == ('Sim-' + str(folder))]
 
-    x = max(df[var]) - (0.1 + y_jitter) * max(df[var])
-    y = min(df['SIM']) + (0.1 + x_jitter) * max(df['SIM'])
+        # R-squared
+        obs = df1[var].tolist()
+        sim = df1['SIM'].tolist()
+        r_squared = str('R' + str(folder) + ' = ' + str(round(get_r_squared(obs, sim), 2)) + '\n \n')
+        r += r_squared
+
+        # Nash
+        mean = df1[var].mean()
+        # Diff sim vs. obs
+        dfn = df1.assign(diff_sim=lambda row: (row['SIM'] - row[var]) ** 2)
+        err_sim = dfn['diff_sim'].sum()
+        # Variance
+        dfn = dfn.assign(diff_obs=lambda row: (row[var] - mean) ** 2)
+        err_obs = dfn['diff_obs'].sum()
+        error = err_sim / err_obs
+        nash = 1 - error
+        if not delta:  # Log only for concentrations
+            lnmean = np.log(df1[var]).mean()
+            # Log Diff sim vs. obs
+            dfn = dfn.assign(lndiff_sim=lambda row: (np.log(row['SIM']) - np.log(row[var])) ** 2)
+            err_lnsim = dfn['lndiff_sim'].sum()
+            # Log variance
+            dfn = dfn.assign(lndiff_obs=lambda row: (np.log(row[var]) - lnmean) ** 2)
+            err_lnobs = dfn['lndiff_obs'].sum()
+            error += err_lnsim / err_lnobs
+            nash = 1 - 0.5*error
+
+        n += str('N' + str(folder) + ' = ' + str(round(nash, 2)) + '\n \n')
+
+    if delta:
+        x = max(df['SIM']) + 0.7
+        y = min(df[var]) - 0.7
+        y2 = y + 0.3
+    else:
+        x = max(df[var]) - (0.1 + y_jitter) * max(df[var])
+        y = min(df['SIM']) + (0.1 + x_jitter) * max(df['SIM'])
+        y2 = y + 1
 
     layout = go.Layout(
         title=title,
@@ -108,7 +147,20 @@ def get_layout(df, var, title='Title', x_jitter=0, y_jitter=0):
                 y=y,
                 # xref='x',
                 # yref='y',
-                text=str('R-sq. = ' + str(round(get_r_squared(obs, sim), 2))),
+                text=r,
+                showarrow=False
+                # arrowhead=7,
+                # xshift = 10,
+                # ax=0,
+                # ay=-40
+                # opacity = 0.7
+            ),
+            dict(
+                x=x,
+                y=y2,
+                # xref='x',
+                # yref='y',
+                text=n,
                 showarrow=False
                 # arrowhead=7,
                 # xshift = 10,

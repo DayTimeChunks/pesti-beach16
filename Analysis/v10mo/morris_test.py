@@ -60,5 +60,5 @@ r = 4
 param_values = mos.sample(problem, r, num_levels=p, grid_jump=grid_jump)
 saveInputMatrix(param_values)
 
-runs = int(param_values.shape[0])  # runs = rk+r = r(k+1)
+runs = int(param_values.shape[0])  # runs = rk+r = r(k+2)
 print("Runs: ", int(runs))

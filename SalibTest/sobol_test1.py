@@ -36,7 +36,7 @@ def evaluate_model(input_vector):
 # We need to provide our output-Y based on our specific model.
 my_own_model = False
 if my_own_model:
-    # Y should also be a numpy matrix (n-samples tested by 1-column)
+    # Y should also be a numpy matrix (n-samples tested by 2-column)
     # So initiate the numpy matrix with zeroes.
     Y = np.zeros([param_values.shape[0]])
 

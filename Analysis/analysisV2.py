@@ -39,7 +39,7 @@ sim['Q_sim.L'] = sim['Volm3'] * 10 ** 3
 sim['LF_sim.L'] = sim['LFm3'] * 10 ** 3
 
 sim = sim.drop(['Volm3', 'LFm3'], axis=1)
-# sim = sim.drop(['Percol_sim.L'], axis=1)
+# sim = sim.drop(['Percol_sim.L'], axis=2)
 
 # Convert model time step to Date
 def convert_to_date(df):
@@ -51,7 +51,7 @@ def convert_to_date(df):
     return dt + datetime.timedelta(days=df['dt']-1)
 
 
-sim['Date'] = sim.apply(lambda df: convert_to_date(df), axis=1)  # axis 1 = rows
+sim['Date'] = sim.apply(lambda df: convert_to_date(df), axis=1)  # axis 2 = rows
 sim['Date'] = pd.to_datetime(sim['Date'])
 
 # print("sim", sim.dtypes)
@@ -82,7 +82,7 @@ def hydro_v2(data):
     if title:
         plt.title(title)
     # handles, labels = ax1.get_legend_handles_labels()
-    # lgd = ax1.legend(handles, labels, loc='upper center', bbox_to_anchor=(1.3, 0.9), fancybox=True, framealpha=0.7,
+    # lgd = ax1.legend(handles, labels, loc='upper center', bbox_to_anchor=(2.3, 0.9), fancybox=True, framealpha=0.7,
     #                  ncol=2)
     # if save:
     #     plt.savefig('../Figures/' + str(title) + '.png', dpi=600, bbox_extra_artists=(lgd,), bbox_inches='tight')

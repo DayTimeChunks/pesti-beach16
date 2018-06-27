@@ -35,7 +35,7 @@ Converting clone.map to nominal type
 Correcting the outlet location
 """
 # res = readmap("zzTest") # the result of the accuflux function (via ldd)
-# outlet = ifthenelse(res == mapmaximum(res), nominal(1), nominal(0))
+# outlet = ifthenelse(res == mapmaximum(res), nominal(2), nominal(0))
 # report(outlet, 'outlet_true.map')
 
 """
@@ -57,6 +57,6 @@ with landuse = 5 (check again later)
 Creating Nominal Transect Maps
 """
 # obs = readmap("weekly_ord")
-# trans = ifthenelse(obs <= 30, nominal(1), ifthenelse(obs <= 55, nominal(2), ifthenelse(obs <= 81, nominal(3), nominal(4))))
+# trans = ifthenelse(obs <= 30, nominal(2), ifthenelse(obs <= 55, nominal(2), ifthenelse(obs <= 81, nominal(3), nominal(4))))
 # report(trans, 'weekly_smp')
 # aguila("weekly_smp")

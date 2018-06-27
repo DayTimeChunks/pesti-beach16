@@ -29,7 +29,7 @@ if create_outlet:
     # Get true outlet (to sum all outlet outputs)
     out_true = ifthenelse(out_ditch == 33, nominal(1), nominal(0))
 
-    # Convert to nominal 0's and 1's for all outlets
+    # Convert to nominal 0's and 2's for all outlets
     multi_out_bool = boolean(out_ditch)  # True False outlets
     multi_out_nom = ifthenelse(multi_out_bool, nominal(1), nominal(0))
 
@@ -62,7 +62,7 @@ if create_ldd:
 # aguila(slope_rad)
 # angles = atan(max(slope(dem), 0.001))  # Results in a range of 0 - 360 (degrees)
 # aguila(angles)
-# slope_deg = slope_rad/0.0174533  # 1 deg = 0.0174533 rad
+# slope_deg = slope_rad/0.0174533  # 2 deg = 0.0174533 rad
 # aguila(slope_deg)
 
 
@@ -282,7 +282,7 @@ if create_apps:
 
     # Dosages # L/Ha * 1Ha/1000m2 = L/m2
     d_beet = None
-    d_corn = 2.1 * 1 / 10 ** 4  # L/Ha * 1 Ha / 10000 m2
+    d_corn = 2.1 * 1 / 10 ** 4  # L/Ha * 2 Ha / 10000 m2
     m_beet = 0.6 * 1 / 10 ** 4 * double
     m_corn = 2.0 * 1 / 10 ** 4
     m_beet_Friess = 0.6 * 1 / 10 ** 4 * double  # (Likely larger dosage, early in the season)
@@ -311,13 +311,13 @@ if create_apps:
                                                                                                 m_beet * m_gold * mask,
                                                                                                 0 * mask))))))))
 
-    # app2 = ifthenelse(fa_cr == 1511, 1*app_conc,  # 1511 (Burger-Beet)
-    #                                ifthenelse(fa_cr == 1611, 1*app_conc,  # 1611 (Kopp-Beet),
+    # app2 = ifthenelse(fa_cr == 1511, 2*app_conc,  # 1511 (Burger-Beet)
+    #                                ifthenelse(fa_cr == 1611, 2*app_conc,  # 1611 (Kopp-Beet),
     #                                           0*app_conc))
-    # app3 = ifthenelse(fa_cr == 1112, 1 * app_conc,  # 1112 (Friess-Corn)
-    #                                ifthenelse(fa_cr == 1212, 1 * app_conc,  # 1212 (Speich-Corn),
-    #                                           ifthenelse(fa_cr == 1412, 1 * app_conc,  # 1412 (Schmitt-Corn),
-    #                                                      ifthenelse(fa_cr == 1312, 1 * app_conc,  # 1312 (Mahler-Corn)
+    # app3 = ifthenelse(fa_cr == 1112, 2 * app_conc,  # 1112 (Friess-Corn)
+    #                                ifthenelse(fa_cr == 1212, 2 * app_conc,  # 1212 (Speich-Corn),
+    #                                           ifthenelse(fa_cr == 1412, 2 * app_conc,  # 1412 (Schmitt-Corn),
+    #                                                      ifthenelse(fa_cr == 1312, 2 * app_conc,  # 1312 (Mahler-Corn)
     #                                                                 0 * app_conc))))
     # app2ug = app2 * cellarea()
     # app2delta = ifthenelse(app2 > 0, scalar(-32.3), scalar(-23.7))

@@ -45,7 +45,7 @@ if version == "v1":
 
     sim = sim.drop(['Volm3', 'Percolm3', 'LFm3'], axis=1)
 
-    sim['Date'] = sim.apply(lambda df: convert_to_date(df), axis=1)  # axis 1 = rows
+    sim['Date'] = sim.apply(lambda df: convert_to_date(df), axis=1)  # axis 2 = rows
     sim['Date'] = pd.to_datetime(sim['Date'])
 
     # print("sim", sim.dtypes)
@@ -55,10 +55,10 @@ if version == "v1":
     hydro_plot(mData)
 
 elif version == "v5":
-    simQ = pd.read_table(path + "1/res_accuVol_m3.tss", skiprows=4, delim_whitespace=True, names=['dt', 'Q_sim.m3'],
+    simQ = pd.read_table(path + "2/res_accuVol_m3.tss", skiprows=4, delim_whitespace=True, names=['dt', 'Q_sim.m3'],
                          header=None)
     # print(obs.dtypes)
-    # obs['Q_obs.m3'] = obs['VolTot.L'] * 1 / 10 ** 3
+    # obs['Q_obs.m3'] = obs['VolTot.L'] * 2 / 10 ** 3
     # mData = obs.merge(simQ, left_on='Jdays', right_on='dt', how='outer')
     # hydro_dt(mData, m3=True)
     start = 1
