@@ -28,12 +28,8 @@ else:
     runs = 3
 
 """
-model_v12 -> mVar_v1
-Testing Variable degradation constant
-
-Planned changes:
-- R2 is not sensitive for calibration (use a nash version)
-
+Bioavailable fraction on sorbed fraction
+Fixed - dt50
 """
 
 
@@ -288,6 +284,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.resM_accVOLAT_L_tss = TimeoutputTimeseries("resM_accVOLAT_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accRO_L_tss = TimeoutputTimeseries("resM_accRO_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDEG_L_tss = TimeoutputTimeseries("resM_accDEG_L", self, nominal("outlet_v3"), noHeader=False)
+        self.resM_accAGED_L_tss = TimeoutputTimeseries("resM_accAGED_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDEGz0_L_tss = TimeoutputTimeseries("resM_accDEGz0_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accLCHz0_L_tss = TimeoutputTimeseries("resM_accLCHz0_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDPz1_L_tss = TimeoutputTimeseries("resM_accDPz1_L", self, nominal("outlet_v3"), noHeader=False)
@@ -325,6 +322,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                       noHeader=False)  # Deg z0
         self.cum_deg_L_g_tss = TimeoutputTimeseries("resM_cumDEG_L", self, nominal("outlet_v3"),
                                                     noHeader=False)  # Deg z0
+        self.cum_aged_L_g_tss = TimeoutputTimeseries("resM_cumAGE_L", self, nominal("outlet_v3"),
+                                                     noHeader=False)  # Deg z0
         self.resM_cumLCHz0_L_g_tss = TimeoutputTimeseries("resM_cumLCHz0_L", self, nominal("outlet_v3"),
                                                           noHeader=False)  # Leaching z0
         self.cum_roZ0_L_g_tss = TimeoutputTimeseries("resM_cumROz0_L", self, nominal("outlet_v3"),
@@ -520,7 +519,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # DT50 (foliar) = 5
         # DT50 (water-sediment) = 365
         # DT50 (water phase only) = 88
-        self.dt_50_ref = scalar(self.ini_param.get("dt_50_ref"))  # S-met (days)
+
 
         self.temp_ref = scalar(self.ini_param.get("temp_ref"))  # Temp.  reference
 
@@ -537,18 +536,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
         """
         self.r_standard = scalar(self.ini_param.get("r_standard"))  # VPDB
         # Degradation Scenarios
+        epsilon_iso = scalar(self.ini_param.get("epsilon_iso_ref"))
+        self.alpha_iso = epsilon_iso / 1000 + 1
 
         """
         Scenarios
         """
         if m_state == 0:
-            epsilon_iso = scalar(self.ini_param.get("epsilon_iso_min"))  # 2 is no fractionation, -2.743 -> low deg
-            self.alpha_iso = epsilon_iso / 1000 + 1
-            # self.dt_50_ref = scalar(self.ini_param.get("dt_50_min"))
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_min"))
             # pass
         elif m_state == 1:
-            epsilon_iso = scalar(self.ini_param.get("epsilon_iso_ref"))
-            self.alpha_iso = epsilon_iso / 1000 + 1
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_ref"))  # S-met (days)
             # for layer in range(self.num_layers):
             #     self.c_lf[layer] = 0.50
             # z3_factor = scalar(0.7)
@@ -558,9 +556,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # self.bsmntIsPermeable = True
             # self.gamma[3] = 0.02
         elif m_state == 2:
-            epsilon_iso = scalar(self.ini_param.get("epsilon_iso_max"))
-            self.alpha_iso = epsilon_iso / 1000 + 1
-            # self.dt_50_ref = scalar(self.ini_param.get("dt_50_max"))
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_max"))
             # for layer in range(self.num_layers):
             #     self.c_lf[layer] = 2
             # z3_factor = scalar(0.4)
@@ -655,6 +651,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.delta_ini = []
         self.light_back = []
         self.heavy_back = []
+        self.light_aged = []
+        self.heavy_aged = []
 
         # Initial Isotope Signature
         for layer in range(self.num_layers):
@@ -670,6 +668,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.lightmass_ini.append(deepcopy(self.light_back[layer]))
             self.heavymass.append(deepcopy(self.heavy_back[layer]))
             self.heavymass_ini.append(deepcopy(self.heavy_back[layer]))
+
+            self.light_aged.append(deepcopy(self.zero_map))  # Aged in sorbed fraction
+            self.heavy_aged.append(deepcopy(self.zero_map))  # ... and non degradable
 
             if mapminimum(self.lightmass[layer]) < 0:
                 print("Err INI, light")
@@ -706,6 +707,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.cum_baseflx_ug_z3 = deepcopy(self.zero_map)
 
         self.cum_degZ0_L_g = deepcopy(self.zero_map)
+        self.cum_aged_L_g = deepcopy(self.zero_map)
         self.cum_deg_L_g = deepcopy(self.zero_map)  # Total cum deg
         self.cum_roZ0_L_g = deepcopy(self.zero_map)
         self.cum_volatZ0_L_g = deepcopy(self.zero_map)
@@ -1436,11 +1438,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                 debug=self.TEST_DEG, run=self.DEG)
 
             self.lightmass[layer] = deg_light_dict["mass_tot_new"]
-            self.light_back[layer] += deg_light_dict["aged_mass"]
+            self.light_aged[layer] = deg_light_dict["aged_mass"]
             light_deg.append(deg_light_dict.get("mass_deg_aq") +
                              deg_light_dict.get("mass_deg_ads"))
             self.heavymass[layer] = deg_heavy_dict["mass_tot_new"]
-            self.heavy_back[layer] += deg_heavy_dict["aged_mass"]
+            self.heavy_aged[layer] = deg_heavy_dict["aged_mass"]
 
             if mapminimum(self.lightmass[layer]) < 0:
                 print("Err DEG, light")
@@ -1451,15 +1453,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 print("Err DEG, heavy")
 
             # Change in pest mass storage after degradation
-            ch_storage_light.append((self.lightmass[layer] + self.light_back[layer]) -
+            ch_storage_light.append(self.lightmass[layer] -
                                     self.lightmass_ini[layer])
             self.lightmass_ini[layer] = deepcopy(self.lightmass[layer])
 
-            # TODO: now aged mass is added to delta (as non-bioavailable fraction
-            #   may still be extracted from sampled data)
-            self.delta[layer] = (((self.heavymass[layer] + self.heavy_back[layer]) /
-                                  (self.lightmass[layer] + self.light_back[
-                                      layer]) - self.r_standard) / self.r_standard) * 1000  # [permille]
+            # TODO: Check. Now aged mass is added to delta (as non-bioavailable fraction
+            #   may still be extracted from sampled data, and thus alter the isotope fraction)
+            self.delta[layer] = ((self.heavymass[layer] / self.lightmass[layer] - self.r_standard)
+                                 / self.r_standard) * 1000  # [permille]
 
         """ Layer analysis """
         for layer in range(self.num_layers):
@@ -1545,6 +1546,15 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.resM_accDEGz0_L_tss.sample(z0_light_deg_catch)
         self.cum_degZ0_L_g_tss.sample(self.cum_degZ0_L_g)
 
+        # Aged
+        light_aged_tot = deepcopy(self.zero_map)
+        for layer in range(self.num_layers):
+            light_aged_tot += self.light_aged[layer]
+        self.cum_aged_L_g += light_aged_tot
+        self.cum_aged_L_g_tss.sample(self.cum_aged_L_g)
+        catch_aged_light = areatotal(light_aged_tot, self.is_catchment)
+        self.resM_accAGED_L_tss.sample(catch_aged_light)
+
         # Volatilized
         catch_volat_light = areatotal(light_volat, self.is_catchment)
         self.resM_accVOLAT_L_tss.sample(catch_volat_light)
@@ -1611,6 +1621,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         reportGlobalPestBalance(self,
                                 catch_app_light,
                                 catch_deg_light,
+                                catch_aged_light,
                                 catch_volat_light,
                                 catch_runoff_light,
                                 catch_leach_light_Bsmt,

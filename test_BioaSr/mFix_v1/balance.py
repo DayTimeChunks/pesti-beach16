@@ -130,6 +130,7 @@ def reportGlobalWaterBalance(model, tot_rain_m3, out_runoff_m3, out_drain_m3,
 def reportGlobalPestBalance(model,
                             catch_app_light,
                             catch_deg_light,
+                            catch_aged_light,
                             catch_volat_light,
                             catch_runoff_light,
                             catch_leach_light_Bsmt,
@@ -139,6 +140,7 @@ def reportGlobalPestBalance(model,
 
     light_mb_pest = (catch_app_light -
                      catch_deg_light -
+                     catch_aged_light -
                      catch_volat_light -
                      catch_runoff_light -
                      catch_leach_light_Bsmt -

@@ -116,11 +116,11 @@ def get_layout(df, var, folders, title='Title', delta=False, x_jitter=0, y_jitte
     if delta:
         x = max(df['SIM']) + 0.7
         y = min(df[var]) - 0.7
-        y2 = y + 0.3
+        y2 = y + 0.7
     else:
-        x = max(df[var]) - (0.1 + y_jitter) * max(df[var])
-        y = min(df['SIM']) + (0.1 + x_jitter) * max(df['SIM'])
-        y2 = y + 1
+        x = max(df[var]) - 0.1 * max(df[var]) + x_jitter
+        y = min(df['SIM']) + 0.1 * max(df['SIM'])
+        y2 = y + 1 + y_jitter
 
     layout = go.Layout(
         title=title,
