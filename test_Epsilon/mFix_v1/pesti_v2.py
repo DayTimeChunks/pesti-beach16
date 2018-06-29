@@ -409,6 +409,7 @@ def getMassDegradation(model, layer, theta_wp, mass,
         # bioa_mass = mass * aged_frac
         if biomass:
             bioa_mass = mass * exp(-model.aged_days / model.dt_50_ref)
+            # bioa_mass = mass * exp(-ln(2)/50)
             aged_mass = mass - bioa_mass
         else:
             bioa_mass = deepcopy(mass)
@@ -450,12 +451,16 @@ def getMassDegradation(model, layer, theta_wp, mass,
         conc_aq = getConcAq(model, layer, bioa_mass,
                             sorption_model=sorption_model, gas=gas)  # mass/L
         conc_ads = getConcAds(model, layer, bioa_mass, gas=gas)  # mass/g soil
-        # conc_gas = conc_aq / model.k_h
+        conc_gas = conc_aq / model.k_h
 
         mass_aq = conc_aq * (theta_layer * depth * cellarea())
         mass_ads = conc_ads * (model.p_b * depth * cellarea())  # pb = g/cm3
         # Check gas
-        mass_gas = bioa_mass - mass_aq - mass_ads
+        # mass_gas1 = bioa_mass - mass_aq - mass_ads
+        mass_gas = conc_gas * (theta_gas * depth * cellarea())
+        # mass_gas = max(mass_gas1, scalar(0))
+        if mapminimum(mass_gas) < float(-1e-06):
+            print('mass_gas is negative: ' + str(float(mapminimum(mass_gas))))
 
         # Step 2 - Degrade phase fractions
         # First order degradation kinetics

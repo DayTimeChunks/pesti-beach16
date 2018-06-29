@@ -1,11 +1,7 @@
 This is BibTeX, Version 0.99dThe top-level auxiliary file: BEACH_Methodology.aux
 The style file: plainnat.bst
 Database file #1: library.bib
-Repeated entry---line 5644 of file library.bib
- : @article{Schroll2006
- :                     ,
-I'm skipping whatever remains of this entry
 Warning--there's a number but no volume in Allen1998
 Warning--empty institution in Leistra2001
 Warning--empty journal in Neitsch2009
-(There was 1 error message)
+(There were 3 warnings)

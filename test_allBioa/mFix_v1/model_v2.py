@@ -89,10 +89,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.PEST = True
         self.TRANSPORT = True
         # Run fate processes
-        self.ROM = True
-        self.LCH = True
-        self.ADRM = True
-        self.LFM = True
+        self.ROM = False
+        self.LCH = False
+        self.ADRM = False
+        self.LFM = False
         self.DEG = True
 
         self.TEST_LCH = False
@@ -1442,7 +1442,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                     self.lightmass_ini[layer])
             self.lightmass_ini[layer] = deepcopy(self.lightmass[layer])
 
-            self.delta[layer] = ((self.heavymass[layer] / self.lightmass[layer] - self.r_standard) /
+            self.delta[layer] = (((self.heavymass[layer] / self.lightmass[layer]) - self.r_standard) /
                                  self.r_standard) * 1000  # [permille]
 
         """ Layer analysis """
@@ -1697,7 +1697,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 300  # 360
+nTimeSteps = 200  # 360
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework

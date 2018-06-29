@@ -629,7 +629,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Application days
         self.app_days = [177, 196, 238]
         # self.app_days = [177, 180, 183] # test days
-        self.aged_days = ifthen(boolean(self.is_catchment), scalar(365))
+        self.aged_days = ifthen(boolean(self.is_catchment), scalar(300))
 
         # Mass
         # in ug = conc. (ug/g soil) * density (g/cm3) * (10^6 cm3/m3)*(2 m/10^3 mm)* depth_layer(mm) * cellarea(m2)
@@ -1724,7 +1724,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 300  # 360
+nTimeSteps = 200  # 360
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework

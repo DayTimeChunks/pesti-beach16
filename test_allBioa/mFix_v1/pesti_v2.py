@@ -408,6 +408,9 @@ def getMassDegradation(model, layer, theta_wp, mass,
                                                                 scalar(0)))))
         # bioa_mass = mass * aged_frac
         if biomass:
+            if model.currentTimeStep() == 1 or model.currentTimeStep() == 166:
+                if layer == 1:
+                    print('Ageing is considered!')
             bioa_mass = mass * exp(-model.aged_days / model.dt_50_ref)
             aged_mass = mass - bioa_mass
         else:
@@ -450,25 +453,26 @@ def getMassDegradation(model, layer, theta_wp, mass,
         conc_aq = getConcAq(model, layer, bioa_mass,
                             sorption_model=sorption_model, gas=gas)  # mass/L
         conc_ads = getConcAds(model, layer, bioa_mass, gas=gas)  # mass/g soil
-        # conc_gas = conc_aq / model.k_h
+        conc_gas = conc_aq / model.k_h
 
         mass_aq = conc_aq * (theta_layer * depth * cellarea())
         mass_ads = conc_ads * (model.p_b * depth * cellarea())  # pb = g/cm3
         # Check gas
-        mass_gas = bioa_mass - mass_aq - mass_ads
+        # mass_gas = bioa_mass - mass_aq - mass_ads
+        mass_gas = conc_gas * (theta_gas * depth * cellarea())
 
         # Step 2 - Degrade phase fractions
         # First order degradation kinetics
         if frac == "H":
             # conc_aq_new = conc_aq * exp(-2 * model.alpha_iso * k_b * scalar(model.jd_dt))
             # conc_ads_new = conc_ads * exp(-2 * model.alpha_iso * k_bs * scalar(model.jd_dt))
-            mass_aq_new = mass_aq * exp(-1 * model.alpha_iso * k_b * scalar(model.jd_dt))
-            mass_ads_new = mass_ads * exp(-1 * model.alpha_iso * k_bs * scalar(model.jd_dt))
+            mass_aq_new = mass_aq * exp(-model.alpha_iso * k_b * scalar(model.jd_dt))
+            mass_ads_new = mass_ads * exp(-model.alpha_iso * k_bs * scalar(model.jd_dt))
         else:  # Same for total conc as for "L", but without alpha
             # conc_aq_new = conc_aq * exp(-2 * k_b * scalar(model.jd_dt))
             # conc_ads_new = conc_ads * exp(-2 * k_bs * scalar(model.jd_dt))
-            mass_aq_new = mass_aq * exp(-1 * k_b * scalar(model.jd_dt))
-            mass_ads_new = mass_ads * exp(-1 * k_bs * scalar(model.jd_dt))
+            mass_aq_new = mass_aq * exp(-k_b * scalar(model.jd_dt))
+            mass_ads_new = mass_ads * exp(-k_bs * scalar(model.jd_dt))
 
         # Step 2 - Convert back to mass (i.e., after degradation in each phase)
         # mass_aq_new = conc_aq_new * (theta_layer * depth * cellarea())

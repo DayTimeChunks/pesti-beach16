@@ -5,9 +5,10 @@ output:
   pdf_document:
     citation_package: natbib
     keep_tex: yes
-  word_document: default
+  # word_document: default
 bibliography: library.bib
 ---
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -21,7 +22,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r include=FALSE}
 # automatically create a bib database for R packages
 # knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
-knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
+# knitr::write_bib(c(.packages(), 'knitr', 'rmarkdown'), 'packages.bib' )
 ```
 
 # Methodology

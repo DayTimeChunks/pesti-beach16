@@ -1,4 +1,4 @@
-\begin{thebibliography}{17}
+\begin{thebibliography}{18}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -27,6 +27,17 @@ J.W. Bakker, F.R. Boone, and P.~Boekel.
 C.O. Bennet and J.E. Myers.
 \newblock \emph{{Momentum, heat and mass transfer}}.
 \newblock McGraw-Hill, New York, 3rd ed. edition, 1982.
+
+\bibitem[Beven and Kirby(1979)]{Beven1979}
+K.~J. Beven and M.~J. Kirby.
+\newblock {A physically based, variable contributing area model of basin
+  hydrology}.
+\newblock \emph{Hydrological Sciences Bulletin}, 24\penalty0 (1):\penalty0
+  43--69, 1979.
+\newblock ISSN 0303-6936.
+\newblock \doi{10.1080/02626667909491834}.
+\newblock URL
+  \url{http://www.tandfonline.com/doi/abs/10.1080/02626667909491834}.
 
 \bibitem[Currie(1960)]{Currie1960}
 J.A. Currie.

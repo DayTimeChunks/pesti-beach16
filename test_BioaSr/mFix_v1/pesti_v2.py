@@ -447,7 +447,7 @@ def getMassDegradation(model, layer, theta_wp, mass,
             mass_gas = ifthenelse(mass_gas < 0, scalar(0), mass_gas)
 
         if biomass:
-            bioa_mass = mass_ads * exp(-model.aged_days * ln(2)*model.f_oc)
+            bioa_mass = mass_ads * exp(-ln(2)/50)
             aged_mass = mass_ads - bioa_mass
         else:
             aged_mass = deepcopy(model.zero_map)
@@ -468,7 +468,7 @@ def getMassDegradation(model, layer, theta_wp, mass,
         # mass_aq_new = conc_aq_new * (theta_layer * depth * cellarea())
         # mass_ads_new = conc_ads_new * (model.p_b * depth * cellarea())  # pb = g/cm3
         # mass_gas = conc_gas * (theta_gas * depth * cellarea())
-        mass_tot_new = mass_aq_new + mass_ads_new + mass_gas
+        mass_tot_new = mass_aq_new + mass_ads_new + mass_gas + aged_mass
         mass_deg_aq = mass_aq - mass_aq_new
         mass_deg_ads = mass_ads - mass_ads_new
         # if frac == "L" and layer == 0:
