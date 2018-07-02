@@ -15,53 +15,59 @@ def getConcAq(model, layer, mass, sorption_model="linear", gas=True):
     theta_layer = model.theta[layer]
     depth = model.layer_depth[layer]
 
-    if mapminimum(model.theta[layer]) < scalar(1e-06):
-        conc_aq = scalar(0)
+    if mapminimum(model.theta[layer]) < scalar(1e-04):
+        print("Moisture is < 1e-04 on layer: " + str(layer))
+        # model.theta[layer] = max(model.theta[layer], scalar(1e-03))
+        # theta_layer = model.theta[layer]
+        # conc_aq = scalar(0)
+
+    if sorption_model == "linear":
+        # Retardation factor (dimensionless)
+        retard_layer = 1 + (model.p_b * model.k_d) / max(theta_layer, scalar(1e-03))
     else:
-        if sorption_model == "linear":
-            # Retardation factor (dimensionless)
-            retard_layer = 1 + (model.p_b * model.k_d) / theta_layer
-        else:
-            print("No sorption assumed, Ret. factor = 2")
-            retard_layer = 1  # No retardation.
+        print("No sorption assumed, Ret. factor = 1")
+        retard_layer = 1  # No retardation.
 
-        if gas:  # Leistra et al., 2001
-            theta_gas = max(model.theta_sat[layer] - theta_layer, scalar(0))
+    if gas:  # Leistra et al., 2001
+        theta_gas = max(model.theta_sat[layer] - theta_layer, scalar(0))
 
-            conc_aq = max(scalar(0), mass / ((cellarea() * depth) *  # m2 * mm = L
-                              (theta_gas / model.k_h +
-                               theta_layer * retard_layer)))  # mass/L cell volume
+        conc_aq = max(scalar(0), (mass / (cellarea() * depth)) /  # m2 * mm = L
+                      (theta_gas / model.k_h + max(theta_layer, scalar(1e-03)) * retard_layer))  # mass/L cell volume
+        # conc_aq = max(scalar(0), (mass / (cellarea() * depth)) /  # m2 * mm = L
+        #               (max(theta_layer, scalar(1e-03)) * retard_layer))  # mass/L cell volume
 
-            mass_aq = conc_aq * (theta_layer * depth * cellarea())
-            # if layer == 2:
-            #     model.report(conc_aq, "Caq2")
-            #     model.report(mass_aq, "Maq2")
-            #     model.report(mass, "Mtot2")
-            #     model.report(cellarea(), "cAr2")
-            #     model.report(depth, "depth2")
+        # conc_ads = model.k_d * conc_aq
+        # mass_aq = conc_aq * (theta_layer * depth * cellarea())
+        # if layer == 2:
+        #     model.report(conc_aq, "Caq2")
+        #     model.report(mass_aq, "Maq2")
+        #     model.report(mass, "Mtot2")
+        #     model.report(cellarea(), "cAr2")
+        #     model.report(depth, "depth2")
 
-        else:  # No gas phase
-            # Whelan, 1987
-            conc_aq = max(scalar(0), mass / (cellarea() * depth * theta_layer * retard_layer))
+    else:  # No gas phase
+        # Whelan, 1987
+        conc_aq = max(scalar(0), (mass/(cellarea() * depth)) / (max(theta_layer, scalar(1e-03)) * retard_layer))
+        # conc_ads = model.k_d * conc_aq
 
     return conc_aq
 
 
-def getConcAds(model, layer, mass, gas=True):
-    # mass / Kg soil
-    depth = model.layer_depth[layer]
-    if gas:
-        theta_gas = max(model.theta_sat[layer] - model.theta[layer], scalar(0))
-        # [mass pest/Kg soil]
-        conc_ads = max(scalar(0), mass / ((cellarea() * depth) *
-                           (theta_gas / (model.k_h * model.k_d) +
-                            model.theta[layer] / model.k_d +
-                            model.p_b)))
-    else:
-        print("No implementation without gas available")
-        raise NotImplementedError
-
-    return conc_ads
+# def getConcAds(model, layer, mass, gas=True):
+#     # mass / Kg soil
+#     depth = model.layer_depth[layer]
+#     if gas:
+#         theta_gas = max(model.theta_sat[layer] - model.theta[layer], scalar(0))
+#         # [mass pest/Kg soil]
+#         conc_ads = max(scalar(0), mass / ((cellarea() * depth) *
+#                                           (theta_gas / (model.k_h * model.k_d) +
+#                                            model.theta[layer] / model.k_d +
+#                                            model.p_b)))
+#     else:
+#         print("No implementation without gas available")
+#         raise NotImplementedError
+#
+#     return conc_ads
 
 
 def getVolatileMass(model, temp_air, mass,  # frac,
@@ -76,7 +82,7 @@ def getVolatileMass(model, temp_air, mass,  # frac,
         depth_m = model.layer_depth[0] * 1 / 10 ** 3
         # Air boundary layer, assumed as 2m high
         thickness_a = scalar(1.0)  # m
-        # Diffusion coefficient in air (cm^2/s); https://www.gsi-net.com
+        # Diffusion coefficient in air (cm^1/s); https://www.gsi-net.com
         #  D_ar (metolachlor) = 0.03609052694,  at reference Temp., in Kelvin, D_a,r)
         diff_ar = 0.03609052694 * 86400.0 * 1.0 / 10 ** 4  # m2/d
         # Diffusion coefficient adjusted to air Temp. in Kelvin, D_a
@@ -86,11 +92,11 @@ def getVolatileMass(model, temp_air, mass,  # frac,
             # Millington and Quirk, 1960 (in Leistra, 2001, p.48)
             # a,b parameters: Jin and Jury, 1996 (in Leistra, 2001)
             diff_relative_gas = max((diff_a * theta_gas ** 2 /
-                                 model.theta_sat[layer] ** (2 / 3)), scalar(1e10-6))  # m2/d
+                                     model.theta_sat[layer] ** (2 / 3)), scalar(1e10 - 6))  # m2/d
         elif rel_diff_model == "option-1":
             # Currie 1960 (in Leistra, 2001)
             # a,b parameters: Baker, 1987 (in Leistra, 2001)
-            diff_relative_gas = max((diff_a * 2.5 * theta_gas ** 3), scalar(1e10-6))  # m2/d
+            diff_relative_gas = max((diff_a * 2.5 * theta_gas ** 3), scalar(1e10 - 6))  # m2/d
         else:
             print("No appropriate relative diffusion parameter chosen")
             diff_relative_gas = diff_a  # m2/d
@@ -307,8 +313,8 @@ def getLatMassFlux(model, layer, mass, flux_map_mm,
 
 
 def getLatMassFluxManfreda(model, layer, mass, cell_moisture_outflow, upstream_cell_inflow,
-                   sorption_model='linear', gas=True,
-                   debug=False, run=True):
+                           sorption_model='linear', gas=True,
+                           debug=False, run=True):
     """
     :param model:
     :param layer:
@@ -359,7 +365,6 @@ def getLatMassFluxManfreda(model, layer, mass, cell_moisture_outflow, upstream_c
                 model.report(mass_gain, 'aMgain' + str(layer))
                 # aguila --scenarios='{2}' --timesteps=[2,300,2] aMi0 aMloss0 aMgain0
 
-
             latflux_dict = {
                 'mass_loss': mass_loss,
                 'mass_gain': mass_gain,
@@ -387,7 +392,7 @@ def getDrainMassFlux(model, layer, mass,
 def getMassDegradation(model, layer, theta_wp, mass,
                        frac="L",
                        sor_deg_factor=1,
-                       sorption_model="linear", fixed_dt50=True,
+                       sorption_model="linear", fixed_dt50=True, bioavail=True,
                        gas=True, debug=False, run=True):
     if not run:
         return {"mass_tot_new": deepcopy(mass),
@@ -398,19 +403,28 @@ def getMassDegradation(model, layer, theta_wp, mass,
         theta_gas = max(model.theta_sat[layer] - theta_layer, scalar(0))
         depth = model.layer_depth[layer]
 
-        # Mass compartment (bio-available fraction)
-        # Was considering a step function, however,
-        # a continuous one is implemented below instead
-        aged_frac = ifthenelse(model.aged_days > 100, scalar(1),
-                               ifthenelse(model.aged_days > 75, scalar(0.75),
-                                          ifthenelse(model.aged_days > 50, scalar(0.50),
-                                                     ifthenelse(model.aged_days > 25, scalar(0.25),
-                                                                scalar(0)))))
-        # bioa_mass = mass * aged_frac
-        bioa_mass = mass * exp(-model.aged_days / model.dt_50_ref)
-        aged_mass = mass - bioa_mass
-        # bioa_mass = deepcopy(mass)
-        # aged_mass = deepcopy(model.zero_map)
+        if bioavail:
+            # Mass compartment (bio-available fraction)
+            bioa_mass = mass * exp(-0.005 * scalar(model.jd_dt))
+            aged_mass = mass - bioa_mass
+        else:
+            bioa_mass = deepcopy(mass)
+            aged_mass = deepcopy(model.zero_map)
+
+        # Step 0 - Obtain species concentration (all phases)
+        conc_aq = getConcAq(model, layer, bioa_mass,
+                            sorption_model=sorption_model, gas=gas)  # mass/L
+        conc_ads = model.k_d * conc_aq
+        # conc_ads = getConcAds(model, layer, bioa_mass, gas=gas)  # mass/g soil
+
+        mass_aq = conc_aq * (theta_layer * depth * cellarea())
+        mass_ads = conc_ads * (model.p_b * depth * cellarea())  # pb = g/cm3
+        # Check gas
+        mass_gas = bioa_mass - mass_aq - mass_ads
+
+        # tot_ba_mass = mass_aq + mass_ads + mass_gas
+        # error = tot_ba_mass - mass
+        # model.report(error, frac + 'errZ' + str(layer))
 
         if not fixed_dt50:
             # F_Theta_1
@@ -428,7 +442,8 @@ def getMassDegradation(model, layer, theta_wp, mass,
             #                                         exp(model.alpha_temperature * (5 - model.temp_ref))
             #                                         )
             #                              ), scalar(0))
-            temp_factor = exp((model.act_e / model.r_gas) * (1 / (model.temp_ref + 273.15) - 1 / (model.temp_air + 273.15)))
+            temp_factor = exp(
+                (model.act_e / model.r_gas) * (1 / (model.temp_ref + 273.15) - 1 / (model.temp_air + 273.15)))
 
             # Half-life as a function of temperature and moisture
             dt_50 = max(model.dt_50_ref * theta_factor * temp_factor, scalar(0))
@@ -443,35 +458,20 @@ def getMassDegradation(model, layer, theta_wp, mass,
         # Deg in sorbed phase (now assumed equal)
         k_bs = k_b * sor_deg_factor
 
-        # Step 0 - Obtain species concentration (all phases)
-        conc_aq = getConcAq(model, layer, bioa_mass,
-                            sorption_model=sorption_model, gas=gas)  # mass/L
-        conc_ads = getConcAds(model, layer, bioa_mass, gas=gas)  # mass/g soil
-        # conc_gas = conc_aq / model.k_h
-
-        mass_aq = conc_aq * (theta_layer * depth * cellarea())
-        mass_ads = conc_ads * (model.p_b * depth * cellarea())  # pb = g/cm3
-        # Check gas
-        mass_gas = bioa_mass - mass_aq - mass_ads
-
         # Step 2 - Degrade phase fractions
         # First order degradation kinetics
         if frac == "H":
-            # conc_aq_new = conc_aq * exp(-2 * model.alpha_iso * k_b * scalar(model.jd_dt))
-            # conc_ads_new = conc_ads * exp(-2 * model.alpha_iso * k_bs * scalar(model.jd_dt))
             mass_aq_new = mass_aq * exp(-1 * model.alpha_iso * k_b * scalar(model.jd_dt))
             mass_ads_new = mass_ads * exp(-1 * model.alpha_iso * k_bs * scalar(model.jd_dt))
         else:  # Same for total conc as for "L", but without alpha
-            # conc_aq_new = conc_aq * exp(-2 * k_b * scalar(model.jd_dt))
-            # conc_ads_new = conc_ads * exp(-2 * k_bs * scalar(model.jd_dt))
             mass_aq_new = mass_aq * exp(-1 * k_b * scalar(model.jd_dt))
             mass_ads_new = mass_ads * exp(-1 * k_bs * scalar(model.jd_dt))
 
-        # Step 2 - Convert back to mass (i.e., after degradation in each phase)
+        # Step 1 - Convert back to mass (i.e., after degradation in each phase)
         # mass_aq_new = conc_aq_new * (theta_layer * depth * cellarea())
         # mass_ads_new = conc_ads_new * (model.p_b * depth * cellarea())  # pb = g/cm3
         # mass_gas = conc_gas * (theta_gas * depth * cellarea())
-        mass_tot_new = mass_aq_new + mass_ads_new + mass_gas + aged_mass
+        mass_tot_new = mass_aq_new + mass_ads_new + mass_gas  # + aged_mass
         mass_deg_aq = mass_aq - mass_aq_new
         mass_deg_ads = mass_ads - mass_ads_new
         # if frac == "L" and layer == 0:
@@ -484,8 +484,14 @@ def getMassDegradation(model, layer, theta_wp, mass,
             model.report(temp_factor, 'aTz' + str(layer))
             model.report(dt_50, 'aDT50z' + str(layer))
             model.report(k_b, 'akbz' + str(layer))
-        # aguila --scenarios='{2}' --timesteps=[2,300,2] aFz aTz aDT50z akbz
+            # aguila --scenarios='{2}' --timesteps=[2,300,2] aFz aTz aDT50z akbz
+
+    # if frac == "H":
+    #     model.report(mass_tot_new, 'HinZ' + str(layer))
+    # else:
+    #     model.report(mass_tot_new, 'LinZ' + str(layer))
 
     return {"mass_tot_new": mass_tot_new,
             "mass_deg_aq": mass_deg_aq,
-            "mass_deg_ads": mass_deg_ads}
+            "mass_deg_ads": mass_deg_ads,
+            "aged_mass": aged_mass}

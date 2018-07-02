@@ -392,7 +392,7 @@ def getDrainMassFlux(model, layer, mass,
 def getMassDegradation(model, layer, theta_wp, mass,
                        frac="L",
                        sor_deg_factor=1,
-                       sorption_model="linear", fixed_dt50=True,
+                       sorption_model="linear", fixed_dt50=True, bioavail=True,
                        gas=True, debug=False, run=True):
     if not run:
         return {"mass_tot_new": deepcopy(mass),
@@ -403,17 +403,16 @@ def getMassDegradation(model, layer, theta_wp, mass,
         theta_gas = max(model.theta_sat[layer] - theta_layer, scalar(0))
         depth = model.layer_depth[layer]
 
-        # Mass compartment (bio-available fraction)
-        # Was considering a step function, however,
-        # a continuous one is implemented below instead
-        aged_frac = ifthenelse(model.aged_days > 100, scalar(1),
-                               ifthenelse(model.aged_days > 75, scalar(0.75),
-                                          ifthenelse(model.aged_days > 50, scalar(0.50),
-                                                     ifthenelse(model.aged_days > 25, scalar(0.25),
-                                                                scalar(0)))))
+        if bioavail:
+            # Mass compartment (bio-available fraction)
+            bioa_mass = mass * exp(-0.005 * scalar(model.jd_dt))
+            aged_mass = mass - bioa_mass
+        else:
+            bioa_mass = deepcopy(mass)
+            aged_mass = deepcopy(model.zero_map)
 
         # Step 0 - Obtain species concentration (all phases)
-        conc_aq = getConcAq(model, layer, mass,
+        conc_aq = getConcAq(model, layer, bioa_mass,
                             sorption_model=sorption_model, gas=gas)  # mass/L
         conc_ads = model.k_d * conc_aq
         # conc_ads = getConcAds(model, layer, bioa_mass, gas=gas)  # mass/g soil
@@ -421,17 +420,11 @@ def getMassDegradation(model, layer, theta_wp, mass,
         mass_aq = conc_aq * (theta_layer * depth * cellarea())
         mass_ads = conc_ads * (model.p_b * depth * cellarea())  # pb = g/cm3
         # Check gas
-        mass_gas = mass - mass_aq - mass_ads
+        mass_gas = bioa_mass - mass_aq - mass_ads
 
         # tot_ba_mass = mass_aq + mass_ads + mass_gas
         # error = tot_ba_mass - mass
         # model.report(error, frac + 'errZ' + str(layer))
-
-        # bioa_mass = mass * aged_frac
-        # bioa_mass = mass * exp(-model.aged_days / model.dt_50_ref)
-        # aged_mass = mass - bioa_mass
-        bioa_mass = deepcopy(mass)
-        aged_mass = deepcopy(model.zero_map)
 
         if not fixed_dt50:
             # F_Theta_1
@@ -478,7 +471,7 @@ def getMassDegradation(model, layer, theta_wp, mass,
         # mass_aq_new = conc_aq_new * (theta_layer * depth * cellarea())
         # mass_ads_new = conc_ads_new * (model.p_b * depth * cellarea())  # pb = g/cm3
         # mass_gas = conc_gas * (theta_gas * depth * cellarea())
-        mass_tot_new = mass_aq_new + mass_ads_new + mass_gas + aged_mass
+        mass_tot_new = mass_aq_new + mass_ads_new + mass_gas  # + aged_mass
         mass_deg_aq = mass_aq - mass_aq_new
         mass_deg_ads = mass_ads - mass_ads_new
         # if frac == "L" and layer == 0:
@@ -500,4 +493,5 @@ def getMassDegradation(model, layer, theta_wp, mass,
 
     return {"mass_tot_new": mass_tot_new,
             "mass_deg_aq": mass_deg_aq,
-            "mass_deg_ads": mass_deg_ads}
+            "mass_deg_ads": mass_deg_ads,
+            "aged_mass": aged_mass}

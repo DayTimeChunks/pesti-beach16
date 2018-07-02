@@ -28,12 +28,13 @@ else:
     runs = 3
 
 """
-model_v12 -> mVar_v1
-Testing Variable degradation constant
+Fixed Mass balance
 
-Planned changes:
-- R2 is not sensitive for calibration (use a nash version)
+Now testing the removal of non-bioavailable mass
+before ddegradation (AND before aquous calculation)
 
+The aged mass is not tracked so the error in mass balance should
+be equivalent to this fraction
 """
 
 
@@ -93,10 +94,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.PEST = True
         self.TRANSPORT = True
         # Run fate processes
-        self.ROM = True
-        self.LCH = True
-        self.ADRM = True
-        self.LFM = True
+        self.ROM = False
+        self.LCH = False
+        self.ADRM = False
+        self.LFM = False
         self.DEG = True
 
         self.TEST_LCH = False
@@ -152,28 +153,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.outlet_multi = self.readmap("out_multi_nom_v3")  # Multi-outlet with 0 or 2
         self.is_outlet = boolean(self.outlet_multi == 1)
         self.report(self.is_outlet, 'OUT')
-        self.north_wk = nominal(self.readmap("north_nom"))
-        self.valley_wk = nominal(self.readmap("valley_nom"))
-        self.south_wk = nominal(self.readmap("south_nom"))
 
-        self.n1_plot = nominal(self.readmap("n1_nom"))
-        self.n2_plot = nominal(self.readmap("n2_nom"))
-        self.n3_plot = nominal(self.readmap("n3_nom"))
-        self.n4_plot = nominal(self.readmap("n4_nom"))
-        self.n5_plot = nominal(self.readmap("n5_nom"))
-        self.n7_plot = nominal(self.readmap("n7_nom"))
-        self.n8_plot = nominal(self.readmap("n8_nom"))
-
-        self.t4_plot = nominal(self.readmap("t4_nom"))
-        self.t5_plot = nominal(self.readmap("t5_nom"))
-        self.t7_plot = nominal(self.readmap("t7_nom"))
-        self.t8_plot = nominal(self.readmap("t8_nom"))
-        self.t9_plot = nominal(self.readmap("t9_nom"))
-        self.t10_plot = nominal(self.readmap("t10_nom"))
-
-        self.s11_plot = nominal(self.readmap("s11_nom"))
-        self.s12_plot = nominal(self.readmap("s12_nom"))
-        self.s13_plot = nominal(self.readmap("s13_nom"))
+        importPlotMaps(self)
 
         self.landuse = self.readmap("landuse2016")
 
@@ -288,6 +269,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.resM_accVOLAT_L_tss = TimeoutputTimeseries("resM_accVOLAT_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accRO_L_tss = TimeoutputTimeseries("resM_accRO_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDEG_L_tss = TimeoutputTimeseries("resM_accDEG_L", self, nominal("outlet_v3"), noHeader=False)
+        self.resM_accAGED_L_tss = TimeoutputTimeseries("resM_accAGED_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDEGz0_L_tss = TimeoutputTimeseries("resM_accDEGz0_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accLCHz0_L_tss = TimeoutputTimeseries("resM_accLCHz0_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDPz1_L_tss = TimeoutputTimeseries("resM_accDPz1_L", self, nominal("outlet_v3"), noHeader=False)
@@ -325,6 +307,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                       noHeader=False)  # Deg z0
         self.cum_deg_L_g_tss = TimeoutputTimeseries("resM_cumDEG_L", self, nominal("outlet_v3"),
                                                     noHeader=False)  # Deg z0
+        self.cum_aged_L_g_tss = TimeoutputTimeseries("resM_cumAGE_L", self, nominal("outlet_v3"),
+                                                     noHeader=False)
         self.resM_cumLCHz0_L_g_tss = TimeoutputTimeseries("resM_cumLCHz0_L", self, nominal("outlet_v3"),
                                                           noHeader=False)  # Leaching z0
         self.cum_roZ0_L_g_tss = TimeoutputTimeseries("resM_cumROz0_L", self, nominal("outlet_v3"),
@@ -360,53 +344,55 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                         noHeader=False)
 
         # Transects
-        self.north_conc_tss = TimeoutputTimeseries("resM_norCONC", self, ordinal("north_ave"), noHeader=False)
-        self.valley_conc_tss = TimeoutputTimeseries("resM_valCONC", self, ordinal("valley_ave"), noHeader=False)
-        self.south_conc_tss = TimeoutputTimeseries("resM_souCONC", self, ordinal("south_ave"), noHeader=False)
-
-        self.north_d13C_tss = TimeoutputTimeseries("resM_nord13C", self, ordinal("north_ave"), noHeader=False)
-        self.valley_dC13_tss = TimeoutputTimeseries("resM_vald13C", self, ordinal("valley_ave"), noHeader=False)
-        self.south_d13C_tss = TimeoutputTimeseries("resM_soud13C", self, ordinal("south_ave"), noHeader=False)
+        # self.north_conc_tss = TimeoutputTimeseries("resM_norCONC", self, ordinal("north_ave"), noHeader=False)
+        # self.north_conc_real_tss = TimeoutputTimeseries("resM_norCONC_real", self, ordinal("north_ave"), noHeader=False)
+        # self.valley_conc_tss = TimeoutputTimeseries("resM_valCONC", self, ordinal("valley_ave"), noHeader=False)
+        # self.south_conc_tss = TimeoutputTimeseries("resM_souCONC", self, ordinal("south_ave"), noHeader=False)
+        #
+        # self.north_d13C_tss = TimeoutputTimeseries("resM_nord13C", self, ordinal("north_ave"), noHeader=False)
+        # self.valley_dC13_tss = TimeoutputTimeseries("resM_vald13C", self, ordinal("valley_ave"), noHeader=False)
+        # self.south_d13C_tss = TimeoutputTimeseries("resM_soud13C", self, ordinal("south_ave"), noHeader=False)
 
         # Detailed
-        self.n1_d13C_tss = TimeoutputTimeseries("resM_n1d13C", self, ordinal("n1_out"), noHeader=False)
-        self.n1_conc_tss = TimeoutputTimeseries("resM_n1CONC", self, ordinal("n1_out"), noHeader=False)
-        self.n2_d13C_tss = TimeoutputTimeseries("resM_n2d13C", self, ordinal("n2_out"), noHeader=False)
-        self.n2_conc_tss = TimeoutputTimeseries("resM_n2CONC", self, ordinal("n2_out"), noHeader=False)
-        self.n3_d13C_tss = TimeoutputTimeseries("resM_n3d13C", self, ordinal("n3_out"), noHeader=False)
-        self.n3_conc_tss = TimeoutputTimeseries("resM_n3CONC", self, ordinal("n3_out"), noHeader=False)
-        self.n4_d13C_tss = TimeoutputTimeseries("resM_n4d13C", self, ordinal("n4_out"), noHeader=False)
-        self.n4_conc_tss = TimeoutputTimeseries("resM_n4CONC", self, ordinal("n4_out"), noHeader=False)
-        self.n5_d13C_tss = TimeoutputTimeseries("resM_n5d13C", self, ordinal("n5_out"), noHeader=False)
-        self.n5_conc_tss = TimeoutputTimeseries("resM_n5CONC", self, ordinal("n5_out"), noHeader=False)
-        self.n7_d13C_tss = TimeoutputTimeseries("resM_n7d13C", self, ordinal("n7_out"), noHeader=False)
-        self.n7_conc_tss = TimeoutputTimeseries("resM_n7CONC", self, ordinal("n7_out"), noHeader=False)
-        self.n8_d13C_tss = TimeoutputTimeseries("resM_n8d13C", self, ordinal("n8_out"), noHeader=False)
-        self.n8_conc_tss = TimeoutputTimeseries("resM_n8CONC", self, ordinal("n8_out"), noHeader=False)
+        defineSoilTSS(self)
+        # self.n1_d13C_tss = TimeoutputTimeseries("resM_n1d13C", self, ordinal("n1_out"), noHeader=False)
+        # self.n1_conc_tss = TimeoutputTimeseries("resM_n1CONC", self, ordinal("n1_out"), noHeader=False)
+        # self.n2_d13C_tss = TimeoutputTimeseries("resM_n2d13C", self, ordinal("n2_out"), noHeader=False)
+        # self.n2_conc_tss = TimeoutputTimeseries("resM_n2CONC", self, ordinal("n2_out"), noHeader=False)
+        # self.n3_d13C_tss = TimeoutputTimeseries("resM_n3d13C", self, ordinal("n3_out"), noHeader=False)
+        # self.n3_conc_tss = TimeoutputTimeseries("resM_n3CONC", self, ordinal("n3_out"), noHeader=False)
+        # self.n4_d13C_tss = TimeoutputTimeseries("resM_n4d13C", self, ordinal("n4_out"), noHeader=False)
+        # self.n4_conc_tss = TimeoutputTimeseries("resM_n4CONC", self, ordinal("n4_out"), noHeader=False)
+        # self.n5_d13C_tss = TimeoutputTimeseries("resM_n5d13C", self, ordinal("n5_out"), noHeader=False)
+        # self.n5_conc_tss = TimeoutputTimeseries("resM_n5CONC", self, ordinal("n5_out"), noHeader=False)
+        # self.n7_d13C_tss = TimeoutputTimeseries("resM_n7d13C", self, ordinal("n7_out"), noHeader=False)
+        # self.n7_conc_tss = TimeoutputTimeseries("resM_n7CONC", self, ordinal("n7_out"), noHeader=False)
+        # self.n8_d13C_tss = TimeoutputTimeseries("resM_n8d13C", self, ordinal("n8_out"), noHeader=False)
+        # self.n8_conc_tss = TimeoutputTimeseries("resM_n8CONC", self, ordinal("n8_out"), noHeader=False)
 
-        self.t4_d13C_tss = TimeoutputTimeseries("resM_v4d13C", self, ordinal("t4_out"), noHeader=False)
-        self.t4_conc_tss = TimeoutputTimeseries("resM_v4CONC", self, ordinal("t4_out"), noHeader=False)
-        self.t5_d13C_tss = TimeoutputTimeseries("resM_v5d13C", self, ordinal("t5_out"), noHeader=False)
-        self.t5_conc_tss = TimeoutputTimeseries("resM_v5CONC", self, ordinal("t5_out"), noHeader=False)
-        self.t7_d13C_tss = TimeoutputTimeseries("resM_v7d13C", self, ordinal("t7_out"), noHeader=False)
-        self.t7_conc_tss = TimeoutputTimeseries("resM_v7CONC", self, ordinal("t7_out"), noHeader=False)
-        self.t8_d13C_tss = TimeoutputTimeseries("resM_v8d13C", self, ordinal("t8_out"), noHeader=False)
-        self.t8_conc_tss = TimeoutputTimeseries("resM_v8CONC", self, ordinal("t8_out"), noHeader=False)
-        self.t9_d13C_tss = TimeoutputTimeseries("resM_v9d13C", self, ordinal("t9_out"), noHeader=False)
-        self.t9_conc_tss = TimeoutputTimeseries("resM_v9CONC", self, ordinal("t9_out"), noHeader=False)
-        self.t10_d13C_tss = TimeoutputTimeseries("resM_v10d13C", self, ordinal("t10_out"), noHeader=False)
-        self.t10_conc_tss = TimeoutputTimeseries("resM_v10CONC", self, ordinal("t10_out"), noHeader=False)
+        # self.t4_d13C_tss = TimeoutputTimeseries("resM_v4d13C", self, ordinal("t4_out"), noHeader=False)
+        # self.t4_conc_tss = TimeoutputTimeseries("resM_v4CONC", self, ordinal("t4_out"), noHeader=False)
+        # self.t5_d13C_tss = TimeoutputTimeseries("resM_v5d13C", self, ordinal("t5_out"), noHeader=False)
+        # self.t5_conc_tss = TimeoutputTimeseries("resM_v5CONC", self, ordinal("t5_out"), noHeader=False)
+        # self.t7_d13C_tss = TimeoutputTimeseries("resM_v7d13C", self, ordinal("t7_out"), noHeader=False)
+        # self.t7_conc_tss = TimeoutputTimeseries("resM_v7CONC", self, ordinal("t7_out"), noHeader=False)
+        # self.t8_d13C_tss = TimeoutputTimeseries("resM_v8d13C", self, ordinal("t8_out"), noHeader=False)
+        # self.t8_conc_tss = TimeoutputTimeseries("resM_v8CONC", self, ordinal("t8_out"), noHeader=False)
+        # self.t9_d13C_tss = TimeoutputTimeseries("resM_v9d13C", self, ordinal("t9_out"), noHeader=False)
+        # self.t9_conc_tss = TimeoutputTimeseries("resM_v9CONC", self, ordinal("t9_out"), noHeader=False)
+        # self.t10_d13C_tss = TimeoutputTimeseries("resM_v10d13C", self, ordinal("t10_out"), noHeader=False)
+        # self.t10_conc_tss = TimeoutputTimeseries("resM_v10CONC", self, ordinal("t10_out"), noHeader=False)
+        #
+        # self.s11_d13C_tss = TimeoutputTimeseries("resM_s11d13C", self, ordinal("s11_out"), noHeader=False)
+        # self.s11_conc_tss = TimeoutputTimeseries("resM_s11CONC", self, ordinal("s11_out"), noHeader=False)
+        # self.s12_d13C_tss = TimeoutputTimeseries("resM_s12d13C", self, ordinal("s12_out"), noHeader=False)
+        # self.s12_conc_tss = TimeoutputTimeseries("resM_s12CONC", self, ordinal("s12_out"), noHeader=False)
+        # self.s13_d13C_tss = TimeoutputTimeseries("resM_s13d13C", self, ordinal("s13_out"), noHeader=False)
+        # self.s13_conc_tss = TimeoutputTimeseries("resM_s13CONC", self, ordinal("s13_out"), noHeader=False)
 
-        self.s11_d13C_tss = TimeoutputTimeseries("resM_s11d13C", self, ordinal("s11_out"), noHeader=False)
-        self.s11_conc_tss = TimeoutputTimeseries("resM_s11CONC", self, ordinal("s11_out"), noHeader=False)
-        self.s12_d13C_tss = TimeoutputTimeseries("resM_s12d13C", self, ordinal("s12_out"), noHeader=False)
-        self.s12_conc_tss = TimeoutputTimeseries("resM_s12CONC", self, ordinal("s12_out"), noHeader=False)
-        self.s13_d13C_tss = TimeoutputTimeseries("resM_s13d13C", self, ordinal("s13_out"), noHeader=False)
-        self.s13_conc_tss = TimeoutputTimeseries("resM_s13CONC", self, ordinal("s13_out"), noHeader=False)
-
-        # Test s11 sample variation
-        self.s11_sconc_tss = TimeoutputTimeseries("resM_s11_sconc", self, ordinal("s11_ord"), noHeader=False)
-        self.s11_smass_tss = TimeoutputTimeseries("resM_s11_smass", self, ordinal("s11_ord"), noHeader=False)
+        # # Test s11 sample variation
+        # self.s11_sconc_tss = TimeoutputTimeseries("resM_s11_sconc", self, ordinal("s11_ord"), noHeader=False)
+        # self.s11_smass_tss = TimeoutputTimeseries("resM_s11_smass", self, ordinal("s11_ord"), noHeader=False)
 
         # Analysis
         # This is 'q' as time series.
@@ -460,6 +446,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.bsmntIsPermeable = False  # basement percolation (DP)
         self.ADLF = True
         self.fixed_dt50 = False
+        self.bioavail = True
 
         # Morris tests
         m_state = get_state(state)  # First run will return state = 0
@@ -537,6 +524,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Degradation Scenarios
         epsilon_iso = scalar(self.ini_param.get("epsilon_iso"))  # 2 is no fractionation, -2.743 -> low deg
         self.alpha_iso = epsilon_iso / 1000 + 1
+        # self.alpha_iso = 1
 
         """
         Scenarios
@@ -643,28 +631,56 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Fraction masses and Delta (Background)
         self.lightmass = []
         self.lightmass_ini = []
+        self.lightaged_ini = []
         self.heavymass = []
         self.heavymass_ini = []
+        self.heavyaged_ini = []
 
         self.delta = []
         self.delta_ini = []
+        self.delta_real = []
+        self.delta_aged = []
         self.light_back = []
         self.heavy_back = []
+
+        self.light_aged = []
+        self.heavy_aged = []
+
+        self.light_real = []
+        self.heavy_real = []
+
+        # Fraction bioavailable after 365 days (with Ageing model Mt = M0 * exp(-0.005*time); ct/C0 (time = 365) = 0.16
+        avail_frac = 0.16
+        aged_frac = 1 - avail_frac
 
         # Initial Isotope Signature
         for layer in range(self.num_layers):
             # Initial deltas assume theoretical max @99% deg Streitwieser Semiclassical Limits
             self.delta.append(self.zero_map - 23.7)
             self.delta_ini.append(self.zero_map - 23.7)
-            self.light_back.append(self.sm_background[layer] /
+            self.delta_real.append(self.zero_map - 23.7)
+            self.delta_aged.append(self.zero_map - 23.7)
+
+            # Aged fraction, still available for biodegradation
+            self.light_back.append(self.sm_background[layer] * avail_frac /
                                    (1 + self.r_standard * (self.delta[layer] / 1000 + 1)))
-            self.heavy_back.append(self.sm_background[layer] - self.light_back[layer])
+            self.heavy_back.append(self.sm_background[layer] * avail_frac - self.light_back[layer])
+
+            # Aged fraction - not available for biodegradation
+            self.light_aged.append(self.sm_background[layer] * aged_frac /
+                                   (1 + self.r_standard * (self.delta_aged[layer] / 1000 + 1)))
+            self.heavy_aged.append(self.sm_background[layer] * aged_frac - self.light_aged[layer])
 
             # Set mass fractions <- background fractions
             self.lightmass.append(deepcopy(self.light_back[layer]))
             self.lightmass_ini.append(deepcopy(self.light_back[layer]))
+            self.lightaged_ini.append(deepcopy(self.light_aged[layer]))
             self.heavymass.append(deepcopy(self.heavy_back[layer]))
             self.heavymass_ini.append(deepcopy(self.heavy_back[layer]))
+
+            # Combined bioavailable and aged masses
+            self.light_real.append(self.lightmass[layer]+self.light_aged[layer])
+            self.heavy_real.append(self.heavymass[layer]+self.heavy_aged[layer])
 
             if mapminimum(self.lightmass[layer]) < 0:
                 print("Err INI, light")
@@ -701,6 +717,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.cum_baseflx_ug_z3 = deepcopy(self.zero_map)
 
         self.cum_degZ0_L_g = deepcopy(self.zero_map)
+        self.cum_aged_L_g = deepcopy(self.zero_map)
         self.cum_deg_L_g = deepcopy(self.zero_map)  # Total cum deg
         self.cum_roZ0_L_g = deepcopy(self.zero_map)
         self.cum_volatZ0_L_g = deepcopy(self.zero_map)
@@ -832,7 +849,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # So currently becasue landuse does not change value in the year, this step is redundant
         # and we could simply use the landuse map to map the fields to the "Crop Parameters" below.
         # Mapping "landuse.map" to -> "fields map" (i.e. the latter is a dyanmic-landuse equivalent).
-        fields = timeinputscalar('tssInput/landuse.tss', nominal(self.landuse))  #
+        fields = timeinputscalar('landuse.tss', nominal(self.landuse))  #
         # Note that the number of columns could still be reduced to 9 as, only 9 classes are considered in 2016.
 
         " Crop Parameters "
@@ -878,9 +895,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Moved theta properties to initial(), for Morris test.
         """
         # Basement layers defined under initial()
-        self.theta_sat[0] = timeinputscalar('tssInput/thetaSat_agr.tss', nominal(self.landuse))  # saturated moisture # [-]
+        self.theta_sat[0] = timeinputscalar('thetaSat_agr.tss', nominal(self.landuse))  # saturated moisture # [-]
         self.theta_sat[1] = deepcopy(self.theta_sat[0])
-        self.theta_fc[0] = timeinputscalar('tssInput/thetaFC_agr.tss', nominal(self.landuse)) * self.fc_adj  # field capacity
+        self.theta_fc[0] = timeinputscalar('thetaFC_agr.tss', nominal(self.landuse)) * self.fc_adj  # field capacity
         self.theta_fc[1] = deepcopy(self.theta_fc[0])
         theta_wp = self.theta_wp  # scalar(0.19)  # lookupscalar('croptable.tbl', 21, fields)  # wilting point moisture
 
@@ -888,7 +905,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             checkMoistureProps(self, self.theta_sat, 'aSATz')
             checkMoistureProps(self, self.theta_fc, 'aFCz')
 
-        k_sat_z0z1 = timeinputscalar('tssInput/ksats.tss', nominal(self.landuse))
+        k_sat_z0z1 = timeinputscalar('ksats.tss', nominal(self.landuse))
         k_sat_z2z3 = lookupscalar('croptable.tbl', 17, fields)  # saturated conductivity of the second layer
         k_sat = []
         for i in range(self.num_layers):
@@ -909,16 +926,16 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Time-series data to spatial location,
         map is implicitly defined as the clonemap.
         """
-        precip = timeinputscalar('tssInput/rain.tss', 1)  # daily precipitation data as time series (mm)
+        precip = timeinputscalar('rain.tss', 1)  # daily precipitation data as time series (mm)
         # Precipitation total
         rain_m3 = self.mask * precip * cellarea() / 1000  # m3
         tot_rain_m3 = areatotal(rain_m3, self.is_catchment)
 
-        temp_bare_soil = timeinputscalar('tssInput/T_bare.tss', nominal('clone_nom'))  # SWAT, Neitsch2009, p.43.
-        self.temp_air = timeinputscalar('tssInput/airTemp.tss', nominal('clone_nom'))
-        et0 = timeinputscalar('tssInput/ET0.tss', 1)  # daily ref. ETP at Zorn station (mm)
-        wind = timeinputscalar('tssInput/U2.tss', 1)  # wind speed time-series at 1 meters height
-        humid = timeinputscalar('tssInput/RHmin.tss', 1)  # minimum relative humidity time-series # PA: (-)
+        temp_bare_soil = timeinputscalar('T_bare.tss', nominal('clone_nom'))  # SWAT, Neitsch2009, p.43.
+        self.temp_air = timeinputscalar('airTemp.tss', nominal('clone_nom'))
+        et0 = timeinputscalar('ET0.tss', 1)  # daily ref. ETP at Zorn station (mm)
+        wind = timeinputscalar('U2.tss', 1)  # wind speed time-series at 1 meters height
+        humid = timeinputscalar('RHmin.tss', 1)  # minimum relative humidity time-series # PA: (-)
         # precipVol = precip * cellarea() / 1000  # m3
 
         ################
@@ -952,8 +969,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         jd_end = jd_late + len_end_stage
         LAIful = max_LAI + 0.5
 
-        height = timeinputscalar('tssInput/height.tss', nominal(self.landuse))
-        root_depth_tot = timeinputscalar('tssInput/height.tss', nominal(self.landuse)) * self.root_adj
+        height = timeinputscalar('height.tss', nominal(self.landuse))
+        root_depth_tot = timeinputscalar('height.tss', nominal(self.landuse)) * self.root_adj
         root_depth_tot *= 10 ** 3  # Convert to mm
 
         root_depth = []
@@ -1412,6 +1429,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         light_deg = []
         ch_storage_light = []
+        ch_storage_light_aged = []
         for layer in range(self.num_layers):
             # Temperature
             temp_dict = getLayerTemp(self, layer, bio_cover, temp_bare_soil)
@@ -1420,16 +1438,24 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
             # Degradation
             deg_light_dict = getMassDegradation(self, layer, theta_wp, self.lightmass[layer],
-                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50,
+                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
             deg_heavy_dict = getMassDegradation(self, layer, theta_wp, self.heavymass[layer],
-                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50,
+                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
+            # self.report(deg_light_dict["mass_tot_new"], 'LoutZ' + str(layer))
+            # self.report(deg_heavy_dict["mass_tot_new"], 'HoutZ' + str(layer))
 
             self.lightmass[layer] = deg_light_dict["mass_tot_new"]
+            self.light_aged[layer] += deg_light_dict["aged_mass"]
             light_deg.append(deg_light_dict.get("mass_deg_aq") +
                              deg_light_dict.get("mass_deg_ads"))
             self.heavymass[layer] = deg_heavy_dict["mass_tot_new"]
+            self.heavy_aged[layer] += deg_heavy_dict["aged_mass"]
+
+            # Combined aged and fresh
+            self.light_real[layer] = self.lightmass[layer] + self.light_aged[layer]
+            self.heavy_real[layer] = self.heavymass[layer] + self.heavy_aged[layer]
 
             if mapminimum(self.lightmass[layer]) < 0:
                 print("Err DEG, light")
@@ -1442,10 +1468,21 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Change in mass storage after degradation - Pesticide Mass
             ch_storage_light.append(self.lightmass[layer] -
                                     self.lightmass_ini[layer])
+
+            ch_storage_light_aged.append(self.light_aged[layer] -
+                                         self.lightaged_ini[layer])
+
             self.lightmass_ini[layer] = deepcopy(self.lightmass[layer])
+            self.lightaged_ini[layer] = deepcopy(self.light_aged[layer])
 
             self.delta[layer] = ((self.heavymass[layer] / self.lightmass[layer] - self.r_standard) /
                                  self.r_standard) * 1000  # [permille]
+
+            self.delta_real[layer] = ((self.heavy_real[layer]/self.light_real[layer] - self.r_standard) /
+                                      self.r_standard) * 1000  # [permille]
+
+            self.delta_aged[layer] = ((self.heavy_aged[layer]/self.light_aged[layer] - self.r_standard) /
+                                      self.r_standard) * 1000  # [permille]
 
         """ Layer analysis """
         for layer in range(self.num_layers):
@@ -1475,15 +1512,26 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Record soil concentrations and isotopes
         if self.PEST:
+            # Bio-available fraction (only)
             cell_mass = self.lightmass[0] + self.heavymass[0]
             cell_massXdelta = cell_mass * self.delta[0]
+            reportSoilTSS(self, cell_mass, cell_massXdelta, 'north', type='bioavail')
+            reportSoilTSS(self, cell_mass, cell_massXdelta, 'valley', type='bioavail')
+            reportSoilTSS(self, cell_mass, cell_massXdelta, 'south', type='bioavail')
 
-            north_sampling_pts = 30
-            soils_north = reportNorthSoils(self, cell_mass, cell_massXdelta, north_sampling_pts)
-            valley_sampling_pts = 25
-            soils_valley = reportValleySoils(self, cell_mass, cell_massXdelta, valley_sampling_pts)
-            south_sampling_pts = 26
-            soils_south = reportSouthSoils(self, cell_mass, cell_massXdelta, south_sampling_pts)
+            # Aged fraction only
+            cell_mass_aged = self.light_aged[0] + self.heavy_aged[0]
+            cell_massXdelta_aged = cell_mass_aged * self.delta_aged[0]
+            reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'north', type='aged')
+            reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'valley', type='aged')
+            reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'south', type='aged')
+
+            # Bio-available and aged fractions
+            cell_mass_real = self.light_real[0] + self.heavy_real[0]
+            cell_massXdelta_real = cell_mass_real * self.delta_real[0]
+            soils_north = reportSoilTSS(self, cell_mass_real, cell_massXdelta_real, 'north', type='real')
+            soils_valley = reportSoilTSS(self, cell_mass_real, cell_massXdelta_real, 'valley', type='real')
+            soils_south = reportSoilTSS(self, cell_mass_real, cell_massXdelta_real, 'south', type='real')
 
         #####################
         # End of Model Loop #
@@ -1492,9 +1540,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         ###################
         # Water Balance  ##
         ###################
-        q_obs = timeinputscalar('tssAnalysis/q_obs_m3day.tss', nominal("outlet_v3"))
-        conc_outlet_obs = timeinputscalar('tssAnalysis/Conc_ugL.tss', nominal("outlet_v3"))
-        iso_outlet_obs = timeinputscalar('tssAnalysis/Delta_out.tss', nominal("outlet_v3"))
+        q_obs = timeinputscalar('q_obs_m3day.tss', nominal("outlet_v3"))
+        conc_outlet_obs = timeinputscalar('Conc_ugL.tss', nominal("outlet_v3"))
+        iso_outlet_obs = timeinputscalar('Delta_out.tss', nominal("outlet_v3"))
 
         # Total discharge
         tot_vol_disch_m3 = getTotalDischarge(out_runoff_m3,
@@ -1530,6 +1578,15 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.resM_accDEG_L_tss.sample(catch_deg_light)
         self.resM_accDEGz0_L_tss.sample(z0_light_deg_catch)
         self.cum_degZ0_L_g_tss.sample(self.cum_degZ0_L_g)
+
+        # Aged
+        light_aged_tot = deepcopy(self.zero_map)
+        for layer in range(self.num_layers):
+            light_aged_tot += deg_light_dict["aged_mass"]
+        self.cum_aged_L_g += light_aged_tot
+        self.cum_aged_L_g_tss.sample(self.cum_aged_L_g)
+        catch_aged_light = areatotal(light_aged_tot, self.is_catchment)
+        self.resM_accAGED_L_tss.sample(catch_aged_light)
 
         # Volatilized
         catch_volat_light = areatotal(light_volat, self.is_catchment)
@@ -1594,6 +1651,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         catch_ch_storage_light = areatotal(ch_storage_light_catch, self.is_catchment)
         self.resM_accCHS_L_tss.sample(catch_ch_storage_light)
 
+        ch_storage_light_aged_catch = deepcopy(self.zero_map)
+        for layer in range(self.num_layers):
+            ch_storage_light_aged_catch += ch_storage_light_aged[layer]
+        catch_ch_storage_light_aged = areatotal(ch_storage_light_aged_catch, self.is_catchment)
+
+
         ####################
         # Outlet Pesticide #
         ####################
@@ -1630,12 +1693,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
         reportGlobalPestBalance(self,
                                 catch_app_light,
                                 catch_deg_light,
+                                catch_aged_light,
                                 catch_volat_light,
                                 catch_runoff_light,
                                 catch_leach_light_Bsmt,
                                 catch_drain_light,
                                 catch_latflux_light,
-                                catch_ch_storage_light)
+                                catch_ch_storage_light,
+                                catch_ch_storage_light_aged)
 
         """
         Nash computations
@@ -1690,7 +1755,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 #  aguila --scenarios='{2,1,3}' thFCz2 thSATz2
 #  aguila --scenarios='{2}' --timesteps=[1,300,1] aROm3 athz0 athz1 athz2 athz3
 #  aguila --scenarios='{2}' --timesteps=[1,300,1] aROm3 aZ1LCH
-# aguila --scenarios='{2}' --timesteps=[2,300,2] z3EVA z3TRA z3ROOT
+# aguila --scenarios='{1}' --timesteps=[1,300,1] LerrZ0
 
 # Time series
 # aguila 2\res_nash_q_m3.tss 6\res_nash_q_m3.tss

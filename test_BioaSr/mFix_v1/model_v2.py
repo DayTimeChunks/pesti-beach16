@@ -323,7 +323,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.cum_deg_L_g_tss = TimeoutputTimeseries("resM_cumDEG_L", self, nominal("outlet_v3"),
                                                     noHeader=False)  # Deg z0
         self.cum_aged_L_g_tss = TimeoutputTimeseries("resM_cumAGE_L", self, nominal("outlet_v3"),
-                                                     noHeader=False)  # Deg z0
+                                                     noHeader=False)  #
         self.resM_cumLCHz0_L_g_tss = TimeoutputTimeseries("resM_cumLCHz0_L", self, nominal("outlet_v3"),
                                                           noHeader=False)  # Leaching z0
         self.cum_roZ0_L_g_tss = TimeoutputTimeseries("resM_cumROz0_L", self, nominal("outlet_v3"),
