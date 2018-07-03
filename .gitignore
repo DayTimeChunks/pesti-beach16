@@ -11,6 +11,7 @@ DataSource/LargeFiles
 Analysis/Old
 Analysis/plotlycred.py
 Analysis/*.png
+./Analysis/*.png
 
 # Compiled docs
 *.pyc

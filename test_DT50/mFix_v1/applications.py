@@ -20,7 +20,7 @@ def getApplications(model, fa_cr, massunit='g'):
     m_beet = scalar(0.6) * 1 / 10 ** 4
     m_corn = scalar(2.0) * 1 / 10 ** 4
     #
-    m_beet_Friess = scalar(0.6) * 1 / 10 ** 4 * (1.5)  # 0.6 L/Ha * 2 Ha / 10000 m2 = L/m2
+    m_beet_Friess = scalar(0.6) * 1 / 10 ** 4 * (double)  # 0.6 L/Ha * 2 Ha / 10000 m2 = L/m2
     m_beet_Mathis = scalar(0.6) * 1 / 10 ** 4 * (double)
     m_beet_Burger = scalar(0.6) * 1 / 10 ** 4 * (double + 1)  #
     m_beet_Kopp = scalar(0.6) * 1 / 10 ** 4 * (double + 1) 
@@ -66,14 +66,14 @@ def getApplications(model, fa_cr, massunit='g'):
     app3 = ifthenelse(fa_cr == 1511, 1 * app_conc * cellarea(),  # 1511 (2nd Burger-Beet, app Day 213 (209-216)
                       0 * app_conc * cellarea())
 
-    # Pesticide applied (mass-unit) on Julian day 222 (May 05, 2016).
-    app4 = ifthenelse(fa_cr == 1111, 1 * app_conc * cellarea(),  # 1111 (2nd Friess-Beet, app Day 222 (209-224)
-                      0 * app_conc * cellarea())
+    # # Pesticide applied (mass-unit) on Julian day 222 (May 05, 2016).
+    # app4 = ifthenelse(fa_cr == 1111, 1 * app_conc * cellarea(),  # 1111 (2nd Friess-Beet, app Day 222 (209-224)
+    #                   0 * app_conc * cellarea())
 
     # Pesticide applied (mass-unit) on Julian day 238 (May 25, 2016).
     # May 25, Schmidt and Speich, and (out of transect): Friess and Mahler
     # Note: Speich could be 2 week later.
-    app5 = ifthenelse(fa_cr == 1112, 1 * app_conc * cellarea(),  # 1112 (Friess-Corn)
+    app4 = ifthenelse(fa_cr == 1112, 1 * app_conc * cellarea(),  # 1112 (Friess-Corn)
                            ifthenelse(fa_cr == 1212, 1 * app_conc * cellarea(),  # 1212 (Speich-Corn),
                                       ifthenelse(fa_cr == 1412, 1 * app_conc * cellarea(),
                                                  # 1412 (Schmitt-Corn),
@@ -81,4 +81,4 @@ def getApplications(model, fa_cr, massunit='g'):
                                                             # 1312 (Mahler-Corn)
                                                             0 * app_conc * cellarea()))))
     
-    return [app1, app2, app3, app4, app5]  # default mass is grams
+    return [app1, app2, app3, app4]  # default mass is grams

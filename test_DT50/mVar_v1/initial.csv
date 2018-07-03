@@ -26,6 +26,9 @@ wp_zAll ,0.19
 fc_adj ,1
 fc_z2z3 ,0.34
 sat_z2z3 ,0.56
+W100_50mm ,0.42
+W100_300mm ,0.40
+W100_1500mm ,0.38
 k ,0.03
 p_b ,1.4
 f_oc ,0.021
@@ -38,7 +41,7 @@ dt_50_max ,37.6
 temp_ref ,20
 beta_moisture ,1
 alpha_temperature ,6.495068559
-activation_e ,54
+activation_e ,23.91
 r_gas ,0.008314
 r_standard ,0.0112372
 epsilon_iso ,-1.37

@@ -28,13 +28,10 @@ else:
     runs = 3
 
 """
-Fixed Mass balance
+Testing aged degradation, based on ES&T from Sylvain.
+Mass balance will be off, need to add the aged-degraded mass!
 
-Now testing the removal of non-bioavailable mass
-before ddegradation (AND before aquous calculation)
-
-The aged mass is not tracked so the error in mass balance should
-be equivalent to this fraction
+avail_frac = 0.01  (avoid fractionation during early period)
 """
 
 
@@ -270,6 +267,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.resM_accRO_L_tss = TimeoutputTimeseries("resM_accRO_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDEG_L_tss = TimeoutputTimeseries("resM_accDEG_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accAGED_L_tss = TimeoutputTimeseries("resM_accAGED_L", self, nominal("outlet_v3"), noHeader=False)
+        self.resM_accAGED_DEG_L_tss = TimeoutputTimeseries("resM_accAGED_DEG_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDEGz0_L_tss = TimeoutputTimeseries("resM_accDEGz0_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accLCHz0_L_tss = TimeoutputTimeseries("resM_accLCHz0_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accDPz1_L_tss = TimeoutputTimeseries("resM_accDPz1_L", self, nominal("outlet_v3"), noHeader=False)
@@ -279,6 +277,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.resM_accLF_L_tss = TimeoutputTimeseries("resM_accLF_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accBF_L_tss = TimeoutputTimeseries("resM_accBF_L", self, nominal("outlet_v3"), noHeader=False)
         self.resM_accCHS_L_tss = TimeoutputTimeseries("resM_accCHS_L", self, nominal("outlet_v3"), noHeader=False)
+        self.resM_accCHS_AGED_L_tss = TimeoutputTimeseries("resM_accCHS_AGED_L", self, nominal("outlet_v3"), noHeader=False)
 
         self.resM_EXP_Smet_g_tss = TimeoutputTimeseries("resM_EXP_Smet_g", self, nominal("outlet_v3"),
                                                         noHeader=False)  # Total outlet mass (g) exports (light fraction only)
@@ -307,8 +306,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                                       noHeader=False)  # Deg z0
         self.cum_deg_L_g_tss = TimeoutputTimeseries("resM_cumDEG_L", self, nominal("outlet_v3"),
                                                     noHeader=False)  # Deg z0
-        self.cum_aged_L_g_tss = TimeoutputTimeseries("resM_cumAGE_L", self, nominal("outlet_v3"),
-                                                     noHeader=False)
+        self.cum_aged_deg_L_g_tss = TimeoutputTimeseries("resM_cumAGE_DEG_L", self, nominal("outlet_v3"),
+                                                         noHeader=False)
         self.resM_cumLCHz0_L_g_tss = TimeoutputTimeseries("resM_cumLCHz0_L", self, nominal("outlet_v3"),
                                                           noHeader=False)  # Leaching z0
         self.cum_roZ0_L_g_tss = TimeoutputTimeseries("resM_cumROz0_L", self, nominal("outlet_v3"),
@@ -331,17 +330,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # NASH composite soils
         # Single pixel value, grouping area total for each transect
         self.nashN_compConc_L_tss = TimeoutputTimeseries("nashN_compConc_L", self, nominal("north_ave"),
-                                                        noHeader=False)
+                                                         noHeader=False)
         self.nashV_compConc_L_tss = TimeoutputTimeseries("nashV_compConc_L", self, nominal("valley_ave"),
-                                                        noHeader=False)
+                                                         noHeader=False)
         self.nashS_compConc_L_tss = TimeoutputTimeseries("nashS_compConc_L", self, nominal("south_ave"),
-                                                        noHeader=False)
+                                                         noHeader=False)
         self.nashN_compIso_tss = TimeoutputTimeseries("nashN_compIso", self, nominal("north_ave"),
-                                                        noHeader=False)
+                                                      noHeader=False)
         self.nashV_compIso_tss = TimeoutputTimeseries("nashV_compIso", self, nominal("valley_ave"),
-                                                        noHeader=False)
+                                                      noHeader=False)
         self.nashS_compIso_tss = TimeoutputTimeseries("nashS_compIso", self, nominal("south_ave"),
-                                                        noHeader=False)
+                                                      noHeader=False)
 
         # Transects
         # self.north_conc_tss = TimeoutputTimeseries("resM_norCONC", self, ordinal("north_ave"), noHeader=False)
@@ -514,8 +513,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.alpha_temperature = scalar(self.ini_param.get(
             "alpha_temperature"))  # Need to confirm units Ea = 54000 KJ/mol; R = 8.314 J/mol/Kelvin
 
-        self.act_e = scalar(self.ini_param.get("activation_e"))
-        self.r_gas = scalar(self.ini_param.get("r_gas"))
+        self.act_e = scalar(self.ini_param.get("activation_e"))  # Metolachlor Ea = 23.91 KJ/mol; @Jaikaew2017
+        self.r_gas = scalar(self.ini_param.get("r_gas"))  # R = 8.314 J / mol Kelvin,
 
         """
         Isotopes
@@ -530,10 +529,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Scenarios
         """
         if m_state == 0:
-            self.dt_50_ref = scalar(self.ini_param.get("dt_50_min"))
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_ref"))  # S-met (days)
             # pass
         elif m_state == 1:
-            self.dt_50_ref = scalar(self.ini_param.get("dt_50_ref"))  # S-met (days)
+            self.dt_50_ref = scalar(self.ini_param.get("dt_50_min"))
             # for layer in range(self.num_layers):
             #     self.c_lf[layer] = 0.50
             # z3_factor = scalar(0.7)
@@ -614,8 +613,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Pesticides Maps
         """
         # Application days
-        self.app_days = [177, 196, 238]
-        # self.app_days = [177, 180, 183] # test days
+        self.app_days = [177, 196, 213, 238]  # Rejected day 222 for a potential Friess' second application
         self.aged_days = ifthen(boolean(self.is_catchment), scalar(365))
 
         # Mass
@@ -650,7 +648,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.heavy_real = []
 
         # Fraction bioavailable after 365 days (with Ageing model Mt = M0 * exp(-0.005*time); ct/C0 (time = 365) = 0.16
-        avail_frac = 0.16
+        avail_frac = 0.01
         aged_frac = 1 - avail_frac
 
         # Initial Isotope Signature
@@ -679,8 +677,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.heavymass_ini.append(deepcopy(self.heavy_back[layer]))
 
             # Combined bioavailable and aged masses
-            self.light_real.append(self.lightmass[layer]+self.light_aged[layer])
-            self.heavy_real.append(self.heavymass[layer]+self.heavy_aged[layer])
+            self.light_real.append(self.lightmass[layer] + self.light_aged[layer])
+            self.heavy_real.append(self.heavymass[layer] + self.heavy_aged[layer])
 
             if mapminimum(self.lightmass[layer]) < 0:
                 print("Err INI, light")
@@ -698,9 +696,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # where app1 > 0, else background sig. (plots with no new mass will be 0)
         # where app1 > 0, else background sig. (plots with no new mass will be 0)
         self.appDelta = []
-        self.appDelta.append(ifthenelse(self.apps[0] > 0, scalar(-32.3), scalar(-23.7)))
-        self.appDelta.append(ifthenelse(self.apps[1] > 0, scalar(-32.3), scalar(-23.7)))
-        self.appDelta.append(ifthenelse(self.apps[2] > 0, scalar(-32.3), scalar(-23.7)))
+        for a in range(len(self.apps)):
+            self.appDelta.append(ifthenelse(self.apps[a] > 0, scalar(-32.3), scalar(-23.7)))
 
         # Cumulative maps
         self.cum_runoff_ug = deepcopy(self.zero_map)
@@ -717,7 +714,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.cum_baseflx_ug_z3 = deepcopy(self.zero_map)
 
         self.cum_degZ0_L_g = deepcopy(self.zero_map)
-        self.cum_aged_L_g = deepcopy(self.zero_map)
+        self.cum_aged_deg_L_g = deepcopy(self.zero_map)
         self.cum_deg_L_g = deepcopy(self.zero_map)  # Total cum deg
         self.cum_roZ0_L_g = deepcopy(self.zero_map)
         self.cum_volatZ0_L_g = deepcopy(self.zero_map)
@@ -827,13 +824,19 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         self.theta_sat = []
         self.theta_fc = []
+        self.theta_100 = []
         for i in range(self.num_layers):
             if i < 2:
                 self.theta_sat.append(deepcopy(self.zero_map))
                 self.theta_fc.append(deepcopy(self.zero_map))
+                self.theta_100.append(scalar(self.ini_param.get("W100_50mm")))
             else:
                 self.theta_sat.append(deepcopy(theta_sat_z2))
                 self.theta_fc.append(deepcopy(theta_fcap_z2))
+                if i == 2:
+                    self.theta_100.append(scalar(self.ini_param.get("W100_300mm")))
+                else:
+                    self.theta_100.append(scalar(self.ini_param.get("W100_1500mm")))
 
                 # Increase bottom layer's initial moisture by 20% saturation
                 # self.theta[-2] += self.theta_sat[-2] * .10
@@ -1063,27 +1066,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Applications and Volatilization (on application days only)
         """
         if self.currentTimeStep() in self.app_days:
-            mass_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
-                                      self.apps[0],
-                                      ifthenelse(self.currentTimeStep() == self.app_days[1], self.apps[1],
-                                                 ifthenelse(self.currentTimeStep() == self.app_days[2], self.apps[2],
-                                                            scalar(0))))
-
-            self.aged_days = ifthenelse(mass_applied > 0, scalar(0), self.aged_days)
-
-            light_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
-                                       mass_applied / (1 + self.r_standard * (self.appDelta[0] / 1000 + 1)),
-                                       ifthenelse(self.currentTimeStep() == self.app_days[1],
-                                                  mass_applied / (
-                                                      1 + self.r_standard * (self.appDelta[1] / 1000 + 1)),
-                                                  ifthenelse(self.currentTimeStep() == self.app_days[2],
-                                                             mass_applied / (
-                                                                 1 + self.r_standard * (self.appDelta[2] / 1000 + 1)),
-                                                             scalar(0))))
+            indx = self.app_days.index(self.currentTimeStep())
+            mass_applied = ifthenelse(self.currentTimeStep() == self.app_days[indx], self.apps[indx], scalar(0))
+            light_applied = ifthenelse(self.currentTimeStep() == self.app_days[indx],
+                                       getLightMass(self, mass_applied, indx), scalar(0))
             heavy_applied = mass_applied - light_applied
-
             self.lightmass[0] += light_applied
             self.heavymass[0] += heavy_applied
+            self.aged_days = ifthenelse(mass_applied > 0, scalar(0), self.aged_days)
 
             if mapminimum(self.lightmass[0]) < 0:
                 print("Err APP, light")
@@ -1428,6 +1418,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         out_baseflow_m3 = areatotal(accu_baseflow_m3, self.outlet_multi)
 
         light_deg = []
+        light_aged_deg = []
         ch_storage_light = []
         ch_storage_light_aged = []
         for layer in range(self.num_layers):
@@ -1437,21 +1428,27 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.temp_fin[layer] = temp_dict["temp_layer"]
 
             # Degradation
-            deg_light_dict = getMassDegradation(self, layer, theta_wp, self.lightmass[layer],
-                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, bioavail=self.bioavail,
+            deg_light_dict = getMassDegradation(self, layer, theta_wp, self.lightmass[layer],  self.light_aged[layer],
+                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50,
+                                                bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
-            deg_heavy_dict = getMassDegradation(self, layer, theta_wp, self.heavymass[layer],
-                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, bioavail=self.bioavail,
+            deg_heavy_dict = getMassDegradation(self, layer, theta_wp, self.heavymass[layer], self.heavy_aged[layer],
+                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50,
+                                                bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
             # self.report(deg_light_dict["mass_tot_new"], 'LoutZ' + str(layer))
             # self.report(deg_heavy_dict["mass_tot_new"], 'HoutZ' + str(layer))
 
             self.lightmass[layer] = deg_light_dict["mass_tot_new"]
-            self.light_aged[layer] += deg_light_dict["aged_mass"]
+            self.light_aged[layer] = deg_light_dict["mass_aged_new"]
+
             light_deg.append(deg_light_dict.get("mass_deg_aq") +
                              deg_light_dict.get("mass_deg_ads"))
+
+            light_aged_deg.append(deg_light_dict["mass_deg_aged"])
+
             self.heavymass[layer] = deg_heavy_dict["mass_tot_new"]
-            self.heavy_aged[layer] += deg_heavy_dict["aged_mass"]
+            self.heavy_aged[layer] = deg_heavy_dict["mass_aged_new"]
 
             # Combined aged and fresh
             self.light_real[layer] = self.lightmass[layer] + self.light_aged[layer]
@@ -1478,10 +1475,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.delta[layer] = ((self.heavymass[layer] / self.lightmass[layer] - self.r_standard) /
                                  self.r_standard) * 1000  # [permille]
 
-            self.delta_real[layer] = ((self.heavy_real[layer]/self.light_real[layer] - self.r_standard) /
+            self.delta_real[layer] = ((self.heavy_real[layer] / self.light_real[layer] - self.r_standard) /
                                       self.r_standard) * 1000  # [permille]
 
-            self.delta_aged[layer] = ((self.heavy_aged[layer]/self.light_aged[layer] - self.r_standard) /
+            self.delta_aged[layer] = ((self.heavy_aged[layer] / self.light_aged[layer] - self.r_standard) /
                                       self.r_standard) * 1000  # [permille]
 
         """ Layer analysis """
@@ -1581,12 +1578,18 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Aged
         light_aged_tot = deepcopy(self.zero_map)
+        light_aged_deg_tot = deepcopy(self.zero_map)
         for layer in range(self.num_layers):
-            light_aged_tot += deg_light_dict["aged_mass"]
-        self.cum_aged_L_g += light_aged_tot
-        self.cum_aged_L_g_tss.sample(self.cum_aged_L_g)
+            light_aged_tot += self.light_aged[layer]
+            light_aged_deg_tot += light_aged_deg[layer]
+
         catch_aged_light = areatotal(light_aged_tot, self.is_catchment)
+        catch_aged_deg_light = areatotal(light_aged_deg_tot, self.is_catchment)
+
+        self.cum_aged_deg_L_g += catch_aged_deg_light
+        self.cum_aged_deg_L_g_tss.sample(self.cum_aged_deg_L_g)
         self.resM_accAGED_L_tss.sample(catch_aged_light)
+        self.resM_accAGED_DEG_L_tss.sample(catch_aged_deg_light)
 
         # Volatilized
         catch_volat_light = areatotal(light_volat, self.is_catchment)
@@ -1655,7 +1658,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         for layer in range(self.num_layers):
             ch_storage_light_aged_catch += ch_storage_light_aged[layer]
         catch_ch_storage_light_aged = areatotal(ch_storage_light_aged_catch, self.is_catchment)
-
+        self.resM_accCHS_AGED_L_tss.sample(catch_ch_storage_light_aged)
 
         ####################
         # Outlet Pesticide #
@@ -1693,7 +1696,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         reportGlobalPestBalance(self,
                                 catch_app_light,
                                 catch_deg_light,
-                                catch_aged_light,
+                                catch_aged_deg_light,
                                 catch_volat_light,
                                 catch_runoff_light,
                                 catch_leach_light_Bsmt,

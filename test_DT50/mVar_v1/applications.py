@@ -62,10 +62,18 @@ def getApplications(model, fa_cr, massunit='g'):
                            ifthenelse(fa_cr == 1611, 1 * app_conc * cellarea(),  # 1611 (Kopp-Beet),
                                       0 * app_conc * cellarea()))
 
+    # Pesticide applied (mass-unit) on Julian day 213 (April 30, 2016).
+    app3 = ifthenelse(fa_cr == 1511, 1 * app_conc * cellarea(),  # 1511 (2nd Burger-Beet, app Day 213 (209-216)
+                      0 * app_conc * cellarea())
+
+    # # Pesticide applied (mass-unit) on Julian day 222 (May 05, 2016).
+    # app4 = ifthenelse(fa_cr == 1111, 1 * app_conc * cellarea(),  # 1111 (2nd Friess-Beet, app Day 222 (209-224)
+    #                   0 * app_conc * cellarea())
+
     # Pesticide applied (mass-unit) on Julian day 238 (May 25, 2016).
     # May 25, Schmidt and Speich, and (out of transect): Friess and Mahler
     # Note: Speich could be 2 week later.
-    app3 = ifthenelse(fa_cr == 1112, 1 * app_conc * cellarea(),  # 1112 (Friess-Corn)
+    app4 = ifthenelse(fa_cr == 1112, 1 * app_conc * cellarea(),  # 1112 (Friess-Corn)
                            ifthenelse(fa_cr == 1212, 1 * app_conc * cellarea(),  # 1212 (Speich-Corn),
                                       ifthenelse(fa_cr == 1412, 1 * app_conc * cellarea(),
                                                  # 1412 (Schmitt-Corn),
@@ -73,4 +81,4 @@ def getApplications(model, fa_cr, massunit='g'):
                                                             # 1312 (Mahler-Corn)
                                                             0 * app_conc * cellarea()))))
     
-    return [app1, app2, app3]  # default mass is grams
+    return [app1, app2, app3, app4]  # default mass is grams

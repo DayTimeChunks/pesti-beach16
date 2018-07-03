@@ -1,0 +1,60 @@
+---
+title: "R Notebook - W100"
+output:
+  pdf_document: default
+  html_notebook: default
+---
+
+
+# Getting mean and SD for water content at 100cm sunction
+
+```{r}
+library("plyr")
+library("dplyr")
+```
+
+```{r}
+MAC = F
+WIN = F
+if (MAC) {
+  if (WIN){
+    path = file.path("C:/Users/DayTimeChunks/Documents/PhD/...")
+    
+  } else {
+    path = file.path("/Users/DayTightChunks/Documents/PhD/...")
+  }
+} else {
+  path = file.path("D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource")
+
+}
+
+
+```
+
+```{r}
+s = read.csv(file.path(path, "W100.csv"), sep = ";", dec = ".")
+
+s <- s[, c("Depth.cm", "W100")]
+sumS = ddply(s, c("Depth.cm"), 
+              summarise,
+              SD = sd(W100),
+              meanW100 = mean(W100)
+              )
+library("tidyr")
+ss = separate(data = sumS, col = Depth.cm, into = c("shallow", "deep"), sep = "-")
+
+ss$shallow = as.numeric(ss$shallow)
+
+z2 = subset(ss, shallow > 25 & shallow < 155)  # 250 to 1550 mm
+z3 = subset(ss, shallow >= 155) # > 1550mm
+mean(z2$meanW100)
+mean(z3$meanW100)
+
+```
+
+# Save
+
+```{r}
+write.csv(ss, file.path(path, "W100summary_R.csv"))
+```
+
