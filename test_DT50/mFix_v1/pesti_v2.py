@@ -53,6 +53,10 @@ def getConcAq(model, layer, mass, sorption_model="linear", gas=True):
     return conc_aq
 
 
+def getLightMass(model, mass, app_indx):
+    delta = mass / (1 + model.r_standard * (model.appDelta[app_indx] / 1000 + 1))
+    return delta
+
 # def getConcAds(model, layer, mass, gas=True):
 #     # mass / Kg soil
 #     depth = model.layer_depth[layer]

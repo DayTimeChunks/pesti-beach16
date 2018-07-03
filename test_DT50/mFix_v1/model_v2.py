@@ -327,17 +327,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # NASH composite soils
         # Single pixel value, grouping area total for each transect
         self.nashN_compConc_L_tss = TimeoutputTimeseries("nashN_compConc_L", self, nominal("north_ave"),
-                                                        noHeader=False)
+                                                         noHeader=False)
         self.nashV_compConc_L_tss = TimeoutputTimeseries("nashV_compConc_L", self, nominal("valley_ave"),
-                                                        noHeader=False)
+                                                         noHeader=False)
         self.nashS_compConc_L_tss = TimeoutputTimeseries("nashS_compConc_L", self, nominal("south_ave"),
-                                                        noHeader=False)
+                                                         noHeader=False)
         self.nashN_compIso_tss = TimeoutputTimeseries("nashN_compIso", self, nominal("north_ave"),
-                                                        noHeader=False)
+                                                      noHeader=False)
         self.nashV_compIso_tss = TimeoutputTimeseries("nashV_compIso", self, nominal("valley_ave"),
-                                                        noHeader=False)
+                                                      noHeader=False)
         self.nashS_compIso_tss = TimeoutputTimeseries("nashS_compIso", self, nominal("south_ave"),
-                                                        noHeader=False)
+                                                      noHeader=False)
 
         # Transects
         # self.north_conc_tss = TimeoutputTimeseries("resM_norCONC", self, ordinal("north_ave"), noHeader=False)
@@ -610,8 +610,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Pesticides Maps
         """
         # Application days
-        self.app_days = [177, 196, 238]
-        # self.app_days = [177, 180, 183] # test days
+        self.app_days = [177, 196, 213, 222, 238]
         self.aged_days = ifthen(boolean(self.is_catchment), scalar(365))
 
         # Mass
@@ -675,8 +674,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.heavymass_ini.append(deepcopy(self.heavy_back[layer]))
 
             # Combined bioavailable and aged masses
-            self.light_real.append(self.lightmass[layer]+self.light_aged[layer])
-            self.heavy_real.append(self.heavymass[layer]+self.heavy_aged[layer])
+            self.light_real.append(self.lightmass[layer] + self.light_aged[layer])
+            self.heavy_real.append(self.heavymass[layer] + self.heavy_aged[layer])
 
             if mapminimum(self.lightmass[layer]) < 0:
                 print("Err INI, light")
@@ -694,9 +693,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # where app1 > 0, else background sig. (plots with no new mass will be 0)
         # where app1 > 0, else background sig. (plots with no new mass will be 0)
         self.appDelta = []
-        self.appDelta.append(ifthenelse(self.apps[0] > 0, scalar(-32.3), scalar(-23.7)))
-        self.appDelta.append(ifthenelse(self.apps[1] > 0, scalar(-32.3), scalar(-23.7)))
-        self.appDelta.append(ifthenelse(self.apps[2] > 0, scalar(-32.3), scalar(-23.7)))
+        for a in range(len(self.apps)):
+            self.appDelta.append(ifthenelse(self.apps[a] > 0, scalar(-32.3), scalar(-23.7)))
 
         # Cumulative maps
         self.cum_runoff_ug = deepcopy(self.zero_map)
@@ -1059,27 +1057,35 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Applications and Volatilization (on application days only)
         """
         if self.currentTimeStep() in self.app_days:
-            mass_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
-                                      self.apps[0],
-                                      ifthenelse(self.currentTimeStep() == self.app_days[1], self.apps[1],
-                                                 ifthenelse(self.currentTimeStep() == self.app_days[2], self.apps[2],
-                                                            scalar(0))))
-
-            self.aged_days = ifthenelse(mass_applied > 0, scalar(0), self.aged_days)
-
-            light_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
-                                       mass_applied / (1 + self.r_standard * (self.appDelta[0] / 1000 + 1)),
-                                       ifthenelse(self.currentTimeStep() == self.app_days[1],
-                                                  mass_applied / (
-                                                      1 + self.r_standard * (self.appDelta[1] / 1000 + 1)),
-                                                  ifthenelse(self.currentTimeStep() == self.app_days[2],
-                                                             mass_applied / (
-                                                                 1 + self.r_standard * (self.appDelta[2] / 1000 + 1)),
-                                                             scalar(0))))
+            indx = self.app_days.index(self.currentTimeStep())
+            mass_applied = ifthenelse(self.currentTimeStep() == self.app_days[indx], self.apps[indx], scalar(0))
+            light_applied = ifthenelse(self.currentTimeStep() == self.app_days[indx],
+                                       getLightMass(self, mass_applied, indx), scalar(0))
             heavy_applied = mass_applied - light_applied
-
             self.lightmass[0] += light_applied
             self.heavymass[0] += heavy_applied
+            self.aged_days = ifthenelse(mass_applied > 0, scalar(0), self.aged_days)
+
+            # TODO: Check that above is correct, if so, delete comments below
+            # mass_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
+            #                           self.apps[0],
+            #                           ifthenelse(self.currentTimeStep() == self.app_days[1], self.apps[1],
+            #                                      ifthenelse(self.currentTimeStep() == self.app_days[2], self.apps[2],
+            #                                                 ifthenelse(self.currentTimeStep() == self.app_days[3],
+            #                                                            self.apps[3], scalar(0)))))
+
+            # light_applied = ifthenelse(self.currentTimeStep() == self.app_days[0],
+            #                            mass_applied / (1 + self.r_standard * (self.appDelta[0] / 1000 + 1)),
+            #                            ifthenelse(self.currentTimeStep() == self.app_days[1],
+            #                                       mass_applied / (
+            #                                           1 + self.r_standard * (self.appDelta[1] / 1000 + 1)),
+            #                                       ifthenelse(self.currentTimeStep() == self.app_days[2],
+            #                                                  mass_applied / (
+            #                                                      1 + self.r_standard * (self.appDelta[2] / 1000 + 1)),
+            #                                                  ifthenelse(self.currentTimeStep() == self.app_days[3],
+            #                                                  mass_applied / (
+            #                                                      1 + self.r_standard * (self.appDelta[3] / 1000 + 1)),
+            #                                                  scalar(0)))))
 
             if mapminimum(self.lightmass[0]) < 0:
                 print("Err APP, light")
@@ -1434,10 +1440,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
             # Degradation
             deg_light_dict = getMassDegradation(self, layer, theta_wp, self.lightmass[layer],
-                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, bioavail=self.bioavail,
+                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50,
+                                                bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
             deg_heavy_dict = getMassDegradation(self, layer, theta_wp, self.heavymass[layer],
-                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, bioavail=self.bioavail,
+                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50,
+                                                bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
             # self.report(deg_light_dict["mass_tot_new"], 'LoutZ' + str(layer))
             # self.report(deg_heavy_dict["mass_tot_new"], 'HoutZ' + str(layer))
@@ -1474,10 +1482,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.delta[layer] = ((self.heavymass[layer] / self.lightmass[layer] - self.r_standard) /
                                  self.r_standard) * 1000  # [permille]
 
-            self.delta_real[layer] = ((self.heavy_real[layer]/self.light_real[layer] - self.r_standard) /
+            self.delta_real[layer] = ((self.heavy_real[layer] / self.light_real[layer] - self.r_standard) /
                                       self.r_standard) * 1000  # [permille]
 
-            self.delta_aged[layer] = ((self.heavy_aged[layer]/self.light_aged[layer] - self.r_standard) /
+            self.delta_aged[layer] = ((self.heavy_aged[layer] / self.light_aged[layer] - self.r_standard) /
                                       self.r_standard) * 1000  # [permille]
 
         """ Layer analysis """
@@ -1652,7 +1660,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
             ch_storage_light_aged_catch += ch_storage_light_aged[layer]
         catch_ch_storage_light_aged = areatotal(ch_storage_light_aged_catch, self.is_catchment)
 
-
         ####################
         # Outlet Pesticide #
         ####################
@@ -1759,7 +1766,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 300  # 360
+nTimeSteps = 280  # 360
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
