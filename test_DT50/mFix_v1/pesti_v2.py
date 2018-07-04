@@ -380,8 +380,9 @@ def getDrainMassFlux(model, layer, mass,
 def getMassDegradation(model, layer, theta_wp, mass, old_aged_mass,
                        frac="L",
                        sor_deg_factor=1,
-                       sorption_model="linear", fixed_dt50=True, bioavail=True,
-                       gas=True, debug=False, run=True):
+                       sorption_model="linear", fixed_dt50=True, deg_method=None,
+                       bioavail=True, gas=True,
+                       debug=False, run=True):
     if not run:
         return {"mass_tot_new": deepcopy(mass),
                 "mass_deg_aq": deepcopy(model.zero_map),
@@ -420,20 +421,15 @@ def getMassDegradation(model, layer, theta_wp, mass, old_aged_mass,
 
         if not fixed_dt50:
             # F_Theta_1
-            theta_factor = ifthenelse(theta_layer <= 0.5 * theta_wp, scalar(0),
-                                      ifthenelse(theta_layer <= model.theta_100[layer],
-                                                 (((theta_layer - 0.5 * theta_wp) / (
-                                                     model.theta_100[layer] - theta_wp)) ** scalar(model.beta_moisture)),
-                                                 scalar(1)))
+            if deg_method == 'schroll':  # Schroll et al., 2006
+                theta_factor = ifthenelse(theta_layer <= 0.5 * theta_wp, scalar(0),
+                                          ifthenelse(theta_layer <= model.theta_100[layer],
+                                                     (((theta_layer - 0.5 * theta_wp) / (
+                                                         model.theta_100[layer] - theta_wp)) ** scalar(model.beta_moisture)),
+                                                     scalar(1)))
+            else:  # Walker, 1973
+                theta_factor = (theta_layer/model.theta_ref)**scalar(model.beta_moisture)
 
-            # Temperature factor in biodegradation
-            # F_T_1
-            # temp_factor = max(ifthenelse(temp_layer <= scalar(0), scalar(0),
-            #                              ifthenelse(temp_layer < 5,
-            #                                         (temp_layer / 5) * exp(model.alpha_temperature) * (5 - model.temp_ref),
-            #                                         exp(model.alpha_temperature * (5 - model.temp_ref))
-            #                                         )
-            #                              ), scalar(0))
             temp_factor = exp(
                 (model.act_e / model.r_gas) * (1 / (model.temp_ref + 273.15) - 1 / (model.temp_air + 273.15)))
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from SALib.sample import morris as mos
-from morris_analysis import *
+
+from calib_v1.mVar_v1.morris.morris_analysis import *
 
 
 def saveMorris(Names, SiList, filename="MorrisResults.json"):

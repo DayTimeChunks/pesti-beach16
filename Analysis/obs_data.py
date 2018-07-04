@@ -10,7 +10,7 @@ def getTime(sep=","):
 
 
 def getTimeStamp(timestep, sep=','):
-    path = "Data/Time.csv"
+    path = "./Data/Time.csv"
     obs = pd.read_csv(path, sep=sep)
     obs = obs[['Jdays', 'Date']]
     obs_dict = obs.to_dict(orient='split')

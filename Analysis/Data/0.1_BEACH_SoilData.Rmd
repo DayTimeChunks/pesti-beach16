@@ -150,7 +150,7 @@ delta_cal = st[, c("Jdays", "Transect", "IDcal", "comp.d13C", "comp.d13C.SD")]
 names(delta_cal) <- c("Jdays", "Transect", "IDcal", "d13C", "d13C.SD")
 delta_cal = subset(delta_cal, !is.na(delta_cal$d13C))
 
-if (F) {
+if (SAVE) {
   write.table(conc_cal, "BEACH_R/conc_comp_cal.tss", sep="\t", row.names = F)
   write.table(delta_cal, "BEACH_R/delta_comp_cal.tss", sep="\t", row.names = F)
 }

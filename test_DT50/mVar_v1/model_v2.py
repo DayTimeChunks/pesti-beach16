@@ -509,9 +509,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.temp_ref = scalar(self.ini_param.get("temp_ref"))  # Temp.  reference
 
         self.beta_moisture = scalar(self.ini_param.get(
-            "beta_moisture"))  # Need to find a correct value for 'B', exponent in moisture dependency (Dairon)
-        self.alpha_temperature = scalar(self.ini_param.get(
-            "alpha_temperature"))  # Need to confirm units Ea = 54000 KJ/mol; R = 8.314 J/mol/Kelvin
+            "beta_moisture"))
+        # self.alpha_temperature = scalar(self.ini_param.get(
+        #     "alpha_temperature"))  # Need to confirm units Ea = 54000 KJ/mol; R = 8.314 J/mol/Kelvin
 
         self.act_e = scalar(self.ini_param.get("activation_e"))  # Metolachlor Ea = 23.91 KJ/mol; @Jaikaew2017
         self.r_gas = scalar(self.ini_param.get("r_gas"))  # R = 8.314 J / mol Kelvin,
@@ -1429,11 +1429,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
             # Degradation
             deg_light_dict = getMassDegradation(self, layer, theta_wp, self.lightmass[layer],  self.light_aged[layer],
-                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50,
+                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, deg_method='schroll',
                                                 bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
             deg_heavy_dict = getMassDegradation(self, layer, theta_wp, self.heavymass[layer], self.heavy_aged[layer],
-                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50,
+                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, deg_method='schroll',
                                                 bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
             # self.report(deg_light_dict["mass_tot_new"], 'LoutZ' + str(layer))
