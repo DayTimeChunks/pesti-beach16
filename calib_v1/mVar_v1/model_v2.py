@@ -48,6 +48,10 @@ class BeachModel(DynamicModel):
 
         self.params = params
 
+        # Calibration
+        self.CALIB = True
+        self.CALIB_OUT = False
+
         self.DEBUG = False
         self.NASH = False
         self.MASS_BAL = False
@@ -71,10 +75,10 @@ class BeachModel(DynamicModel):
         self.TRANSPORT = True
 
         # Run fate processes
-        self.ROM = False
-        self.LCH = False
-        self.ADRM = False
-        self.LFM = False
+        self.ROM = True
+        self.LCH = True
+        self.ADRM = True
+        self.LFM = True
         self.DEG = True
 
         self.TEST_LCH = False
@@ -1255,10 +1259,11 @@ class BeachModel(DynamicModel):
             if mapminimum(self.theta[layer]) < 0:
                 print('Error at ETP, Layer ' + str(layer))
 
-        evap_m3 = areatotal(evap_m3, self.is_catchment)
-        transp_m3 = areatotal(transp_m3, self.is_catchment)
-        self.resW_accEvap_m3_tss.sample(evap_m3)
-        self.resW_accTransp_m3_tss.sample(transp_m3)
+        if not self.CALIB:
+            evap_m3 = areatotal(evap_m3, self.is_catchment)
+            transp_m3 = areatotal(transp_m3, self.is_catchment)
+            self.resW_accEvap_m3_tss.sample(evap_m3)
+            self.resW_accTransp_m3_tss.sample(transp_m3)
 
         # Lateral flow
         latflow_net = []  # every cell
@@ -1435,26 +1440,27 @@ class BeachModel(DynamicModel):
 
         # Record soil concentrations and isotopes
         if self.PEST:
-            # Bio-available fraction (only)
-            cell_mass = self.lightmass[0] + self.heavymass[0]
-            cell_massXdelta = cell_mass * self.delta[0]
-            reportSoilTSS(self, cell_mass, cell_massXdelta, 'north', type='bioavail')
-            reportSoilTSS(self, cell_mass, cell_massXdelta, 'valley', type='bioavail')
-            reportSoilTSS(self, cell_mass, cell_massXdelta, 'south', type='bioavail')
-
-            # Aged fraction only
-            cell_mass_aged = self.light_aged[0] + self.heavy_aged[0]
-            cell_massXdelta_aged = cell_mass_aged * self.delta_aged[0]
-            reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'north', type='aged')
-            reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'valley', type='aged')
-            reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'south', type='aged')
-
             # Bio-available and aged fractions
             cell_mass_real = self.light_real[0] + self.heavy_real[0]
             cell_massXdelta_real = cell_mass_real * self.delta_real[0]
             soils_north = reportSoilTSS(self, cell_mass_real, cell_massXdelta_real, 'north', type='real')
             soils_valley = reportSoilTSS(self, cell_mass_real, cell_massXdelta_real, 'valley', type='real')
             soils_south = reportSoilTSS(self, cell_mass_real, cell_massXdelta_real, 'south', type='real')
+
+            if not self.CALIB:
+                # Bio-available fraction (only)
+                cell_mass = self.lightmass[0] + self.heavymass[0]
+                cell_massXdelta = cell_mass * self.delta[0]
+                reportSoilTSS(self, cell_mass, cell_massXdelta, 'north', type='bioavail')
+                reportSoilTSS(self, cell_mass, cell_massXdelta, 'valley', type='bioavail')
+                reportSoilTSS(self, cell_mass, cell_massXdelta, 'south', type='bioavail')
+
+                # Aged fraction only
+                cell_mass_aged = self.light_aged[0] + self.heavy_aged[0]
+                cell_massXdelta_aged = cell_mass_aged * self.delta_aged[0]
+                reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'north', type='aged')
+                reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'valley', type='aged')
+                reportSoilTSS(self, cell_mass_aged, cell_massXdelta_aged, 'south', type='aged')
 
         #####################
         # End of Model Loop #
@@ -1464,131 +1470,134 @@ class BeachModel(DynamicModel):
         # Water Output   ##
         ###################
         # Total discharge
-        tot_vol_disch_m3 = getTotalDischarge(out_runoff_m3,
-                                             outlet_latflow_m3,
-                                             out_drain_m3, baseflow=out_baseflow_m3)
+        if self.CALIB_OUT:
+            tot_vol_disch_m3 = getTotalDischarge(out_runoff_m3,
+                                                 outlet_latflow_m3,
+                                                 out_drain_m3, baseflow=out_baseflow_m3)
 
-        self.tot_Q_m3_tss.sample(tot_vol_disch_m3)
+            self.tot_Q_m3_tss.sample(tot_vol_disch_m3)
 
         ######################
         # Pesticide Output  ##
         ######################
-        # Applied mass on catchment
-        catch_app_light = areatotal(light_applied, self.is_catchment)  #
-        self.resM_accAPP_g_tss.sample(catch_app_light)
+        if not self.CALIB:
+            # Applied mass on catchment
+            catch_app_light = areatotal(light_applied, self.is_catchment)  #
+            self.resM_accAPP_g_tss.sample(catch_app_light)
 
-        # Degradation
-        light_deg_tot = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
-            light_deg_tot += light_deg[layer]
-        catch_deg_light = areatotal(light_deg_tot, self.is_catchment)
-        z0_light_deg_catch = areatotal(light_deg[0], self.is_catchment)
-        self.cum_degZ0_L_g += z0_light_deg_catch
+            # Degradation
+            light_deg_tot = deepcopy(self.zero_map)
+            for layer in range(self.num_layers):
+                light_deg_tot += light_deg[layer]
+            catch_deg_light = areatotal(light_deg_tot, self.is_catchment)
+            z0_light_deg_catch = areatotal(light_deg[0], self.is_catchment)
 
-        self.resM_accDEG_L_tss.sample(catch_deg_light)
-        self.resM_accDEGz0_L_tss.sample(z0_light_deg_catch)
-        self.cum_degZ0_L_g_tss.sample(self.cum_degZ0_L_g)
+            self.cum_degZ0_L_g += z0_light_deg_catch
+            self.resM_accDEG_L_tss.sample(catch_deg_light)
+            self.resM_accDEGz0_L_tss.sample(z0_light_deg_catch)
+            self.cum_degZ0_L_g_tss.sample(self.cum_degZ0_L_g)
 
-        # Aged
-        light_aged_tot = deepcopy(self.zero_map)
-        light_aged_deg_tot = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
-            light_aged_tot += self.light_aged[layer]
-            light_aged_deg_tot += light_aged_deg[layer]
+            # Aged
+            light_aged_tot = deepcopy(self.zero_map)
+            light_aged_deg_tot = deepcopy(self.zero_map)
+            for layer in range(self.num_layers):
+                light_aged_tot += self.light_aged[layer]
+                light_aged_deg_tot += light_aged_deg[layer]
 
-        catch_aged_light = areatotal(light_aged_tot, self.is_catchment)
-        catch_aged_deg_light = areatotal(light_aged_deg_tot, self.is_catchment)
+            catch_aged_light = areatotal(light_aged_tot, self.is_catchment)
+            catch_aged_deg_light = areatotal(light_aged_deg_tot, self.is_catchment)
 
-        self.cum_aged_deg_L_g += catch_aged_deg_light
-        self.cum_aged_deg_L_g_tss.sample(self.cum_aged_deg_L_g)
-        self.resM_accAGED_L_tss.sample(catch_aged_light)
-        self.resM_accAGED_DEG_L_tss.sample(catch_aged_deg_light)
+            self.cum_aged_deg_L_g += catch_aged_deg_light
+            self.cum_aged_deg_L_g_tss.sample(self.cum_aged_deg_L_g)
+            self.resM_accAGED_L_tss.sample(catch_aged_light)
+            self.resM_accAGED_DEG_L_tss.sample(catch_aged_deg_light)
 
-        # Volatilized
-        catch_volat_light = areatotal(light_volat, self.is_catchment)
-        self.resM_accVOLAT_L_tss.sample(catch_volat_light)
+            # Volatilized
+            catch_volat_light = areatotal(light_volat, self.is_catchment)
+            self.resM_accVOLAT_L_tss.sample(catch_volat_light)
 
-        # Mass loss to run-off
-        # Index: 0 <- light, Index: 2 <- heavy
-        catch_runoff_light = areatotal(mass_runoff[0], self.is_catchment)
-        catch_runoff_heavy = areatotal(mass_runoff[1], self.is_catchment)
-        self.resM_accRO_L_tss.sample(catch_runoff_light)
+            # Mass loss to run-off
+            # Index: 0 <- light, Index: 2 <- heavy
+            catch_runoff_light = areatotal(mass_runoff[0], self.is_catchment)
+            catch_runoff_heavy = areatotal(mass_runoff[1], self.is_catchment)
+            self.resM_accRO_L_tss.sample(catch_runoff_light)
 
-        # z0-mass leached
-        catch_leach_light_z0 = areatotal(light_leached[0], self.is_catchment)
-        self.cum_lchZ0_L_g += catch_leach_light_z0
-        self.resM_accLCHz0_L_tss.sample(catch_leach_light_z0)
-        self.resM_cumLCHz0_L_g_tss.sample(self.cum_lchZ0_L_g)
+            # z0-mass leached
+            catch_leach_light_z0 = areatotal(light_leached[0], self.is_catchment)
+            self.cum_lchZ0_L_g += catch_leach_light_z0
+            self.resM_accLCHz0_L_tss.sample(catch_leach_light_z0)
+            self.resM_cumLCHz0_L_g_tss.sample(self.cum_lchZ0_L_g)
 
-        # z1-mass leached
-        catch_leach_light_z1 = areatotal(light_leached[1], self.is_catchment)
-        self.resM_accDPz1_L_tss.sample(catch_leach_light_z1)
+            # z1-mass leached
+            catch_leach_light_z1 = areatotal(light_leached[1], self.is_catchment)
+            self.resM_accDPz1_L_tss.sample(catch_leach_light_z1)
 
-        # Basement-mass leached = zero, if no basement percolation
-        catch_leach_light_Bsmt = areatotal(light_leached[-1], self.is_catchment)
-        self.resM_accDP_L_tss.sample(catch_leach_light_Bsmt)
+            # Basement-mass leached = zero, if no basement percolation
+            catch_leach_light_Bsmt = areatotal(light_leached[-1], self.is_catchment)
+            self.resM_accDP_L_tss.sample(catch_leach_light_Bsmt)
 
-        # Artificial drained mass (layer z2)
-        catch_drain_light = areatotal(light_drained, self.is_catchment)
-        catch_drain_heavy = areatotal(heavy_drained, self.is_catchment)
-        self.resM_accADR_L_tss.sample(catch_drain_light)
+            # Artificial drained mass (layer z2)
+            catch_drain_light = areatotal(light_drained, self.is_catchment)
+            catch_drain_heavy = areatotal(heavy_drained, self.is_catchment)
+            self.resM_accADR_L_tss.sample(catch_drain_light)
 
-        # Lateral flux (Required in MB)
-        latflux_light_catch = deepcopy(self.zero_map)
-        latflux_heavy_catch = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
-            latflux_light_catch += ligth_latflow[layer]
-            latflux_heavy_catch += heavy_latflow[layer]
+            # Lateral flux (Required in MB)
+            latflux_light_catch = deepcopy(self.zero_map)
+            latflux_heavy_catch = deepcopy(self.zero_map)
+            for layer in range(self.num_layers):
+                latflux_light_catch += ligth_latflow[layer]
+                latflux_heavy_catch += heavy_latflow[layer]
 
-        catch_latflux_light = areatotal(latflux_light_catch, self.outlet_multi)  # Needed for MB
-        catch_latflux_heavy = areatotal(latflux_heavy_catch, self.outlet_multi)  # Needed for MB
-        self.resM_accLF_L_tss.sample(catch_latflux_light)  # Reports the outlet-only loss
+            catch_latflux_light = areatotal(latflux_light_catch, self.outlet_multi)  # Needed for MB
+            catch_latflux_heavy = areatotal(latflux_heavy_catch, self.outlet_multi)  # Needed for MB
+            self.resM_accLF_L_tss.sample(catch_latflux_light)  # Reports the outlet-only loss
 
-        # Baseflow flux
-        # out_baseflow_light = areatotal(baseflow_light, self.is_catchment)
-        # self.resM_accBF_L_tss.sample(out_baseflow_light)
+            # Baseflow flux
+            # out_baseflow_light = areatotal(baseflow_light, self.is_catchment)
+            # self.resM_accBF_L_tss.sample(out_baseflow_light)
 
-        # Change in mass storage
-        ch_storage_light_catch = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
-            ch_storage_light_catch += ch_storage_light[layer]
+            # Change in mass storage
+            ch_storage_light_catch = deepcopy(self.zero_map)
+            for layer in range(self.num_layers):
+                ch_storage_light_catch += ch_storage_light[layer]
 
-        catch_ch_storage_light = areatotal(ch_storage_light_catch, self.is_catchment)
-        self.resM_accCHS_L_tss.sample(catch_ch_storage_light)
+            catch_ch_storage_light = areatotal(ch_storage_light_catch, self.is_catchment)
+            self.resM_accCHS_L_tss.sample(catch_ch_storage_light)
 
-        ch_storage_light_aged_catch = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
-            ch_storage_light_aged_catch += ch_storage_light_aged[layer]
-        catch_ch_storage_light_aged = areatotal(ch_storage_light_aged_catch, self.is_catchment)
-        self.resM_accCHS_AGED_L_tss.sample(catch_ch_storage_light_aged)
+            ch_storage_light_aged_catch = deepcopy(self.zero_map)
+            for layer in range(self.num_layers):
+                ch_storage_light_aged_catch += ch_storage_light_aged[layer]
+            catch_ch_storage_light_aged = areatotal(ch_storage_light_aged_catch, self.is_catchment)
+            self.resM_accCHS_AGED_L_tss.sample(catch_ch_storage_light_aged)
 
         ####################
         # Outlet Pesticide #
         ####################
-        # Total mass export
-        outlet_light_export = (catch_runoff_light + catch_drain_light + catch_latflux_light)
-        outlet_heavy_export = (catch_runoff_heavy + catch_drain_heavy + catch_latflux_heavy)
-        self.resM_EXP_Smet_g_tss.sample(outlet_light_export)  # grams
+        if self.CALIB_OUT:
+            # Total mass export
+            outlet_light_export = (catch_runoff_light + catch_drain_light + catch_latflux_light)
+            outlet_heavy_export = (catch_runoff_heavy + catch_drain_heavy + catch_latflux_heavy)
+            conc_ugL = (outlet_light_export + outlet_heavy_export) * 1e6 / (tot_vol_disch_m3 * 1e3)
+            self.resM_oCONC_ugL_tss.sample(conc_ugL)  # ug/L
 
-        conc_ugL = (outlet_light_export + outlet_heavy_export) * 1e6 / (tot_vol_disch_m3 * 1e3)
-        conc_ROFF_ug_L = (catch_runoff_light + catch_runoff_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
-        conc_LF_ug_L = (catch_latflux_light + catch_latflux_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
-        conc_ADR_ug_L = (catch_drain_light + catch_drain_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
+        if not self.CALIB:
+            conc_ROFF_ug_L = (catch_runoff_light + catch_runoff_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
+            conc_LF_ug_L = (catch_latflux_light + catch_latflux_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
+            conc_ADR_ug_L = (catch_drain_light + catch_drain_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
+            self.resM_EXP_Smet_g_tss.sample(outlet_light_export)  # grams
+            self.resM_oCONC_ROFF_ugL_tss.sample(conc_ROFF_ug_L)  # ug/L
+            self.resM_oCONC_LF_ugL_tss.sample(conc_LF_ug_L)  # ug/L
+            self.resM_oCONC_ADR_ugL_tss.sample(conc_ADR_ug_L)  # ug/L
 
-        self.resM_oCONC_ugL_tss.sample(conc_ugL)  # ug/L
-        self.resM_oCONC_ROFF_ugL_tss.sample(conc_ROFF_ug_L)  # ug/L
-        self.resM_oCONC_LF_ugL_tss.sample(conc_LF_ug_L)  # ug/L
-        self.resM_oCONC_ADR_ugL_tss.sample(conc_ADR_ug_L)  # ug/L
-
-        # Isotope signature - outlet
-        out_delta = ((outlet_heavy_export / outlet_light_export - self.r_standard) /
-                     self.r_standard) * 1000  # [permille]
-        roff_delta = ((catch_runoff_heavy / catch_runoff_light - self.r_standard) /
-                      self.r_standard) * 1000  # [permille]
-        latflux_delta = ((catch_latflux_heavy / catch_latflux_light - self.r_standard) /
+            # Isotope signature - outlet
+            out_delta = ((outlet_heavy_export / outlet_light_export - self.r_standard) /
                          self.r_standard) * 1000  # [permille]
-        drain_delta = ((catch_drain_heavy / catch_drain_light - self.r_standard) /
-                       self.r_standard) * 1000  # [permille]
+            roff_delta = ((catch_runoff_heavy / catch_runoff_light - self.r_standard) /
+                          self.r_standard) * 1000  # [permille]
+            latflux_delta = ((catch_latflux_heavy / catch_latflux_light - self.r_standard) /
+                             self.r_standard) * 1000  # [permille]
+            drain_delta = ((catch_drain_heavy / catch_drain_light - self.r_standard) /
+                           self.r_standard) * 1000  # [permille]
 
         if self.MASS_BAL:
 

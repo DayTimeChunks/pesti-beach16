@@ -26,7 +26,8 @@ def get_dataframe(name_obs_detail, name_obs_comp, name_sim):
     name_sim = 'd13C_real' | 'CONC_real'
     """
     # path = 'D:/Documents/these_pablo/Models/BEACH2016/Analysis/Data/BEACH_R/'
-    path = 'C:/Users/pablo/Documents/pablo-models/pesti-beach16/Analysis/Data/BEACH_R/'
+    # path = 'C:/Users/pablo/Documents/pablo-models/pesti-beach16/Analysis/Data/BEACH_R/'
+    path = '../../Analysis/Data/BEACH_R/'
 
     detail_plots = ['n1', 'n2', 'n3', 'n4', 'n5', 'n7', 'n8',
                     'v4', 'v5', 'v7', 'v8', 'v9', 'v10',
@@ -166,7 +167,7 @@ def objective(x):
     return error
 
 
-x0 = [5, -1]
+x0 = [20, -2]  # [20, -2]
 
 # solution = minimize(objective, x0, method='SLSQP', bounds=bnds, jac=False)
 # solution = minimize(objective, x0, method='L-BFGS-B', bounds=bnds, jac=False)

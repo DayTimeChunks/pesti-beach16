@@ -179,8 +179,10 @@ if (length(co) == 1) {
 }
 
 
+
 # Remove likley GC-MS errors for individual plots > 19 ug/g
 co = subset(co, co$ug.g < 19)
+length(co$ug.g)
 # Remove NA's
 is = subset(is, !is.na(d13C))
 
@@ -199,6 +201,9 @@ sumIS = ddply(siso, c("ID"),
               d13C = mean(d13C)
               )
 sumIS = subset(sumIS, N_detsoil > 1 & d13C.SD < 0.8)
+
+
+length(sumIS$d13C)
 ```
 
 ### Merge conc and isotopes, delete isotope if low concentration (low reliability)
