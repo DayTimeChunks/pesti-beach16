@@ -1356,11 +1356,11 @@ class BeachModel(DynamicModel):
 
             # Degradation
             deg_light_dict = getMassDegradation(self, layer, theta_wp, self.lightmass[layer],  self.light_aged[layer],
-                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, deg_method='schroll',
+                                                frac="L", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, deg_method='walker',
                                                 bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
             deg_heavy_dict = getMassDegradation(self, layer, theta_wp, self.heavymass[layer], self.heavy_aged[layer],
-                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, deg_method='schroll',
+                                                frac="H", sor_deg_factor=1, fixed_dt50=self.fixed_dt50, deg_method='walker',
                                                 bioavail=self.bioavail,
                                                 debug=self.TEST_DEG, run=self.DEG)
             # self.report(deg_light_dict["mass_tot_new"], 'LoutZ' + str(layer))

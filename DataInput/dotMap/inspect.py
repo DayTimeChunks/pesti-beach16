@@ -13,7 +13,7 @@ clone = readmap("clone")
 generate_maps = {
     "outlets": False,
     "weekly_soils": False,
-    "applications": True,
+    "applications": False,
     "create_ldd": False
 }
 
@@ -328,3 +328,5 @@ if create_apps:
     report(burn_farmcrop, 'farm_burn_v3.map')
 
 
+pcodes = readmap('plot_code16')
+aguila(pcodes)
