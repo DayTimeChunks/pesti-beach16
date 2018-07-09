@@ -86,7 +86,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.LF = True
         self.ETP = True
         self.f_transp = 0.40
-        self.f_evap = 0.50
+        # self.f_evap = 0.50
 
         self.PEST = True
         self.TRANSPORT = True
@@ -1767,7 +1767,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 300  # 360
+nTimeSteps = 185  # 360
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework

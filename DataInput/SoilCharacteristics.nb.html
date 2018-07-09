@@ -175,33 +175,23 @@ $(document).ready(function () {
 <!-- rnb-text-begin -->
 <div id="getting-mean-and-sd-for-water-content-at-100cm-sunction" class="section level1">
 <h1>Getting mean and SD for water content at 100cm sunction</h1>
+<p>P. V Dijk defines:</p>
+<ul>
+<li>Wilting point at 1500 kPa (15295.7 cm)</li>
+<li>Field capacity at 33 kPa (336.5 cm)</li>
+<li>Saturation at 0 kPa (0 cm)</li>
+</ul>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubGlicmFyeShcInBseXJcIilcbmxpYnJhcnkoXCJkcGx5clwiKVxuYGBgIn0= -->
 <pre class="r"><code>library(&quot;plyr&quot;)
 library(&quot;dplyr&quot;)</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiXG5BdHRhY2hlbWVudCBkdSBwYWNrYWdlIDog46S847ixZHBseXLjpLzjuLJcblxuVGhlIGZvbGxvd2luZyBvYmplY3RzIGFyZSBtYXNrZWQgZnJvbSDjpLzjuLFwYWNrYWdlOnBseXLjpLzjuLI6XG5cbiAgICBhcnJhbmdlLCBjb3VudCwgZGVzYywgZmFpbHdpdGgsIGlkLCBtdXRhdGUsIHJlbmFtZSwgc3VtbWFyaXNlLCBzdW1tYXJpemVcblxuVGhlIGZvbGxvd2luZyBvYmplY3RzIGFyZSBtYXNrZWQgZnJvbSDjpLzjuLFwYWNrYWdlOnN0YXRz46S847iyOlxuXG4gICAgZmlsdGVyLCBsYWdcblxuVGhlIGZvbGxvd2luZyBvYmplY3RzIGFyZSBtYXNrZWQgZnJvbSDjpLzjuLFwYWNrYWdlOmJhc2XjpLzjuLI6XG5cbiAgICBpbnRlcnNlY3QsIHNldGRpZmYsIHNldGVxdWFsLCB1bmlvblxuIn0= -->
-<pre><code>
-Attachement du package : &lt;U+393C&gt;&lt;U+3E31&gt;dplyr&lt;U+393C&gt;&lt;U+3E32&gt;
-
-The following objects are masked from &lt;U+393C&gt;&lt;U+3E31&gt;package:plyr&lt;U+393C&gt;&lt;U+3E32&gt;:
-
-    arrange, count, desc, failwith, id, mutate, rename, summarise, summarize
-
-The following objects are masked from &lt;U+393C&gt;&lt;U+3E31&gt;package:stats&lt;U+393C&gt;&lt;U+3E32&gt;:
-
-    filter, lag
-
-The following objects are masked from &lt;U+393C&gt;&lt;U+3E31&gt;package:base&lt;U+393C&gt;&lt;U+3E32&gt;:
-
-    intersect, setdiff, setequal, union</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuTUFDID0gRlxuV0lOID0gRlxuaWYgKE1BQykge1xuICBpZiAoV0lOKXtcbiAgICBwYXRoID0gZmlsZS5wYXRoKFwiQzovVXNlcnMvRGF5VGltZUNodW5rcy9Eb2N1bWVudHMvUGhELy4uLlwiKVxuICAgIFxuICB9IGVsc2Uge1xuICAgIHBhdGggPSBmaWxlLnBhdGgoXCIvVXNlcnMvRGF5VGlnaHRDaHVua3MvRG9jdW1lbnRzL1BoRC8uLi5cIilcbiAgfVxufSBlbHNlIHtcbiAgcGF0aCA9IGZpbGUucGF0aChcIkQ6L0RvY3VtZW50cy90aGVzZV9wYWJsby9Nb2RlbHMvQkVBQ0gyMDE2L0RhdGFJbnB1dC9UYWJsZXMvRGF0YVNvdXJjZVwiKVxufVxucyA9IHJlYWQuY3N2MihmaWxlLnBhdGgocGF0aCwgXCJXMTAwLmNzdlwiKSlcbmBgYCJ9 -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuTUFDID0gRlxuV0lOID0gRlxuaWYgKE1BQykge1xuICBpZiAoV0lOKXtcbiAgICBwYXRoID0gZmlsZS5wYXRoKFwiQzovVXNlcnMvRGF5VGltZUNodW5rcy9Eb2N1bWVudHMvUGhELy4uLlwiKVxuICAgIFxuICB9IGVsc2Uge1xuICAgIHBhdGggPSBmaWxlLnBhdGgoXCIvVXNlcnMvRGF5VGlnaHRDaHVua3MvRG9jdW1lbnRzL1BoRC8uLi5cIilcbiAgfVxufSBlbHNlIHtcbiAgcGF0aCA9IGZpbGUucGF0aChcIkQ6L0RvY3VtZW50cy90aGVzZV9wYWJsby9Nb2RlbHMvQkVBQ0gyMDE2L0RhdGFJbnB1dC9UYWJsZXMvRGF0YVNvdXJjZVwiKVxufVxuYGBgIn0= -->
 <pre class="r"><code>MAC = F
 WIN = F
 if (MAC) {
@@ -213,19 +203,35 @@ if (MAC) {
   }
 } else {
   path = file.path(&quot;D:/Documents/these_pablo/Models/BEACH2016/DataInput/Tables/DataSource&quot;)
-}
-s = read.csv2(file.path(path, &quot;W100.csv&quot;))</code></pre>
+}</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubWVhbih6MyRtZWFuVzEwMClcblxuYGBgIn0= -->
-<pre class="r"><code>mean(z3$meanW100)
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxubWluKHozJG1lYW53MTAwKVxuXG5gYGAifQ== -->
+<pre class="r"><code>min(z3$meanw100)
 </code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDAuMzc5NzM1XG4ifQ== -->
-<pre><code>[1] 0.379735</code></pre>
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIDAuMzQ4MzQ1NlxuIn0= -->
+<pre><code>[1] 0.3483456</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+</div>
+<div id="apparent-soil-density" class="section level1">
+<h1>Apparent soil density</h1>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuejJzcFN1bSA9IGRkcGx5KHoyc3AsIGMoXCJMb2NhdGlvblwiKSwgXG4gICAgICAgICAgICAgc3VtbWFyaXNlLFxuICAgICAgICAgICAgIFNEID0gc2QocGIuU0QpLFxuICAgICAgICAgICAgIG1lYW4gPSBtZWFuKHBfYikpXG5cbmBgYCJ9 -->
+<pre class="r"><code>z2spSum = ddply(z2sp, c(&quot;Location&quot;), 
+             summarise,
+             SD = sd(pb.SD),
+             mean = mean(p_b))
+</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRXJyb3IgaW4gc3VtbWFyaXNlX2ltcGwoLmRhdGEsIGRvdHMpIDogb2JqZWN0ICdwX2InIG5vdCBmb3VuZFxuIn0= -->
+<pre><code>Error in summarise_impl(.data, dots) : object 'p_b' not found</code></pre>
 <!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
@@ -242,7 +248,7 @@ s = read.csv2(file.path(path, &quot;W100.csv&quot;))</code></pre>
 <!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2sgLSBXMTAwIg0Kb3V0cHV0Og0KICBwZGZfZG9jdW1lbnQ6IGRlZmF1bHQNCiAgaHRtbF9ub3RlYm9vazogZGVmYXVsdA0KLS0tDQoNCg0KIyBHZXR0aW5nIG1lYW4gYW5kIFNEIGZvciB3YXRlciBjb250ZW50IGF0IDEwMGNtIHN1bmN0aW9uDQoNCmBgYHtyfQ0KbGlicmFyeSgicGx5ciIpDQpsaWJyYXJ5KCJkcGx5ciIpDQpgYGANCg0KYGBge3J9DQpNQUMgPSBGDQpXSU4gPSBGDQppZiAoTUFDKSB7DQogIGlmIChXSU4pew0KICAgIHBhdGggPSBmaWxlLnBhdGgoIkM6L1VzZXJzL0RheVRpbWVDaHVua3MvRG9jdW1lbnRzL1BoRC8uLi4iKQ0KICAgIA0KICB9IGVsc2Ugew0KICAgIHBhdGggPSBmaWxlLnBhdGgoIi9Vc2Vycy9EYXlUaWdodENodW5rcy9Eb2N1bWVudHMvUGhELy4uLiIpDQogIH0NCn0gZWxzZSB7DQogIHBhdGggPSBmaWxlLnBhdGgoIkQ6L0RvY3VtZW50cy90aGVzZV9wYWJsby9Nb2RlbHMvQkVBQ0gyMDE2L0RhdGFJbnB1dC9UYWJsZXMvRGF0YVNvdXJjZSIpDQoNCn0NCg0KDQpgYGANCg0KYGBge3J9DQpzID0gcmVhZC5jc3YoZmlsZS5wYXRoKHBhdGgsICJXMTAwLmNzdiIpLCBzZXAgPSAiOyIsIGRlYyA9ICIuIikNCg0KcyA8LSBzWywgYygiRGVwdGguY20iLCAiVzEwMCIpXQ0Kc3VtUyA9IGRkcGx5KHMsIGMoIkRlcHRoLmNtIiksIA0KICAgICAgICAgICAgICBzdW1tYXJpc2UsDQogICAgICAgICAgICAgIFNEID0gc2QoVzEwMCksDQogICAgICAgICAgICAgIG1lYW5XMTAwID0gbWVhbihXMTAwKQ0KICAgICAgICAgICAgICApDQpsaWJyYXJ5KCJ0aWR5ciIpDQpzcyA9IHNlcGFyYXRlKGRhdGEgPSBzdW1TLCBjb2wgPSBEZXB0aC5jbSwgaW50byA9IGMoInNoYWxsb3ciLCAiZGVlcCIpLCBzZXAgPSAiLSIpDQoNCnNzJHNoYWxsb3cgPSBhcy5udW1lcmljKHNzJHNoYWxsb3cpDQoNCnoyID0gc3Vic2V0KHNzLCBzaGFsbG93ID4gMjUgJiBzaGFsbG93IDwgMTU1KSAgIyAyNTAgdG8gMTU1MCBtbQ0KejMgPSBzdWJzZXQoc3MsIHNoYWxsb3cgPj0gMTU1KSAjID4gMTU1MG1tDQptZWFuKHoyJG1lYW5XMTAwKQ0KbWVhbih6MyRtZWFuVzEwMCkNCg0KYGBgDQoNCiMgU2F2ZQ0KDQpgYGB7cn0NCndyaXRlLmNzdihzcywgZmlsZS5wYXRoKHBhdGgsICJXMTAwc3VtbWFyeV9SLmNzdiIpKQ0KYGBgDQoNCg==</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIlIgTm90ZWJvb2sgLSBXMTAwIg0Kb3V0cHV0Og0KICBwZGZfZG9jdW1lbnQ6IGRlZmF1bHQNCiAgaHRtbF9ub3RlYm9vazogZGVmYXVsdA0KLS0tDQoNCg0KIyBHZXR0aW5nIG1lYW4gYW5kIFNEIGZvciB3YXRlciBjb250ZW50IGF0IDEwMGNtIHN1bmN0aW9uDQoNClAuIFYgRGlqayBkZWZpbmVzOg0KDQotIFdpbHRpbmcgcG9pbnQgYXQgMTUwMCBrUGEgKDE1Mjk1LjcgY20pDQotIEZpZWxkIGNhcGFjaXR5IGF0IDMzIGtQYSAoMzM2LjUgY20pDQotIFNhdHVyYXRpb24gYXQgMCBrUGEgKDAgY20pDQoNCmBgYHtyfQ0KbGlicmFyeSgicGx5ciIpDQpsaWJyYXJ5KCJkcGx5ciIpDQpgYGANCg0KYGBge3J9DQpNQUMgPSBGDQpXSU4gPSBGDQppZiAoTUFDKSB7DQogIGlmIChXSU4pew0KICAgIHBhdGggPSBmaWxlLnBhdGgoIkM6L1VzZXJzL0RheVRpbWVDaHVua3MvRG9jdW1lbnRzL1BoRC8uLi4iKQ0KICAgIA0KICB9IGVsc2Ugew0KICAgIHBhdGggPSBmaWxlLnBhdGgoIi9Vc2Vycy9EYXlUaWdodENodW5rcy9Eb2N1bWVudHMvUGhELy4uLiIpDQogIH0NCn0gZWxzZSB7DQogIHBhdGggPSBmaWxlLnBhdGgoIkQ6L0RvY3VtZW50cy90aGVzZV9wYWJsby9Nb2RlbHMvQkVBQ0gyMDE2L0RhdGFJbnB1dC9UYWJsZXMvRGF0YVNvdXJjZSIpDQoNCn0NCg0KDQpgYGANCg0KYGBge3J9DQpzID0gcmVhZC5jc3YoZmlsZS5wYXRoKHBhdGgsICJXMTAwLmNzdiIpLCBzZXAgPSAiOyIsIGRlYyA9ICIuIikNCg0KcyA8LSBzWywgYygiRGVwdGguY20iLCAiVzAiLCAiVzEwMCIsICJXMjAwIildDQpzdW1TID0gZGRwbHkocywgYygiRGVwdGguY20iKSwgDQogICAgICAgICAgICAgc3VtbWFyaXNlLA0KICAgICAgICAgICAgIFNEdzAgPSBzZChXMCksDQogICAgICAgICAgICAgbWVhbncwID0gbWVhbihXMCksDQogICAgICAgICAgICAgU0R3MTAwID0gc2QoVzEwMCksDQogICAgICAgICAgICAgbWVhbncxMDAgPSBtZWFuKFcxMDApLA0KICAgICAgICAgICAgIFNEdzIwMCA9IHNkKFcyMDApLA0KICAgICAgICAgICAgIG1lYW53MjAwID0gbWVhbihXMjAwKSkNCmxpYnJhcnkoInRpZHlyIikNCnNzID0gc2VwYXJhdGUoZGF0YSA9IHN1bVMsIGNvbCA9IERlcHRoLmNtLCBpbnRvID0gYygic2hhbGxvdyIsICJkZWVwIiksIHNlcCA9ICItIikNCg0Kc3Mkc2hhbGxvdyA9IGFzLm51bWVyaWMoc3Mkc2hhbGxvdykNCg0KejB6MSA9IHN1YnNldChzcywgc2hhbGxvdyA8IDM1KQ0KejIgPSBzdWJzZXQoc3MsIHNoYWxsb3cgPj0gMzUgJiBzaGFsbG93IDwgMTU1KSAgIyAzNTAgdG8gMTU1MCBtbQ0KejMgPSBzdWJzZXQoc3MsIHNoYWxsb3cgPj0gMTU1KSAjID4gMTU1MG1tDQoNCg0KIyBTYXR1cmF0aW9uDQptYXgoejB6MSRTRHcwKQ0KDQptYXgoejIkbWVhbncwKQ0KbWF4KHoyJFNEdzApDQoNCiMgVzEwMA0KbWF4KHowejEkbWVhbncxMDApDQptaW4oejB6MSRtZWFudzEwMCkNCg0KbWF4KHoyJG1lYW53MTAwKQ0KbWluKHoyJG1lYW53MTAwKQ0KDQptYXgoejMkbWVhbncxMDApDQptaW4oejMkbWVhbncxMDApDQoNCg0KDQojIEZpZWxkIGNhcGFjaXR5IGZvciBib3R0b21sYXllciBub3QgYXZhaWxhYmxlDQojIHRha2luZyB0aGUgbWF4IFNEIGZvciBXMjAwDQptZWFuKHozJG1lYW53MjAwKQ0KbWF4KHozJFNEdzIwMCkNCg0KYGBgDQoNCiMgQXBwYXJlbnQgc29pbCBkZW5zaXR5DQoNCmBgYHtyfQ0KcGIgPSByZWFkLmNzdihmaWxlLnBhdGgocGF0aCwgInBfYi5jc3YiKSwgc2VwID0gIjsiLCBkZWMgPSAiLiIpDQpuYW1lcyhwYikNCg0Kc3VtX3BiID0gZGRwbHkocGIsIGMoIkxvY2F0aW9uIiwgIkRlcHRoLmNtIiksIA0KICAgICAgICAgICAgIHN1bW1hcmlzZSwNCiAgICAgICAgICAgICBwYi5TRCA9IHNkKHBfYi5nLmNtMyksDQogICAgICAgICAgICAgcGIgPSBtZWFuKHBfYi5nLmNtMykpDQoNCmxpYnJhcnkoInRpZHlyIikNCnNwID0gc2VwYXJhdGUoZGF0YSA9IHN1bV9wYiwgY29sID0gRGVwdGguY20sIGludG8gPSBjKCJzaGFsbG93IiwgImRlZXAiKSwgc2VwID0gIi0iKQ0KDQpzcCRzaGFsbG93ID0gYXMubnVtZXJpYyhzcCRzaGFsbG93KQ0KejJzcCA9IHN1YnNldChzcCwgc2hhbGxvdyA+PSAzNSAmIHNoYWxsb3cgPCAxNTUpICAjIDM1MCB0byAxNTUwIG1tDQp6M3NwID0gc3Vic2V0KHNwLCBzaGFsbG93ID49IDE1NSkgIyA+IDE1NTBtbQ0KDQp6MnNwU3VtID0gZGRwbHkoejJzcCwgYygiTG9jYXRpb24iKSwgDQogICAgICAgICAgICAgc3VtbWFyaXNlLA0KICAgICAgICAgICAgIFNEID0gc2QocGIuU0QpLA0KICAgICAgICAgICAgIG1lYW4gPSBtZWFuKHBiKSkNCg0KejNzcFN1bSA9IGRkcGx5KHozc3AsIGMoIkxvY2F0aW9uIiksIA0KICAgICAgICAgICAgIHN1bW1hcmlzZSwNCiAgICAgICAgICAgICBTRCA9IHNkKHBiLlNEKSwNCiAgICAgICAgICAgICBtZWFuID0gbWVhbihwYikpDQoNCmBgYA0KDQoNCiMgU2F2ZQ0KDQpgYGB7cn0NCndyaXRlLmNzdihzcywgZmlsZS5wYXRoKHBhdGgsICJXMTAwc3VtbWFyeV9SLmNzdiIpKQ0KYGBgDQoNCg==</div>
 
 
 

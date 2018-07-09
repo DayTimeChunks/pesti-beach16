@@ -8,6 +8,12 @@ output:
 
 # Getting mean and SD for water content at 100cm sunction
 
+P. V Dijk defines:
+
+- Wilting point at 1500 kPa (15295.7 cm)
+- Field capacity at 33 kPa (336.5 cm)
+- Saturation at 0 kPa (0 cm)
+
 ```{r}
 library("plyr")
 library("dplyr")
@@ -34,23 +40,80 @@ if (MAC) {
 ```{r}
 s = read.csv(file.path(path, "W100.csv"), sep = ";", dec = ".")
 
-s <- s[, c("Depth.cm", "W100")]
+s <- s[, c("Depth.cm", "W0", "W100", "W200")]
 sumS = ddply(s, c("Depth.cm"), 
-              summarise,
-              SD = sd(W100),
-              meanW100 = mean(W100)
-              )
+             summarise,
+             SDw0 = sd(W0),
+             meanw0 = mean(W0),
+             SDw100 = sd(W100),
+             meanw100 = mean(W100),
+             SDw200 = sd(W200),
+             meanw200 = mean(W200))
 library("tidyr")
 ss = separate(data = sumS, col = Depth.cm, into = c("shallow", "deep"), sep = "-")
 
 ss$shallow = as.numeric(ss$shallow)
 
-z2 = subset(ss, shallow > 25 & shallow < 155)  # 250 to 1550 mm
+z0z1 = subset(ss, shallow < 35)
+z2 = subset(ss, shallow >= 35 & shallow < 155)  # 350 to 1550 mm
 z3 = subset(ss, shallow >= 155) # > 1550mm
-mean(z2$meanW100)
-mean(z3$meanW100)
+
+
+# Saturation
+max(z0z1$SDw0)
+
+max(z2$meanw0)
+max(z2$SDw0)
+
+# W100
+max(z0z1$meanw100)
+min(z0z1$meanw100)
+
+max(z2$meanw100)
+min(z2$meanw100)
+
+max(z3$meanw100)
+min(z3$meanw100)
+
+
+
+# Field capacity for bottomlayer not available
+# taking the max SD for W200
+mean(z3$meanw200)
+max(z3$SDw200)
 
 ```
+
+# Apparent soil density
+
+```{r}
+pb = read.csv(file.path(path, "p_b.csv"), sep = ";", dec = ".")
+names(pb)
+
+sum_pb = ddply(pb, c("Location", "Depth.cm"), 
+             summarise,
+             pb.SD = sd(p_b.g.cm3),
+             pb = mean(p_b.g.cm3))
+
+library("tidyr")
+sp = separate(data = sum_pb, col = Depth.cm, into = c("shallow", "deep"), sep = "-")
+
+sp$shallow = as.numeric(sp$shallow)
+z2sp = subset(sp, shallow >= 35 & shallow < 155)  # 350 to 1550 mm
+z3sp = subset(sp, shallow >= 155) # > 1550mm
+
+z2spSum = ddply(z2sp, c("Location"), 
+             summarise,
+             SD = sd(pb.SD),
+             mean = mean(pb))
+
+z3spSum = ddply(z3sp, c("Location"), 
+             summarise,
+             SD = sd(pb.SD),
+             mean = mean(pb))
+
+```
+
 
 # Save
 

@@ -761,12 +761,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Stochastic / test parameters
         print("state:", m_state)
         self.theta_wp = scalar(self.ini_param.get("wp_zAll"))  # => 0.19
-        theta_sat_z2 = self.zero_map + readmap("mapInput/thSATz2")  # => 0.63
+        theta_sat_z2 = self.zero_map + (self.ini_param.get("sat_z2z3"))
         # scalar(self.ini_param.get("sat_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
-        theta_fcap_z2 = self.zero_map + readmap("mapInput/thFCz2")  # => 0.39
+        theta_fcap_z2 = self.zero_map + (self.ini_param.get("fc_z2z3"))
         # scalar(self.ini_param.get("fc_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
-        # self.report(self.theta_sat_z2, "thSATz2")
-        # self.report(self.theta_fcap_z2, "thFCz2")
 
         self.theta_sat = []
         self.theta_fc = []
