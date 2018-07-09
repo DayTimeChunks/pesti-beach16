@@ -273,7 +273,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.PERCOL = False  # z2 deep percolation (DP)
         self.ADLF = True
 
-        # Morris tests
+        # Morris_error tests
         m_state = get_state(state)  # First run will return state = 0
         vector = getInputVector(m_state, param_values)
         names = ['thsat0', 'thsat2',
@@ -703,7 +703,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Apple trees = 0.5
 
         """ Soil physical parameters
-            # Moved theta properties to initial(), for Morris test.
+            # Moved theta properties to initial(), for Morris_error test.
         """
         # Saturated moisture capacity is equal for depth0 and depth1
         # theta_sat_z0z1 = lookupscalar('croptable.tbl', 17, fields)  # saturated moisture of the first layer # [-]

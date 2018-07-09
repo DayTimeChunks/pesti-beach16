@@ -11,12 +11,13 @@ def checkLayerDepths(model, layer):
     model.report(model.layer_depth[layer], 'z' + str(layer) + 'Depth')
     # print('Mapminium, z' + str(layer) + ' ' + str(mapminimum(model.layer_depth[layer])))
 
-#  aguila --scenarios='{2}' aDepth0 aDepth1 aDepth2 aDepth3
+#  aguila --scenarios='{1}' aDepth0 aDepth1 aDepth2 aDepth3
 
 def checkRootDepths(model, root_depth_arr):
     for layer in range(len(root_depth_arr)):
         root_length = root_depth_arr[layer] / 10 ** 3  # Convert back to m
         model.report(root_length, 'aRDz'+str(layer))
+
 
 def checkMoistureProps(model, prop_list, name):
     for i in range(len(prop_list)):
@@ -88,3 +89,5 @@ def recordRunOff(model, runoff, unit='m3'):
 #
 
 # VOL_Mz0
+
+# aguila  --timesteps=[1,300,1] potTP

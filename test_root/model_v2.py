@@ -78,7 +78,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.TEST_roots = False
         self.TEST_Ksat = False
         self.TEST_thProp = False
-        self.TEST_theta = False
+        self.TEST_theta = True
         self.TEST_IR = False
         self.TEST_PERC = False
 
@@ -446,7 +446,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.fixed_dt50 = False
         self.bioavail = True
 
-        # Morris tests
+        # Morris_error tests
         m_state = get_state(state)  # First run will return state = 0
 
         """ Physical parameters for each layer """
@@ -561,26 +561,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # self.report(self.tot_depth, 'zTot_mm')
         #  aguila --scenarios='{2}' DepthZ0 DepthZ1 DepthZ2 DepthZ3 DepthZ4 zTot_mm
 
-        """
-        Hydro Maps
-        """
-        # Initial moisture (Final from model v1, Sept 30, 2016)
-        self.theta = []
-        if start_jday() < 166:
-            self.theta.append(readmap('d14_theta_z0'))  # map of initial soil moisture in top layer (-)
-            self.theta.append(readmap('d14_theta_z1'))  # d14_theta_z1
-            self.theta.append(readmap('d14_theta_z2'))
-            self.theta.append(readmap("d14_theta_z3"))  # * z3_factor + scalar(0.6) * self.gw_factor
-            self.theta.append(readmap("d14_theta_z4"))  # * z3_factor + scalar(0.6) * self.gw_factor
-        else:
-            self.theta.append(readmap('d166_theta_z0'))  # map of initial soil moisture in top layer (-)
-            self.theta.append(readmap('d166_theta_z1'))
-            self.theta.append(readmap('d166_theta_z2'))
-            self.theta.append(readmap("d166_theta_z3"))
-            self.theta.append(readmap("d166_theta_z4"))
-
-        # Need initial states to compute change in storage after each run
-        self.theta_ini = deepcopy(self.theta)
 
         """
         Pesticides Maps
@@ -789,33 +769,44 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         # Stochastic / test parameters
         print("state:", m_state)
-        self.theta_wp = scalar(self.ini_param.get("wp_zAll"))  # => 0.19
-        theta_sat_z2 = self.zero_map + readmap("thSATz2")  # => 0.63
-        # scalar(self.ini_param.get("sat_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
-        theta_fcap_z2 = self.zero_map + readmap("thFCz2")  # => 0.39
-        # scalar(self.ini_param.get("fc_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
-        # self.report(self.theta_sat_z2, "thSATz2")
-        # self.report(self.theta_fcap_z2, "thFCz2")
 
+        """
+        Hydro Maps
+        """
+        self.theta_wp = scalar(self.ini_param.get("wp_zAll"))  # => 0.19
+        theta_sat_z2 = self.zero_map + readmap("thSATz2")  # 0.63  scalar(self.ini_param.get("sat_z2z3"))
+        # scalar(self.ini_param.get("sat_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
+        theta_fcap_z2 = self.zero_map + readmap("thFCz2") # scalar(self.ini_param.get("fc_z2z3"))   # readmap("thFCz2")  # => 0.38702
+        # scalar(self.ini_param.get("fc_z2z3")) + mapnormal() * 0.04  # mean + 1SD(X)*0.04 = mean + (0.002)**0.5
+
+        # Initial moisture (Final from model v1, Sept 30, 2016)
+        self.theta = []
         self.theta_sat = []
         self.theta_fc = []
         self.theta_100 = []
-        for i in range(self.num_layers):
-            if i < 2:
+        for layer in range(self.num_layers):
+            if layer < 2:
                 self.theta_sat.append(deepcopy(self.zero_map))
                 self.theta_fc.append(deepcopy(self.zero_map))
-                self.theta_100.append(scalar(self.ini_param.get("W100_50mm")))
-            else:
+                self.theta_100.append(scalar(self.ini_param.get("W100_30mm")))
+            elif layer == 2:
                 self.theta_sat.append(deepcopy(theta_sat_z2))
                 self.theta_fc.append(deepcopy(theta_fcap_z2))
-                if i == 2:
-                    self.theta_100.append(scalar(self.ini_param.get("W100_300mm")))
-                else:
-                    self.theta_100.append(scalar(self.ini_param.get("W100_1500mm")))
+                self.theta_100.append(scalar(self.ini_param.get("W100_1550mm")))
+            else:
+                self.theta_sat.append(self.zero_map + scalar(self.ini_param.get("sat_z3")))
+                self.theta_fc.append(self.zero_map + scalar(self.ini_param.get("fc_z3")))
+                self.theta_100.append(scalar(self.ini_param.get("W100_1555mm")))
 
-                # Increase bottom layer's initial moisture by 20% saturation
-                # self.theta[-2] += self.theta_sat[-2] * .10
-                # self.theta[-2] = min(deepcopy(self.theta_sat[-2]), self.theta[-2])
+            if start_jday() < 166:
+                name = 'd14_theta_z' + str(layer)
+                self.theta.append(readmap(name))
+            else:
+                name = 'd166_theta_z' + str(layer)
+                self.theta.append(readmap(name))
+
+        # Need initial states to compute change in storage after each run
+        self.theta_ini = deepcopy(self.theta)
 
     def dynamic(self):
 
@@ -872,7 +863,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Apple trees = 0.5
 
         """ Soil physical parameters
-        # Moved theta properties to initial(), for Morris test.
+        # Moved theta properties to initial(), for Morris_error test.
         """
         # Basement layers defined under initial()
         self.theta_sat[0] = timeinputscalar('thetaSat_agr.tss', nominal(self.landuse))  # saturated moisture # [-]

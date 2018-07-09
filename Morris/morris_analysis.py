@@ -1,16 +1,7 @@
 # -*- coding: utf-8 -*-
 from SALib.analyze import morris as moa
-import numpy as np
-
-
-def getInputVector(row, sample_matrix):
-    """
-    :param row: relevant sample row
-    :param sample_matrix: numpy sample matrix
-    :return: a numpy row with required input parameters
-    """
-    test_vector = sample_matrix[row]
-    return test_vector
+from morris_test import *
+# import numpy as np
 
 
 def getTestOutput(variable, runs):
@@ -41,16 +32,67 @@ def getSiList(ouput_vars, problem, param_values, grid_jump, p, runs):
     return morris_results
 
 
-def saveInputMatrix(param_values):
-    np.savetxt("input_vectors.txt", param_values)
-
-
 def getInputMatrix(path):
     path += "input_vectors.txt"
     return np.loadtxt(path, float)
 
 
+# To test, uncomment:
+# get_runs(get_param_values())
+# First test of soil-water holding capacity on:
+ouput_vars = [
+    # Outlet - Hydro
+    "resW_tot_accVol_m3",  # Tot Q-sim
+    "resW_accEtp_m3",
+    "resW_accRunoff_m3",
+    "resW_o_accDrain_m3",
+    "resW_o_cellLatflow_m3",
+    "resW_accChStorage_m3",  # needed?
+    "resW_accBaseflow_m3",
+    # Outlet - Mass
+    "resM_EXP_Smet_g",  # TOT = RO + ADR + LF
+    "resM_oCONC_ugL",  # Tot concentration outlet
+    "resM_oCONC_ROFF_ugL",
+    "resM_oCONC_LF_ugL",
+    "resM_oCONC_ADR_ugL",
+    # Outlet - ISO
+    "resM_outISO_d13C",  # TOT = RO + ADR + LF
+    "resM_outISO_ROFF_d13C",
+    "resM_outISO_LF_d13C",
+    "resM_outISO_ADR_d13C",
+    # Soils - Mass
+    "resM_accDEG_L",
+    "resM_accDEGz0_L",
+    "resM_accAGED_L",
+    "resM_accAGED_DEG_L",
+    "resM_accVOLAT_L",
+    "resM_accRO_L",
+    "resM_accLCHz0_L",  # Leaching z0
+    "resM_accDPz1_L",  # Leaching z1
+    "resM_accADR_L",
+    "resM_accLF_L",  # Outlet cell mass-loss
+    # Nash - outlet
+    "resNash_q_m3",  # Q
+    "resNash_outConc_ugL",  # Conc
+    "resNash_outIso_delta",  # Iso
+    # Nash - soils
+    "nashN_compConc_L",
+    "nashV_compConc_L",
+    "nashS_compConc_L",
+    "nashN_compIso",
+    "nashV_compIso",
+    "nashS_compIso"
+]
 
+def run_test():
+    p = 4.0
+    grid_jump = 2
+    r = 4
+    params_test = get_param_values(p=p, grid_jump=grid_jump, r=r)
+    morris_results = getSiList(ouput_vars, problem, params_test, 2, p, get_runs(params_test))
+    saveMorris(ouput_vars, morris_results)
+
+run_test()
 
 
 

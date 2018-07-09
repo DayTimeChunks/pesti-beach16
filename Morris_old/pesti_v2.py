@@ -184,44 +184,51 @@ def getKfilm(model, runoffvelocity):
     return kl  # mm/day
 
 
-def getRunOffMass(model, theta_sat, precip, runoff_mm,
-                  mass,
+def getRunOffMass(model, precip, runoff_mm, mass,
                   transfer_model="simple-mt", sorption_model="linear",
-                  gas=True, debug=False):
-    # Aqueous concentration
-    conc_aq = getConcAq(model, 0, theta_sat, mass,
-                        sorption_model=sorption_model, gas=gas)
-
-    if transfer_model == "simple-mt":
-        mass_ro = conc_aq * runoff_mm * cellarea()
-    elif transfer_model == "nu-mlm-ro":
-        # non-uniform-mixing-layer-model-runoff (nu-mlm-ro)
-        # Considers a decrease in effective transfer as mixing layer depth increases
-        # Adapted from Ahuja and Lehman, 1983 in @Shi2011,
-        # Adaptation replaces Precip by Runoff amount.
-        b = 1  # [mm] Calibration constant, 1 >= b > 0 (b-ranges appear reasonable).
-        # As b decreases, mass transfer increases, model.z0 in mm
-        mass_ro = (runoff_mm * cellarea()) * exp(-b * model.z0) * conc_aq
-    elif transfer_model == "nu-mlm":
-        # non-uniform-mixing-layer-model (nu-mlm)
-        # Original from Ahuja and Lehman, 1983 in @Shi2011
-        b = 1  # [mm] Calibration constant, 1 >= b > 0 (b-ranges appear reasonable).
-        # As b decreases, mass transfer increases, model.z0 in mm
-        mass_ro = (precip * cellarea()) * exp(-b * model.z0) * conc_aq
-    elif transfer_model == "d-mlm":
-        # distributed mixing-layer-model (d-mlm)
-        # Adapted from Havis et al., 1992, and
-        # taking the K_L definition for laminar flow from Bennett and Myers, 1982.
-        mass_ro = getKfilm(model, runoff_mm) * cellarea() * conc_aq
+                  gas=True, debug=False, run=True):
+    if not run:
+        mass_ro = deepcopy(model.zero_map)
+    elif debug:
+        mass_ro = deepcopy(model.zero_map)
     else:
-        print("Run-off transfer model not stated")
-        return None
+        # Aqueous concentration
+        layer = 0
+        conc_aq = getConcAq(model, layer, mass, sorption_model=sorption_model, gas=gas)
 
-    if debug:
-        pass
-        # model.report(conc_aq, 'aCo')
-        # model.report(mass_ro, 'aMROa')
-        # model.report(runoff_mm, 'aRO')
+        if transfer_model == "simple-mt":
+            mass_ro = conc_aq * runoff_mm * cellarea()
+        elif transfer_model == "nu-mlm-ro":
+            # non-uniform-mixing-layer-model-runoff (nu-mlm-ro)
+            # Considers a decrease in effective transfer as mixing layer depth increases
+            # Adapted from Ahuja and Lehman, 1983 in @Shi2011,
+            # Adaptation replaces Precip by Runoff amount.
+            # beta_runoff = 1  # [mm] Calibration constant, 2 >= b > 0 (b-ranges appear reasonable).
+            # As b decreases, mass transfer increases, model.z0 in mm
+            mass_ro = conc_aq * (runoff_mm * cellarea()) * exp(-model.beta_runoff * model.layer_depth[layer])
+        elif transfer_model == "nu-mlm":
+            # non-uniform-mixing-layer-model (nu-mlm)
+            # Original from Ahuja and Lehman, 1983 in @Shi2011
+            # beta_runoff = 1 # [mm] Calibration constant, 2 >= b > 0 (b-ranges appear reasonable).
+            # As b decreases, mass transfer increases, model.z0 in mm
+            mass_ro = conc_aq * (precip * cellarea()) * exp(-model.beta_runoff * model.layer_depth[layer])
+            mass_ro = ifthenelse(runoff_mm > scalar(0), mass_ro, scalar(0))
+        elif transfer_model == "d-mlm":
+            # distributed mixing-layer-model (d-mlm)
+            # Adapted from Havis et al., 1992, and
+            # taking the K_L definition for laminar flow from Bennett and Myers, 1982.
+            mass_ro = getKfilm(model, runoff_mm) * cellarea() * conc_aq
+        else:
+            print("Run-off transfer model not stated")
+            return None
+
+        mReport = False
+        if mReport:
+            pass
+            # model.report(conc_aq, 'aCo')
+            # model.report(mass_ro, 'aMROa')
+            # model.report(runoff_mm, 'aRO')
+
     return mass_ro
 
 

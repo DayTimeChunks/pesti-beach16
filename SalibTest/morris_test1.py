@@ -3,7 +3,7 @@ from SALib.analyze import morris as moa
 from SALib.test_functions import Ishigami
 import numpy as np
 
-
+#
 # Source
 # http://salib.readthedocs.io/en/latest/basics.html
 
@@ -56,7 +56,7 @@ Delta
 
 """
 Dairon...
-p is the number of level in the grid (gamma) for each dimension. 
+p is the number of level in the grid (gamma) for each dimension.
 Values of p = 4 and r = 10 are generally satisfactory for screening factor.
 """
 p = 4.0  # q in Dairon

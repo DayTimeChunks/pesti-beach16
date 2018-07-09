@@ -22,7 +22,7 @@ param_values = saltelli.sample(problem, 1000)
 # print(param_values.shape) # -> (8000, 3)
 # print(param_values.shape[0]) # -> 8000
 
-# TODO: Is saltelli.sample() also used in Morris?
+# TODO: Is saltelli.sample() also used in Morris_error?
 # ...to generate the matrix of test cases?
 
 # Run model (example)

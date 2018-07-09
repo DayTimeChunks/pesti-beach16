@@ -378,7 +378,7 @@ class BeachModel(DynamicModel):
         self.fixed_dt50 = False
         self.bioavail = True
 
-        # Morris tests
+        # Morris_error tests
         m_state = get_state(state)  # First run will return state = 0
 
         """ Physical parameters for each layer """
@@ -828,7 +828,7 @@ class BeachModel(DynamicModel):
         # Apple trees = 0.5
 
         """ Soil physical parameters
-        # Moved theta properties to initial(), for Morris test.
+        # Moved theta properties to initial(), for Morris_error test.
         """
         # Basement layers defined under initial()
         self.theta_sat[0] = timeinputscalar('tssInput/thetaSat_agr.tss', nominal(self.landuse))  # saturated moisture # [-]

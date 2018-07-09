@@ -61,22 +61,6 @@ def getLightMass(model, mass, app_indx):
     delta = mass / (1 + model.r_standard * (model.appDelta[app_indx] / 1000 + 1))
     return delta
 
-# def getConcAds(model, layer, mass, gas=True):
-#     # mass / Kg soil
-#     depth = model.layer_depth[layer]
-#     if gas:
-#         theta_gas = max(model.theta_sat[layer] - model.theta[layer], scalar(0))
-#         # [mass pest/Kg soil]
-#         conc_ads = max(scalar(0), mass / ((cellarea() * depth) *
-#                                           (theta_gas / (model.k_h * model.k_d) +
-#                                            model.theta[layer] / model.k_d +
-#                                            model.p_b)))
-#     else:
-#         print("No implementation without gas available")
-#         raise NotImplementedError
-#
-#     return conc_ads
-
 
 def getVolatileMass(model, temp_air, mass,  # frac,
                     rel_diff_model="option-2", sorption_model="linear",

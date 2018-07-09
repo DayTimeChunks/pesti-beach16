@@ -67,18 +67,18 @@ def repNashConcComposites(model, north_ave_conc, valley_ave_conc, south_ave_conc
     2 - (conc_north_diff/var_north +  valley + south)
     """
     # Nash
-    conc_north_obs = timeinputscalar('tssAnalysis/northConc.tss', ordinal("mapAnalysis/north_ave.map"))
+    conc_north_obs = timeinputscalar('northConc.tss', ordinal("north_ave"))
     model.northConc_diff += ifthenelse(conc_north_obs > 0, (north_ave_conc - conc_north_obs) ** 2, scalar(0))
     model.northConc_var += ifthenelse(conc_north_obs > 0, (north_ave_conc - model.conc_compNorth_mean) ** 2,
                                      scalar(0))  # ug/g
     
     # Nash
-    conc_valley_obs = timeinputscalar('tssAnalysis/valleyConc.tss', ordinal("mapAnalysis/valley_ave"))
+    conc_valley_obs = timeinputscalar('valleyConc.tss', ordinal("valley_ave"))
     model.valleyConc_diff += ifthenelse(conc_valley_obs > 0, (valley_ave_conc - conc_valley_obs) ** 2, scalar(0))
     model.valleyConc_var += ifthenelse(conc_valley_obs > 0, (valley_ave_conc - model.conc_compValley_mean) ** 2,
                                       scalar(0))  # ug/g
 
-    conc_south_obs = timeinputscalar('tssAnalysis/southConc.tss', ordinal("mapAnalysis/south_ave"))
+    conc_south_obs = timeinputscalar('southConc.tss', ordinal("south_ave"))
     model.southConc_diff += ifthenelse(conc_south_obs > 0, (south_ave_conc - conc_south_obs) ** 2, scalar(0))
     model.southConc_var += ifthenelse(conc_south_obs > 0, (south_ave_conc - model.conc_compSouth_mean) ** 2,
                                      scalar(0))  # ug/g
@@ -98,19 +98,19 @@ def repNashConcComposites(model, north_ave_conc, valley_ave_conc, south_ave_conc
 
 
 def reptNashIsoComposites(model, north_ave_iso, valley_ave_iso, south_ave_iso):
-    iso_north_obs = timeinputscalar('tssAnalysis/northDelta.tss', ordinal("mapAnalysis/north_ave"))
+    iso_north_obs = timeinputscalar('northDelta.tss', ordinal("north_ave"))
     model.northIso_diff += ifthenelse(iso_north_obs < 1e06, (north_ave_iso - iso_north_obs) ** 2, scalar(0))
     model.northIso_var += ifthenelse(iso_north_obs < 1e06, (north_ave_iso - model.delta_compNorth_mean) ** 2,
                                       scalar(0))  #
     north_nash_compIso = 1 - (model.northIso_diff / model.northIso_var)
 
-    iso_valley_obs = timeinputscalar('tssAnalysis/valleyDelta.tss', ordinal("mapAnalysis/valley_ave"))
+    iso_valley_obs = timeinputscalar('valleyDelta.tss', ordinal("valley_ave"))
     model.valleyIso_diff += ifthenelse(iso_valley_obs < 1e06, (valley_ave_iso - iso_valley_obs) ** 2, scalar(0))
     model.valleyIso_var += ifthenelse(iso_valley_obs < 1e06, (valley_ave_iso - model.delta_compValley_mean) ** 2,
                                      scalar(0))
     valley_nash_compIso = 1 - (model.valleyIso_diff / model.valleyIso_var)
 
-    iso_south_obs = timeinputscalar('tssAnalysis/southDelta.tss', ordinal("mapAnalysis/south_ave"))
+    iso_south_obs = timeinputscalar('southDelta.tss', ordinal("south_ave"))
     model.southIso_diff += ifthenelse(iso_south_obs < 1e06, (south_ave_iso - iso_south_obs) ** 2, scalar(0))
     model.southIso_var += ifthenelse(iso_south_obs < 1e06, (south_ave_iso - model.delta_compSouth_mean) ** 2,
                                      scalar(0))

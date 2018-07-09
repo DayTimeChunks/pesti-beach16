@@ -17,7 +17,7 @@ def getConcAq(model, layer, mass, sorption_model="linear", gas=True):
     if layer < 2:
         p_b = model.p_bAgr
     else:
-        p_b = model.p_bMax
+        p_b = model.p_bZ
 
     if mapminimum(model.theta[layer]) < scalar(1e-04):
         print("Moisture is < 1e-04 on layer: " + str(layer))
@@ -60,6 +60,22 @@ def getConcAq(model, layer, mass, sorption_model="linear", gas=True):
 def getLightMass(model, mass, app_indx):
     delta = mass / (1 + model.r_standard * (model.appDelta[app_indx] / 1000 + 1))
     return delta
+
+# def getConcAds(model, layer, mass, gas=True):
+#     # mass / Kg soil
+#     depth = model.layer_depth[layer]
+#     if gas:
+#         theta_gas = max(model.theta_sat[layer] - model.theta[layer], scalar(0))
+#         # [mass pest/Kg soil]
+#         conc_ads = max(scalar(0), mass / ((cellarea() * depth) *
+#                                           (theta_gas / (model.k_h * model.k_d) +
+#                                            model.theta[layer] / model.k_d +
+#                                            model.p_b)))
+#     else:
+#         print("No implementation without gas available")
+#         raise NotImplementedError
+#
+#     return conc_ads
 
 
 def getVolatileMass(model, temp_air, mass,  # frac,
@@ -149,13 +165,13 @@ def getRunOffMass(model, precip, runoff_mm, mass,
             # Considers a decrease in effective transfer as mixing layer depth increases
             # Adapted from Ahuja and Lehman, 1983 in @Shi2011,
             # Adaptation replaces Precip by Runoff amount.
-            # model.beta_runoff = 1  # [mm] Calibration constant, 2 >= b > 0 (b-ranges appear reasonable).
+            # beta_runoff = 1  # [mm] Calibration constant, 2 >= b > 0 (b-ranges appear reasonable).
             # As b decreases, mass transfer increases, model.z0 in mm
             mass_ro = conc_aq * (runoff_mm * cellarea()) * exp(-model.beta_runoff * model.layer_depth[layer])
         elif transfer_model == "nu-mlm":
             # non-uniform-mixing-layer-model (nu-mlm)
             # Original from Ahuja and Lehman, 1983 in @Shi2011
-            # model.beta_runoff = 1  # [mm] Calibration constant, 2 >= b > 0 (b-ranges appear reasonable).
+            # beta_runoff = 1 # [mm] Calibration constant, 2 >= b > 0 (b-ranges appear reasonable).
             # As b decreases, mass transfer increases, model.z0 in mm
             mass_ro = conc_aq * (precip * cellarea()) * exp(-model.beta_runoff * model.layer_depth[layer])
             mass_ro = ifthenelse(runoff_mm > scalar(0), mass_ro, scalar(0))
@@ -195,7 +211,7 @@ def getLeachedMass(model, layer, water_flux,
             if layer < 2:
                 p_b = model.p_bAgr
             else:
-                p_b = model.p_bMax
+                p_b = model.p_bZ
 
             # Aqueous concentration
             conc_aq = getConcAq(model, layer, mass,
@@ -402,7 +418,7 @@ def getMassDegradation(model, layer, theta_wp, mass, old_aged_mass,
         if layer < 2:
             p_b = model.p_bAgr
         else:
-            p_b = model.p_bMax
+            p_b = model.p_bZ
 
         # Step 0 - Obtain species concentration (all phases)
         conc_aq = getConcAq(model, layer, mass,
@@ -415,6 +431,7 @@ def getMassDegradation(model, layer, theta_wp, mass, old_aged_mass,
         # Check gas
         mass_gas = max(mass - mass_aq - mass_ads, scalar(0))
 
+
         if bioavail:
             # Mass compartment (bio-available fraction)
             bioa_mass = mass_ads * exp(-model.k_aged * scalar(model.jd_dt))
@@ -423,8 +440,9 @@ def getMassDegradation(model, layer, theta_wp, mass, old_aged_mass,
             bioa_mass = deepcopy(mass_ads)
             aged_mass = deepcopy(model.zero_map)
         #
+        k_ab = max(ln(2) / model.dt_50_ab, scalar(0))
         total_aged = old_aged_mass + aged_mass
-        mass_aged_new = total_aged * exp(-model.k_ab * scalar(model.jd_dt))  # k_ab (abiotic deg rate)
+        mass_aged_new = total_aged * exp(-k_ab * scalar(model.jd_dt))
         mass_deg_aged = total_aged - mass_aged_new
 
         # tot_ba_mass = mass_aq + mass_ads + mass_gas
@@ -452,11 +470,11 @@ def getMassDegradation(model, layer, theta_wp, mass, old_aged_mass,
 
         # Convert to degradation constant
         # Deg in dissolved phase
-        k_b = ifthenelse(dt_50 > 0, ln(2) / dt_50,
-                         scalar(0))  # Constant of degradation (-) is dynamic, based on Theta and Temp.
+        k_b = max(ln(2) / dt_50, scalar(0))  # Constant of degradation (-) is dynamic, based on Theta and Temp.
 
         # Deg in sorbed phase (now assumed equal)
         k_bs = k_b * sor_deg_factor
+
 
         # Step 2 - Degrade phase fractions
         # First order degradation kinetics
@@ -468,6 +486,9 @@ def getMassDegradation(model, layer, theta_wp, mass, old_aged_mass,
             mass_ads_new = bioa_mass * exp(-1 * k_bs * scalar(model.jd_dt))
 
         # Step 1 - Convert back to mass (i.e., after degradation in each phase)
+        # mass_aq_new = conc_aq_new * (theta_layer * depth * cellarea())
+        # mass_ads_new = conc_ads_new * (model.p_b * depth * cellarea())  # pb = g/cm3
+        # mass_gas = conc_gas * (theta_gas * depth * cellarea())
         mass_tot_new = mass_aq_new + mass_ads_new + mass_gas  # + aged_mass
         mass_deg_aq = mass_aq - mass_aq_new
         mass_deg_ads = bioa_mass - mass_ads_new
