@@ -533,6 +533,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 name = 'd166_theta_z' + str(layer)
                 self.theta.append(readmap(name))
 
+            self.theta[layer] = ifthenelse(self.theta[layer] > self.theta_sat[layer], self.theta_sat[layer], self.theta[layer])
+
 
         """ Soil Properties """
         self.p_bZ = scalar(self.ini_param.get("p_bZ"))  # Soil bulk density (g/cm^3)
@@ -1133,20 +1135,22 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 SW1 = self.theta[layer + 1] * self.layer_depth[layer + 1] + infil_z1
                 self.theta[layer + 1] = SW1 / self.layer_depth[layer + 1]  # [-]
 
-                if mapmaximum(self.theta[layer]) > mapmaximum(self.theta_sat[layer]):
-                    val = float(mapmaximum(self.theta[layer])) - float(mapmaximum(self.theta_sat[layer]))
+                excess = max(self.theta[layer] - self.theta_sat[layer], scalar(0))
+                if mapmaximum(excess) > 0:
+                    val = float(mapmaximum(excess))
                     self.theta[layer] = ifthenelse(self.theta[layer] > self.theta_sat[layer], self.theta_sat[layer],
                                                    self.theta[layer])
-                    if float(val) > float(1e-06):
-                        print("Error at Percolation(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
+                    if float(val) > float(1e-02):
+                        print("Corrected Percolation(), SAT was exceeded, layer " + str(layer) + ' by ' + str(val))
 
-                if mapmaximum(self.theta[layer + 1]) > mapmaximum(self.theta_sat[layer + 1]):
-                    val = float(mapmaximum(self.theta[layer + 1])) - float(mapmaximum(self.theta_sat[layer + 1]))
+                excessLj = max(self.theta[layer + 1] - self.theta_sat[layer + 1], scalar(0))
+                if mapmaximum(excessLj) > 0:
+                    val = float(mapmaximum(excessLj))
                     self.theta[layer + 1] = ifthenelse(self.theta[layer + 1] > self.theta_sat[layer + 1],
                                                        self.theta_sat[layer + 1],
                                                        self.theta[layer + 1])
-                    if float(val) > float(1e-06):
-                        print("Error at Percolation(), SAT exceeded, layer " + str(layer + 1))
+                    if float(val) > float(1e-02):
+                        print("Corrected Percolation(), SAT exceeded, layer " + str(layer + 1) + ' by ' + str(val))
 
                 # RunOff Mass
                 # Mass & delta run-off (RO)

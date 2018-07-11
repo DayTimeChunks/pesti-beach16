@@ -4,6 +4,8 @@ from morris_test import *
 # import numpy as np
 
 
+# TODO: Evaluates only the last observation,
+# so need to compute first the cumulative for each
 def getTestOutput(variable, runs):
     """
     :param variable: name of the variable to extract

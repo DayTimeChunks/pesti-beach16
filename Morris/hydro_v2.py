@@ -168,7 +168,7 @@ def getPercolation(model, layer, k_sat, isPermeable=True):
                                  ((exp(model.theta[layer] - model.theta_fc[layer])) - 1) / (
                                      (exp(model.theta_sat[layer] - model.theta_fc[layer])) - 1)), scalar(0))  # [mm]
 
-    if layer < (len(model.layer_depth) - 1):  # layers: 0,2,2
+    if layer < (len(model.layer_depth) - 1):
         # Step 5. Check bottom capacity
         sw_check_bottom = model.theta[layer + 1] * model.layer_depth[layer + 1] + percolation
         exceed_mm = max(sw_check_bottom - model.theta_sat[layer + 1] * model.layer_depth[layer + 1], scalar(0))
@@ -177,12 +177,17 @@ def getPercolation(model, layer, k_sat, isPermeable=True):
 
         sw_check_again = model.theta[layer + 1] * model.layer_depth[layer + 1] + percolation
         exceed2_mm = max(sw_check_again - model.theta_sat[layer + 1] * model.layer_depth[layer + 1], scalar(0))
+        if mapmaximum(exceed2_mm) > 0:
+            percolation -= (exceed2_mm * 1.01)
 
-        if mapmaximum(sw_check_again) > mapmaximum(model.theta_sat[layer + 1] * model.layer_depth[layer + 1]):
-            val = float(mapmaximum(sw_check_again/model.layer_depth[layer + 1])) - float(mapmaximum(model.theta_sat[layer + 1]))
-            if val > float(1e-06):
-                model.report(exceed2_mm, 'inEXz' + str(layer + 1))
-                print("Error at fn = Percolation(), SAT exceeded, layer " + str(layer + 1) + ' by ' + str(val))
+            sw_check3 = model.theta[layer + 1] * model.layer_depth[layer + 1] + percolation
+            exceed3_mm = max(sw_check3 - model.theta_sat[layer + 1] * model.layer_depth[layer + 1], scalar(0))
+
+            if mapmaximum(exceed3_mm) > 0:
+                val = float(mapmaximum(exceed3_mm/model.layer_depth[layer + 1]))
+                if val > float(1e-06):
+                    model.report(exceed3_mm, 'inEXz' + str(layer + 1))
+                    print("Error at fn = Percolation(), SAT exceeded, layer " + str(layer + 1) + ' by ' + str(val))
 
     else:  # Basement layer
         if not isPermeable:
@@ -228,13 +233,14 @@ def getLateralFlow_Manfreda(model, layer, run=True):
     if mapminimum(model.theta[layer]) < 0:
         print("Error Negative Theta, before LF layer" + str(layer))
 
-    if mapmaximum(model.theta[layer]) > mapmaximum(model.theta_sat[layer]):
-        val = float(mapmaximum(model.theta[layer])) - float(mapmaximum(model.theta_sat[layer]))
-        if float(val) > float(1e-06):
-            print("Error before getLateralFlow(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
+    exceedLi = max(model.theta[layer] - model.theta_sat[layer], scalar(0))
+    if mapmaximum(exceedLi) > 0:
+        val = float(mapmaximum(exceedLi))
         model.theta[layer] = ifthenelse(model.theta[layer] < 0, scalar(0), model.theta[layer])
         model.theta[layer] = ifthenelse(model.theta[layer] > model.theta_sat[layer], model.theta_sat[layer],
                                         model.theta[layer])
+        if float(val) > float(1e-06):
+            print("Corrected sig. error before getLateralFlow(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
 
     if not run:
         cell_sw_outflow = scalar(0)
@@ -294,8 +300,9 @@ def getLateralFlow(model, layer, run=True):
     if mapminimum(model.theta[layer]) < 0:
         print("Error Negative Theta, before LF layer" + str(layer))
 
-    if mapmaximum(model.theta[layer]) > mapmaximum(model.theta_sat[layer]):
-        val = float(mapmaximum(model.theta[layer])) - float(mapmaximum(model.theta_sat[layer]))
+    exceedLi = max(model.theta[layer] - model.theta_sat[layer], scalar(0))
+    if mapmaximum(exceedLi) > 0:
+        val = float(mapmaximum(exceedLi))
         if float(val) > float(1e-06):
             print("Error before getLateralFlow(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
         model.theta[layer] = ifthenelse(model.theta[layer] < 0, scalar(0), model.theta[layer])
@@ -368,11 +375,12 @@ def getLateralFlow(model, layer, run=True):
         #
         if mapminimum(new_moisture) < 0:
             print("Error on new moisture fn = getLateralFlow(), Negative Theta layer" + str(layer))
-        if mapmaximum(new_moisture) > mapmaximum(model.theta_sat[layer]):
-            val = float(mapmaximum(new_moisture)) - float(mapmaximum(model.theta_sat[layer]))
-            new_moisture = ifthenelse(new_moisture < 0, scalar(0),
-                                      ifthenelse(new_moisture > model.theta_sat[layer], model.theta_sat[layer],
-                                      new_moisture))
+        exceedLi = max(new_moisture - model.theta_sat[layer], scalar(0))
+        if mapmaximum(exceedLi) > 0:
+            val = float(mapmaximum(exceedLi))
+            new_moisture = max(new_moisture, scalar(0))
+            new_moisture = min(new_moisture, model.theta_sat[layer])
+
             if float(val) > float(1e-06):
                 print("Error on new moisture fn = getLateralFlow(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
                 error = ifthenelse(new_moisture > model.theta_sat[layer], scalar(1), scalar(0))

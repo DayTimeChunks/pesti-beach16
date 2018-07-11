@@ -19,11 +19,8 @@ def getConcAq(model, layer, mass, sorption_model="linear", gas=True):
     else:
         p_b = model.p_bZ
 
-    if mapminimum(model.theta[layer]) < scalar(1e-04):
-        print("Moisture is < 1e-04 on layer: " + str(layer))
-        # model.theta[layer] = max(model.theta[layer], scalar(1e-03))
-        # theta_layer = model.theta[layer]
-        # conc_aq = scalar(0)
+    if mapminimum(model.theta[layer]) < scalar(0):
+        print("Moisture is " + float(mapminimum(model.theta[layer])) + " on layer: " + str(layer))
 
     if sorption_model == "linear":
         # Retardation factor (dimensionless)
@@ -60,22 +57,6 @@ def getConcAq(model, layer, mass, sorption_model="linear", gas=True):
 def getLightMass(model, mass, app_indx):
     delta = mass / (1 + model.r_standard * (model.appDelta[app_indx] / 1000 + 1))
     return delta
-
-# def getConcAds(model, layer, mass, gas=True):
-#     # mass / Kg soil
-#     depth = model.layer_depth[layer]
-#     if gas:
-#         theta_gas = max(model.theta_sat[layer] - model.theta[layer], scalar(0))
-#         # [mass pest/Kg soil]
-#         conc_ads = max(scalar(0), mass / ((cellarea() * depth) *
-#                                           (theta_gas / (model.k_h * model.k_d) +
-#                                            model.theta[layer] / model.k_d +
-#                                            model.p_b)))
-#     else:
-#         print("No implementation without gas available")
-#         raise NotImplementedError
-#
-#     return conc_ads
 
 
 def getVolatileMass(model, temp_air, mass,  # frac,
@@ -232,6 +213,10 @@ def getLeachedMass(model, layer, water_flux,
                 print("Error, mass < mass_aq, on layer: ", str(layer))
                 model.report(test, 'aMzErr' + str(layer))
 
+            if mapminimum(mass_aq) < 0:
+                print("Corrected error caught in getLeachedMass(), mass_aq < 0")
+                mass_aq = max(mass_aq, scalar(0))
+
             if sorption_model == "linear":
                 # Retardation factor
                 retard_layer = scalar(1) + (p_b * model.k_d) / theta_layer
@@ -309,6 +294,10 @@ def getLatMassFlux(model, layer, mass, flux_map_mm,
             mass_gain = upstream(model.ldd_subs, mass_loss)
             new_mass = mass - mass_loss + mass_gain
             # http://pcraster.geo.uu.nl/pcraster/4.1.0/doc/manual/op_upstream.html
+
+            if mapminimum(new_mass) < 0:
+                print("Corrected error caught in getLatMassFlux(), new_mass < 0")
+                new_mass = max(new_mass, scalar(0))
 
             if debug:
                 model.report(mass, 'aMi' + str(layer))
