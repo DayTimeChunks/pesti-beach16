@@ -16,7 +16,10 @@ def checkLayerDepths(model, layer):
 def checkRootDepths(model, root_depth_arr):
     for layer in range(len(root_depth_arr)):
         root_length = root_depth_arr[layer] / 10 ** 3  # Convert back to m
-        model.report(root_length, 'aRDz'+str(layer))
+        model.report(root_length, 'RDz'+str(layer))
+
+        pct_of_layer = 100 * (root_length / (model.layer_depth[layer] / 10 ** 3))  # Convert back to m
+        model.report(pct_of_layer, 'RDpctz' + str(layer))
 
 
 def checkMoistureProps(model, prop_list, name):

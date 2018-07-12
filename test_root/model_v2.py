@@ -25,13 +25,10 @@ morris = False
 if morris:
     from morris_test import *
 else:
-    runs = 3
+    runs = 2
 
 """
-Testing aged degradation, based on ES&T from Sylvain.
-Mass balance will be off, need to add the aged-degraded mass!
 
-avail_frac = 0.01  (avoid fractionation during early period)
 """
 
 
@@ -75,7 +72,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
     def premcloop(self):
         self.DEBUG = False
         self.TEST_depth = False
-        self.TEST_roots = False
+        self.TEST_roots = True
         self.TEST_Ksat = False
         self.TEST_thProp = False
         self.TEST_theta = True
@@ -984,7 +981,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 root_depth.append(scalar(0))
 
         if self.TEST_roots:
-            checkRootDepths(root_depth)
+            checkRootDepths(self, root_depth)
+
 
         # calculation of fraction of soil covered by vegetation
         # frac_soil_cover = 2 - exp(-mu * LAI)
@@ -1732,7 +1730,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 200  # 360
+nTimeSteps = 300  # 360
 myAlteck16 = BeachModel("clone_nom.map")  # an instance of the model, which inherits from class: DynamicModel
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
