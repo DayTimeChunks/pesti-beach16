@@ -1,6 +1,63 @@
 import numpy as np
+import pandas as pd
 from pyswarm import pso
 from model_v2 import *
+
+def getOutletData(name, var=None, tss=True):
+    path = '../Analysis/Data/BEACH_R/'
+    if var is None:
+        var = name
+    if tss:
+        path += name + ".tss"
+        obs = pd.read_table(path, header=None)
+        obs = obs.rename(index=str, columns={0: "Jdays", 1: var})
+    else:
+        path += name + ".csv"
+        obs = pd.read_csv(path, sep=",")
+
+    return obs
+
+
+def get_outlet_merged():
+
+    # Simulated
+    filename = "resW_" + "tot_accVOl_m3" + ".tss"
+    out_sim = pd.read_table(filename,
+                            skiprows=4, delim_whitespace=True,
+                            names=['Jdays', 'SIM'],
+                            header=None)
+
+    # Observed
+    obs = getOutletData('q_obs_m3day', var='m3d')
+
+
+    # Merge
+    match = pd.merge(obs, out_sim, how='inner', on='Jdays')
+    return match
+
+
+def get_error(var):
+    """
+
+    :param var: 'm3d'
+    :return:
+    """
+    # Considers only outlet volume discharged
+    # Define observation dataframes to use
+
+    df1 = get_outlet_merged()
+
+    # Nash
+    mean = df1[var].mean()
+    # Diff sim vs. obs
+    dfn = df1.assign(diff_sim=lambda row: (row['SIM'] - row[var]) ** 2)
+    err_sim = dfn['diff_sim'].sum()
+    # Variance
+    dfn = dfn.assign(diff_obs=lambda row: (row[var] - mean) ** 2)
+    err_obs = dfn['diff_obs'].sum()
+    error = err_sim / err_obs  # nash = 1 - error
+
+    return error
 
 
 def objective(x):
@@ -17,7 +74,7 @@ def objective(x):
                                     firstTimestep=firstTimeStep)
     dynamicModel.run()
 
-    error_q = get_error('qm3')
+    error_q = get_error('m3d')
     print(error_q)
     return error_q
 
