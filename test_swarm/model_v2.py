@@ -56,7 +56,7 @@ def get_state(old_state):
 
 
 def start_jday():
-    start_sim = 166  # 213 # 166
+    start_sim = 1  # 213 # 166
     return start_sim
 
 

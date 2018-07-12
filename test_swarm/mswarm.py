@@ -80,7 +80,7 @@ def objective(x):
     :param x:
     :return:
     """
-    nTimeSteps = 200  # 360
+    nTimeSteps = 360  # 360
     myAlteck16 = BeachModel("clone_nom.map", x)
     dynamicModel = DynamicFramework(myAlteck16,
                                     lastTimeStep=nTimeSteps,
@@ -158,6 +158,6 @@ ub = [0.99,
 
 cons = [clf_constraint, gamma_constraint, fc_constraints, sat_constraints, wp_constraints]
 
-xopt, fopt = pso(objective, lb, ub, ieqcons=cons, swarmsize=1, maxiter=5, minfunc=1e-4, debug=True)
+xopt, fopt = pso(objective, lb, ub, ieqcons=cons, swarmsize=1, maxiter=1, minfunc=1e-4, debug=True)
 
 save_swarm(names_swarm, xopt, fopt, filename="SWARMresults.json")
