@@ -1,7 +1,8 @@
-import numpy as np
 import pandas as pd
 from pyswarm import pso
 from model_v2 import *
+import json
+
 
 def getOutletData(name, var=None, tss=True):
     path = '../Analysis/Data/BEACH_R/'
@@ -19,7 +20,6 @@ def getOutletData(name, var=None, tss=True):
 
 
 def get_outlet_merged():
-
     # Simulated
     filename = "resW_" + "tot_accVOl_m3" + ".tss"
     out_sim = pd.read_table(filename,
@@ -30,10 +30,23 @@ def get_outlet_merged():
     # Observed
     obs = getOutletData('q_obs_m3day', var='m3d')
 
-
     # Merge
     match = pd.merge(obs, out_sim, how='inner', on='Jdays')
     return match
+
+
+def save_swarm(names, xopt, fopt, filename="SWARMresults.json"):
+    # Create a dictionary to store the results
+    mSwarmArray = dict()
+    mSwarmArray['min_err'] = fopt
+
+    # Add the best solution array to the dictionary, by name
+    for i in range(len(names)):
+        var_name = names[i]
+        mSwarmArray[var_name] = xopt[i]
+
+    with open(filename, 'w') as f:
+        json.dump(mSwarmArray, f)
 
 
 def get_error(var):
@@ -67,15 +80,16 @@ def objective(x):
     :param x:
     :return:
     """
-    nTimeSteps = 200  # 360
+    nTimeSteps = 360  # 360
     myAlteck16 = BeachModel("clone_nom.map", x)
     dynamicModel = DynamicFramework(myAlteck16,
                                     lastTimeStep=nTimeSteps,
-                                    firstTimestep=firstTimeStep)
+                                    firstTimestep=start_jday())
     dynamicModel.run()
 
     error_q = get_error('m3d')
     print(error_q)
+    # print(x)
     return error_q
 
 
@@ -109,6 +123,17 @@ def wp_constraints(x):
     return WPz2 - WPz
 
 
+names_swarm = ['z3_factor',
+               'cZ0Z1', 'cZ',
+               'c_adr',
+               'k_g',
+               'gamma01', 'gammaZ',
+               'f_transp',
+               'FCz2', 'FCz',
+               'SATz2', 'SATz',
+               'WPz2', 'WPz'
+               ]
+
 lb = [0.75,
       0.01, 0.01,
       0.0001,
@@ -128,7 +153,11 @@ ub = [0.99,
       1,
       0.41, 0.41,
       0.61, 0.53,
-      0.19, 0.19
+      0.24, 0.24
       ]
 
 cons = [clf_constraint, gamma_constraint, fc_constraints, sat_constraints, wp_constraints]
+
+xopt, fopt = pso(objective, lb, ub, ieqcons=cons, swarmsize=1, maxiter=1, minfunc=1e-4, debug=True)
+
+save_swarm(names_swarm, xopt, fopt, filename="SWARMresults.json")
