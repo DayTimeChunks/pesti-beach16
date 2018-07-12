@@ -1,14 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# from time import *
-import os
-from copy import deepcopy
-from datetime import datetime
-
-from pcraster._pcraster import *
-from pcraster.framework import *
-
-from applications import getApplications
 from hydro_v2 import *
 from nash import *
 from pesti_v2 import *
@@ -23,10 +14,12 @@ state = -1
 
 """
 
-This model inherits fro, Morris, to change:
+This model inherits fro, Morris,
+
+Changes:
 
 - not a montecarlo
-- parameters need to be draxn from the argument in the objective function
+- parameters are drawn from the argument in the objective function
 - TSS written needs to be only discharge
 
 ATTENTION: Model still does not transport mass from Baseflow!!!

@@ -28,6 +28,9 @@ def getConcAq(model, layer, mass, sorption_model="linear", gas=True):
     else:
         print("No sorption assumed, Ret. factor = 1")
         retard_layer = 1  # No retardation.
+        # For Freundlich parameters:
+        # https://sitem.herts.ac.uk/aeru/ppdb/en/Reports/1027.htm
+        # Retardation factor (eq 6): https://www.engr.mun.ca/~ccoles/Publications/ICWEM-023.pdf
 
     if gas:  # Leistra et al., 2001
         theta_gas = max(model.theta_sat[layer] - theta_layer, scalar(0))
