@@ -964,7 +964,7 @@ class BeachModel(DynamicModel):
         reportNashHydro(self, q_obs, tot_vol_disch_m3)
 
 
-mini_test = True
+mini_test = False
 if mini_test:
     params = [0.99,
               1, 1,
