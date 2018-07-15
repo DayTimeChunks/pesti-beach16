@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 # from time import *
-import os
-from copy import deepcopy
+#import os
+#from copy import deepcopy
 from datetime import datetime
 
-from pcraster._pcraster import *
-from pcraster.framework import *
+#from pcraster._pcraster import *
+#from pcraster.framework import *
 
 from applications import getApplications
 from hydro_v2 import *
@@ -16,7 +16,7 @@ from soil_samples import *
 from output import *
 from test_suite import *
 from balance import *
-import numpy as np
+# import numpy as np
 
 print(os.getcwd())
 
@@ -24,7 +24,7 @@ global state
 state = -1
 
 from morris_test import *
-morris = False
+morris = True
 if morris:
     p = 4.0
     grid_jump = 2
@@ -172,8 +172,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Output & Observations (tss and observation maps)
         """
         defineHydroTSS(self)  # output.py
-        definePestTSS(self)  # output.py
+        defineAverageMoistTSS(self)  # output.py
+
+        definePestTSS(self)  # output.p
         defineSoilTSS(self)  # soil_samples.py
+
 
         defineNashHydroTSS(self)  # nash.py
         defineNashPestiTSS(self)  # nash.py
@@ -986,6 +989,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Artificial drainage (relevant layer)
         drained_layers = [n for n, x in enumerate(self.drainage_layers) if x is True]  # <- list of indexes
         adr_layer = int(drained_layers[0])  # <- 13.05.2018, implements only one layer (i.e. z2)!
+        assert adr_layer == 2
         cell_drainge_outflow = getArtificialDrainage(self, adr_layer)  # mm
         light_drained = getDrainMassFlux(self, adr_layer, self.lightmass[adr_layer], run=self.ADRM)  #
         heavy_drained = getDrainMassFlux(self, adr_layer, self.heavymass[adr_layer], run=self.ADRM)  #
@@ -1206,7 +1210,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             ch_storage_m3 += ch_storage[layer]  # Reservoir storage (m3)
 
         getCatchmentStorage(self)
-        # getAverageMoisture(self)
+        getAverageMoisture(self)
 
         # Get Transect concentrations
         # Observed conc. is betw 2 and 8 ug/g dry soil (on transect)
@@ -1472,7 +1476,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 180  # 360
+nTimeSteps = 286  # 360
 myAlteck16 = BeachModel("clone_nom.map", names, params, bounds)
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
                                 firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework

@@ -153,85 +153,8 @@ def reportGlobalPestBalance(model,
     model.global_mb_pest_tss.sample(light_mb_pest)
 
 
-def getCatchmentStorage(model):
-    cell_vol_tot_m3 = deepcopy(model.zero_map)
-    for layer in range(model.num_layers):
-        cell_vol_tot_m3 += model.theta[layer] * model.layer_depth[layer] * cellarea() / 1000
-
-    vol_tot_m3 = accuflux(model.ldd_subs, cell_vol_tot_m3)
-    multi_vol_tot_m3 = areatotal(vol_tot_m3, model.outlet_multi)
-    model.storage_m3_tss.sample(multi_vol_tot_m3)
 
 
-def getAverageMoisture(model):
-    prop_sat_layers = []
-    for layer in range(model.num_layers):
-        prop_sat = model.theta[layer]/model.theta_sat[layer]
-        prop_sat_ave = areaaverage(prop_sat, model.is_catchment)
-        prop_sat_layers.append(prop_sat_ave)
-
-    model.resW_z0_thetaPropSat.sample(prop_sat_layers[0])
-    model.resW_z1_thetaPropSat.sample(prop_sat_layers[1])
-    model.resW_z2_thetaPropSat.sample(prop_sat_layers[2])
-    model.resW_z3_thetaPropSat.sample(prop_sat_layers[3])
-    model.resW_Bsmt_thetaPropSat.sample(prop_sat_layers[-1])
 
 
-def getRestitution():
-    # rest_obs = tot_rain_m3 / q_obs
-    # model.rest_obs_tss.sample(rest_obs)
-    pass
-
-
-def getLayerAnalysis(model, layer,
-                     percolation, latflow_out, evap, transp,
-                     root_depth, out_baseflow_m3=None):
-    # Report Basement layer fluxes
-    # Infil
-    infil_m3 = percolation[layer-1] * cellarea() / 1000  # m3
-    infil_m3 = areatotal(infil_m3, model.is_catchment)
-    # Latflow
-    latflow_m3 = latflow_out[layer] * cellarea() / 1000
-    latflow_m3 = areatotal(latflow_m3, model.outlet_multi)  # Only outlet cells
-    # Baseflow
-    # Already recorded...
-    if out_baseflow_m3 is None:
-        out_baseflow_m3 = deepcopy(model.zero_map)
-    # Evapotransp
-    evap_m3 = evap[layer] * cellarea() / 1000  # m3
-    transp_m3 = transp[layer] * cellarea() / 1000  # m3
-    evapotransp_m3 = evap_m3 + transp_m3
-    # model.report(evap_m3, 'z' + str(layer) + 'EVA')  # Check which cells
-    # model.report(transp_m3, 'z' + str(layer) + 'TRA')  # Check which cells
-    # model.report(root_depth[layer], 'z' + str(layer) + 'ROOT')
-    evapotransp_m3 = areatotal(evapotransp_m3, model.is_catchment)
-    # Storage
-    storage_m3 = model.theta[layer] * model.layer_depth[layer] * cellarea() / 1000
-    storage_m3 = areatotal(storage_m3, model.is_catchment)
-
-    # Change In storage
-    ch_storage_m3 = ((model.theta[layer] * model.layer_depth[layer] * cellarea() / 1000) -
-                     (model.theta_ini[layer] * model.layer_depth[layer] * cellarea() / 1000))
-    ch_storage_m3 = areatotal(ch_storage_m3, model.is_catchment)
-    balance_m3 = infil_m3 - latflow_m3 - out_baseflow_m3 - evapotransp_m3 - ch_storage_m3
-
-    if layer == 0:
-        model.resW_accVOL_z0_m3_tss.sample(storage_m3)
-    elif layer == 1:
-        model.resW_accVOL_z1_m3_tss.sample(storage_m3)
-    elif layer == 2:
-        model.resW_accVOL_z2_m3_tss.sample(storage_m3)
-    elif layer == 3:
-        # model.resW_accInfil_z3_m3_tss.sample(infil_m3)
-        # model.resW_accLF_z3_m3_tss.sample(latflow_m3)
-        # model.resW_accETP_z3_m3_tss.sample(evapotransp_m3)
-        model.resW_accVOL_z3_m3_tss.sample(storage_m3)
-        # model.resW_accBAL_z3_m3_tss.sample(balance_m3)
-    elif layer == (model.num_layers - 1):
-        model.resW_accInfil_Bsmt_m3_tss.sample(infil_m3)
-        model.resW_accLF_Bsmt_m3_tss.sample(latflow_m3)
-        model.resW_accETP_Bsmt_m3_tss.sample(evapotransp_m3)
-        model.resW_accVOL_Bsmt_m3_tss.sample(storage_m3)
-        model.resW_accBAL_Bsmt_m3_tss.sample(balance_m3)
-        # aguila --scenarios='{2}' --timesteps=[2,300,2] z3EVA z3TRA z3ROOT
 
