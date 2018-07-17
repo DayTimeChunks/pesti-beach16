@@ -32,7 +32,7 @@ def defineHydroTSS(model):
     # LF Drainage
     model.resW_o_accDrain_m3_tss = TimeoutputTimeseries("resW_o_accDrain_m3", model, nominal("outlet_v3"),
                                                        noHeader=False)
-    model.tot_accu_drain_m3_tss = TimeoutputTimeseries("resW_o_totDrain_m3", model, nominal("outlet_v3"),
+    model.resW_o_cumDrain_m3_tss = TimeoutputTimeseries("resW_o_cumDrain_m3", model, nominal("outlet_v3"),
                                                       noHeader=False)  # Cumulative ADR
     # LF options
     model.sat_accu_overflow_m3_tss = TimeoutputTimeseries("resW_of_accLatflow_m3", model, nominal("outlet_v3"),
@@ -118,27 +118,30 @@ def definePestTSS(model):
     # Pesticide
     model.global_mb_pest_tss = TimeoutputTimeseries("resM_global_mb_pest", model, nominal("outlet_v3"),
                                                    noHeader=False)
-    model.resM_accAPP_g_tss = TimeoutputTimeseries("resM_accAPP_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accVOLAT_L_tss = TimeoutputTimeseries("resM_accVOLAT_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accRO_L_tss = TimeoutputTimeseries("resM_accRO_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accDEG_L_tss = TimeoutputTimeseries("resM_accDEG_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accAGED_L_tss = TimeoutputTimeseries("resM_accAGED_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accAGED_DEG_L_tss = TimeoutputTimeseries("resM_accAGED_DEG_L", model, nominal("outlet_v3"),
-                                                       noHeader=False)
-    model.resM_accDEGz0_L_tss = TimeoutputTimeseries("resM_accDEGz0_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accLCHz0_L_tss = TimeoutputTimeseries("resM_accLCHz0_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accDPz1_L_tss = TimeoutputTimeseries("resM_accDPz1_L", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accAPP_g_tss = TimeoutputTimeseries("resM_accAPP", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accVOLATz0_tss = TimeoutputTimeseries("resM_accVOLATz0", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accROz0_tss = TimeoutputTimeseries("resM_accROz0", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accDEGz0_tss = TimeoutputTimeseries("resM_accDEGz0", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accDEGzX_tss = TimeoutputTimeseries("resM_accDEGzX", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accAGEDz0_tss = TimeoutputTimeseries("resM_accAGEDz0", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accAGEDzX_tss = TimeoutputTimeseries("resM_accAGEDzX", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accAGED_DEGz0_tss = TimeoutputTimeseries("resM_accAGED_DEGz0", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accAGED_DEGzX_tss = TimeoutputTimeseries("resM_accAGED_DEGzX", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accLCHz0_tss = TimeoutputTimeseries("resM_accLCHz0", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accLCHz1_tss = TimeoutputTimeseries("resM_accLCHz1", model, nominal("outlet_v3"), noHeader=False)
     
-    model.resM_accDP_L_tss = TimeoutputTimeseries("resM_accDP_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accADR_L_tss = TimeoutputTimeseries("resM_accADR_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accLF_L_tss = TimeoutputTimeseries("resM_accLF_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accBF_L_tss = TimeoutputTimeseries("resM_accBF_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accCHS_L_tss = TimeoutputTimeseries("resM_accCHS_L", model, nominal("outlet_v3"), noHeader=False)
-    model.resM_accCHS_AGED_L_tss = TimeoutputTimeseries("resM_accCHS_AGED_L", model, nominal("outlet_v3"),
+    model.resM_accDP_tss = TimeoutputTimeseries("resM_accDP", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accADR_tss = TimeoutputTimeseries("resM_accADR", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accLF_tss = TimeoutputTimeseries("resM_accLF", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accBF_tss = TimeoutputTimeseries("resM_accBF", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accCHS_tss = TimeoutputTimeseries("resM_accCHS", model, nominal("outlet_v3"), noHeader=False)
+    model.resM_accCHS_AGED_tss = TimeoutputTimeseries("resM_accCHS_AGED", model, nominal("outlet_v3"),
                                                        noHeader=False)
     
-    model.resM_EXP_Smet_g_tss = TimeoutputTimeseries("resM_EXP_Smet_g", model, nominal("outlet_v3"),
+    model.resM_EXP_light_g_tss = TimeoutputTimeseries("resM_EXP_light_g", model, nominal("outlet_v3"),
                                                     noHeader=False)  # Total outlet mass (g) exports (light fraction only)
+    model.resM_EXP_heavy_g_tss = TimeoutputTimeseries("resM_EXP_heavy_g", model, nominal("outlet_v3"),
+                                                    noHeader=False)  # Total outlet mass (g) exports (heavy fraction only)
     # Concentrations outlet
     model.resM_oCONC_ugL_tss = TimeoutputTimeseries("resM_oCONC_ugL", model, nominal("outlet_v3"),
                                                    noHeader=False)  # Total outlet conc (ug/L)
@@ -160,7 +163,7 @@ def definePestTSS(model):
                                                          noHeader=False)  # Artificial drainage outlet
     
     # Cumulative Pesticide
-    model.cum_degZ0_L_g_tss = TimeoutputTimeseries("resM_cumDEGz0_L", model, nominal("outlet_v3"),
+    model.cum_degZ0_g_tss = TimeoutputTimeseries("resM_cumDEGz0", model, nominal("outlet_v3"),
                                                   noHeader=False)  # Deg z0
     model.cum_deg_L_g_tss = TimeoutputTimeseries("resM_cumDEG_L", model, nominal("outlet_v3"),
                                                 noHeader=False)  # Deg z0
@@ -273,5 +276,131 @@ def getAverageMoisture(model):
     model.resW_z2_thetaPropSat.sample(prop_sat_layers[2])
     model.resW_z3_thetaPropSat.sample(prop_sat_layers[3])
     model.resW_Bsmt_thetaPropSat.sample(prop_sat_layers[-1])
+
+
+def reportCumHydro(model, q_obs, out_runoff_m3, out_drain_m3, tot_rain_m3,
+                  out_etp_m3, outlet_latflow_m3, out_percol_m3=None):
+
+    # Don't need it for GLUE
+    model.rain_cum_m3 += tot_rain_m3
+    model.rain_obs_cum_tss.sample(model.rain_cum_m3)
+
+    # Mass balance components
+    model.tot_runoff_m3 += ifthenelse(q_obs >= 0, out_runoff_m3, 0)
+    model.tot_runoff_m3_tss.sample(model.tot_runoff_m3)
+
+    if out_percol_m3 is not None:
+        model.tot_perc_z3_m3 += ifthenelse(q_obs >= 0, out_percol_m3, 0)  # <- == 0
+        model.tot_perc_z3_m3_tss.sample(model.tot_perc_z3_m3)
+
+    model.tot_etp_m3 += ifthenelse(q_obs >= 0, out_etp_m3, 0)
+    model.tot_etp_m3_tss.sample(model.tot_etp_m3)
+    # model.tot_baseflow_m3 += ifthenelse(q_obs >= 0, out_baseflow_m3, 0)
+    # model.tot_baseflow_m3_tss.sample(model.tot_baseflow_m3)
+
+    # Cumulative drainage
+    model.tot_drain_m3 += ifthenelse(q_obs >= 0, out_drain_m3, 0)  # o_drain_z1_m3
+    model.resW_o_cumDrain_m3_tss.sample(model.tot_drain_m3)
+
+    # model.tot_ilf_m3 += ifthenelse(q_obs >= 0, outlet_lat_inflow_m3, 0)
+    # model.tot_accu_i_latflow_m3_tss.sample(model.tot_ilf_m3)
+    model.cum_olf_m3 += ifthenelse(q_obs >= 0, outlet_latflow_m3, 0)
+    model.resW_o_cumLatflow_m3_tss.sample(model.cum_olf_m3)
+    # model.tot_nlf_m3 += ifthenelse(q_obs >= 0, n_latflow_m3, 0)
+    # model.tot_accu_n_latflow_m3_tss.sample(model.tot_nlf_m3)
+    # model.tot_of_m3 += ifthenelse(q_obs >= 0, of_latflow_m3, 0)
+    # model.tot_accu_of_latflow_m3_tss.sample(model.tot_of_m3)
+
+
+def reportGlobalWaterBalance(model, tot_rain_m3, out_runoff_m3, out_drain_m3,
+                             outlet_latflow_m3,
+                             out_etp_m3, accu_ch_storage_m3,
+                             out_percol_m3=None,
+                             out_baseflow_m3=None):
+    model.resW_accRain_m3_tss.sample(tot_rain_m3)
+    model.resW_accEtp_m3_tss.sample(out_etp_m3)
+    model.resW_accRunoff_m3_tss.sample(out_runoff_m3)  # save to outlet
+    model.resW_o_accDrain_m3_tss.sample(out_drain_m3)  # Outlet discharge - Drain
+    model.resW_o_cellLatflow_m3_tss.sample(outlet_latflow_m3)  # Outlet discharge - LF
+    model.resW_accChStorage_m3_tss.sample(accu_ch_storage_m3)
+
+    if out_percol_m3 is not None:
+        model.resW_accPercol_Bsmt_m3_tss.sample(out_percol_m3)  # Basement
+
+    if out_baseflow_m3 is not None:
+        model.out_baseflow_m3_tss.sample(out_baseflow_m3)
+    # model.out_accu_o_latflow_m3_tss.sample(catch_lat_outflow_m3)
+    # model.resW_accChStorage_m3_tss.sample(out_ch_storage_m3)
+
+    # GLOBAL Water
+    if out_baseflow_m3 is not None:
+        global_mb_water = (tot_rain_m3 -
+                           out_etp_m3 - out_runoff_m3 -
+                           # out_percol_m3 - # Basement percolation
+                           outlet_latflow_m3 -
+                           out_drain_m3 -
+                           accu_ch_storage_m3 -
+                           out_baseflow_m3
+                           )
+    else:
+        global_mb_water = (tot_rain_m3 -
+                           out_etp_m3 - out_runoff_m3 -
+                           # out_percol_m3 -  # Basement percolation
+                           outlet_latflow_m3 -
+                           out_drain_m3 -
+                           accu_ch_storage_m3
+                           )
+
+    model.global_mb_water_tss.sample(global_mb_water)
+
+
+def reportGlobalPestBalance(model,
+                            catch_app_z0,
+                            catch_deg_z0,
+                            catch_aged_deg_z0,
+                            catch_volat_z0,
+                            catch_runoff_z0,
+                            z0_catch_leach,
+                            # catch_drain_light,
+                            catch_latflux_z0,
+                            catch_ch_storage_z0,
+                            catch_ch_storage_z0_aged):
+
+    z0_mb_pest = (catch_app_z0 -
+                     catch_deg_z0 -
+                     catch_aged_deg_z0 -
+                     catch_volat_z0 -
+                     catch_runoff_z0 -
+                     z0_catch_leach -
+                     # catch_drain_light -
+                     catch_latflux_z0 -  #
+                     catch_ch_storage_z0 -
+                     catch_ch_storage_z0_aged)
+
+    model.global_mb_pest_tss.sample(z0_mb_pest)
+
+
+def repCumOutMass(model, conc_outlet_obs, outlet_light_export,
+                  catch_latflux_light, catch_drain_light, catch_runoff_light,
+                  catch_volat_light, catch_deg_light):
+    # Outlet-specific, Cumulative masses
+    model.cum_exp_L_g += ifthenelse(conc_outlet_obs > 0, outlet_light_export, scalar(0))
+    model.resM_cumEXP_Smet_g_tss.sample(model.cum_exp_L_g)
+
+    model.cum_latflux_L_g += ifthenelse(conc_outlet_obs > 0, catch_latflux_light, scalar(0))
+    model.cum_latflux_L_g_tss.sample(model.cum_latflux_L_g)
+
+    model.cum_adr_L_g += ifthenelse(conc_outlet_obs > 0, catch_drain_light, scalar(0))
+    model.cum_adr_L_g_tss.sample(model.cum_adr_L_g)
+
+    model.cum_roZ0_L_g += ifthenelse(conc_outlet_obs > 0, catch_runoff_light, scalar(0))
+    model.cum_roZ0_L_g_tss.sample(model.cum_roZ0_L_g)
+
+    # Not in outlet, but relevant cumulative sinks
+    model.cum_volatZ0_L_g += catch_volat_light
+    model.cum_volatZ0_L_g_tss.sample(model.cum_volatZ0_L_g)
+
+    model.cum_deg_L_g += catch_deg_light
+    model.cum_deg_L_g_tss.sample(model.cum_deg_L_g)
 
 

@@ -3,6 +3,11 @@ from pcraster.framework import *
 
 
 def defineNashHydroTSS(model):
+    model.q_m3day_mean = scalar(model.ini_param.get("ave_outlet_q_m3day"))
+    model.conc_outlet_mean = scalar(model.ini_param.get("ave_outlet_conc_ugL"))
+    model.ln_conc_outlet_mean = scalar(model.ini_param.get("ave_outlet_lnconc_ugL"))
+    model.delta_outlet_mean = scalar(model.ini_param.get("ave_outlet_delta"))
+
     model.nash_q_tss = TimeoutputTimeseries("resNash_q_m3", model, nominal("outlet_v3"),
                                            noHeader=False)  # This is 'Nash_q' as time series.
     model.nash_outlet_conc_tss = TimeoutputTimeseries("resNash_outConc_ugL", model, nominal("outlet_v3"),
@@ -12,6 +17,13 @@ def defineNashHydroTSS(model):
 
 
 def defineNashPestiTSS(model):
+    model.conc_compNorth_mean = scalar(model.ini_param.get("ave_north_compConc_ugg"))
+    model.conc_compValley_mean = scalar(model.ini_param.get("ave_valley_compConc_ugg"))
+    model.conc_compSouth_mean = scalar(model.ini_param.get("ave_south_compConc_ugg"))
+    model.delta_compNorth_mean = scalar(model.ini_param.get("ave_north_compIso_delta"))
+    model.delta_compValley_mean = scalar(model.ini_param.get("ave_valley_compIso_delta"))
+    model.delta_compSouth_mean = scalar(model.ini_param.get("ave_south_compIso_delta"))
+    
     # NASH composite soils
     # Single pixel value, grouping area total for each transect
     model.resNash_NcompConc_L_tss = TimeoutputTimeseries("resNash_NcompConc_L", model, nominal("north_ave"),
@@ -151,31 +163,4 @@ def reptNashIsoComposites(model, north_ave_iso, valley_ave_iso, south_ave_iso):
     #                       (model.valleyIso_diff / model.valleyIso_var) * 2 / 3 +
     #                       (model.southIso_diff / model.southIso_var) * 2 / 3)
     #model.nash_compIso_tss.sample(nash_compIso)
-
-
-def repCumOutMass(model, conc_outlet_obs, outlet_light_export,
-                  catch_latflux_light, catch_drain_light, catch_runoff_light,
-                  catch_volat_light, catch_deg_light):
-    # Outlet-specific, Cumulative masses
-    model.cum_exp_L_g += ifthenelse(conc_outlet_obs > 0, outlet_light_export, scalar(0))
-    model.resM_cumEXP_Smet_g_tss.sample(model.cum_exp_L_g)
-
-    model.cum_latflux_L_g += ifthenelse(conc_outlet_obs > 0, catch_latflux_light, scalar(0))
-    model.cum_latflux_L_g_tss.sample(model.cum_latflux_L_g)
-
-    model.cum_adr_L_g += ifthenelse(conc_outlet_obs > 0, catch_drain_light, scalar(0))
-    model.cum_adr_L_g_tss.sample(model.cum_adr_L_g)
-
-    model.cum_roZ0_L_g += ifthenelse(conc_outlet_obs > 0, catch_runoff_light, scalar(0))
-    model.cum_roZ0_L_g_tss.sample(model.cum_roZ0_L_g)
-
-    # Not in outlet, but relevant cumulative sinks
-    model.cum_volatZ0_L_g += catch_volat_light
-    model.cum_volatZ0_L_g_tss.sample(model.cum_volatZ0_L_g)
-
-    model.cum_deg_L_g += catch_deg_light
-    model.cum_deg_L_g_tss.sample(model.cum_deg_L_g)
-
-    # TODO:
-    # Report outlet mass (not cumulative), and components
 

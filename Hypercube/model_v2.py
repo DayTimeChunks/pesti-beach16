@@ -1,60 +1,29 @@
 # -*- coding: utf-8 -*-
 
 # from time import *
-#import os
-#from copy import deepcopy
+# import os
+# from copy import deepcopy
+# import numpy as np
 from datetime import datetime
+# from pcraster._pcraster import *
+# from pcraster.framework import *
+from SALib.sample import latin
 
-#from pcraster._pcraster import *
-#from pcraster.framework import *
+from mlhs_test import *
 
 from applications import getApplications
 from hydro_v2 import *
 from nash import *
 from pesti_v2 import *
-from soil_samples import *
+from output_soils import *
 from output import *
 from test_suite import *
-from balance import *
-# import numpy as np
+
 
 print(os.getcwd())
 
 global state
 state = -1
-
-from morris_test import *
-morris = True
-if morris:
-    p = 4.0
-    grid_jump = 2
-    r = 4
-    params = get_param_values(p=p, grid_jump=grid_jump, r=r)
-    runs = get_runs(params)
-else:
-    params = np.loadtxt('input_vectors.txt', float)
-    # params = input_matrix[np.random.randint(0, 100)]
-    runs = 2
-
-"""
-
-ATTENTION: Model still does not transport mass from Baseflow!!!
-
-"""
-
-
-# 1st
-# - Generate the set of input parameters (see: morris_analysis.py)
-# - Make input parameters a global numpy array (for model access)
-
-
-# def getTimeStamp(timestep, sep=','):
-#     path = "Data/Time.csv"
-#     obs = read_csv(path, sep=sep)
-#     obs = obs[['Jdays', 'Date']]
-#     obs_dict = obs.to_dict(orient='split')
-#     obs_dict['data']
-#     return str(obs_dict['data'][timestep-2][2])
 
 
 def get_state(old_state):
@@ -69,18 +38,29 @@ def start_jday():
     return start_sim
 
 
+def getInputVector(row, sample_matrix):
+    """
+    :param row: relevant sample row
+    :param sample_matrix: numpy sample matrix
+    :return: a numpy row with required input parameters
+    """
+    test_vector = sample_matrix[row]
+    return test_vector
+
+
 class BeachModel(DynamicModel, MonteCarloModel):
     def setDebug(self):
         pass
 
-    def __init__(self, cloneMap, names, params, bounds):
+    def __init__(self, cloneMap, names, params, upper, staticDT50=False):
         DynamicModel.__init__(self)
         MonteCarloModel.__init__(self)
         setclone(cloneMap)
 
         self.names = names  # Parameter names
         self.params = params  # Parameter matrix
-        self.upper = get_upper(bounds)  # Parameter upper bounds
+        self.upper = upper  # Parameter upper bounds
+        self.fixed_dt50 = staticDT50
 
     def premcloop(self):
         self.DEBUG = False
@@ -117,17 +97,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
             reader = csv.reader(f, delimiter=',')
             for row in reader:
                 self.ini_param[row[0].strip()] = float(row[1])
-
-        self.q_m3day_mean = scalar(self.ini_param.get("ave_outlet_q_m3day"))
-        self.conc_outlet_mean = scalar(self.ini_param.get("ave_outlet_conc_ugL"))
-        self.ln_conc_outlet_mean = scalar(self.ini_param.get("ave_outlet_lnconc_ugL"))
-        self.delta_outlet_mean = scalar(self.ini_param.get("ave_outlet_delta"))
-        self.conc_compNorth_mean = scalar(self.ini_param.get("ave_north_compConc_ugg"))
-        self.conc_compValley_mean = scalar(self.ini_param.get("ave_valley_compConc_ugg"))
-        self.conc_compSouth_mean = scalar(self.ini_param.get("ave_south_compConc_ugg"))
-        self.delta_compNorth_mean = scalar(self.ini_param.get("ave_north_compIso_delta"))
-        self.delta_compValley_mean = scalar(self.ini_param.get("ave_valley_compIso_delta"))
-        self.delta_compSouth_mean = scalar(self.ini_param.get("ave_south_compIso_delta"))
 
         date_path = 'Time.csv'
         self.time_dict = {}
@@ -175,18 +144,23 @@ class BeachModel(DynamicModel, MonteCarloModel):
         defineAverageMoistTSS(self)  # output.py
 
         definePestTSS(self)  # output.p
-        defineSoilTSS(self)  # soil_samples.py
-
-
-        defineNashHydroTSS(self)  # nash.py
-        defineNashPestiTSS(self)  # nash.py
+        defineSoilTSS(self)  # output_soils.py
+        defineMassTSS(self)  # output_soils.py
+        defineTransectSinkTSS(self, 'APP_mass')
+        defineTransectSinkTSS(self, 'DEG_mass')
+        defineTransectSinkTSS(self, 'AGE_mass')
+        defineTransectSinkTSS(self, 'VOLA_mass')
+        defineTransectSinkTSS(self, 'ROFF_mass')
+        defineTransectSinkTSS(self, 'LCH_mass')
+        #
+        # defineNashHydroTSS(self)  # nash.py
+        # defineNashPestiTSS(self)  # nash.py
 
     def initial(self):
         self.num_layers = int(self.ini_param.get("layers"))
         # Hydrological scenarios
         self.bsmntIsPermeable = False  # basement percolation (DP)
         self.ADLF = True
-        self.fixed_dt50 = False
         self.bioavail = True
 
         # Morris_error tests
@@ -230,24 +204,21 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.theta = []
         self.theta_sat = []
         self.theta_fc = []
-        self.theta_100 = []
+        # self.theta_100 = []
         self.theta_wp = []  # => 0.19
         for layer in range(self.num_layers):
             if layer < 2:
                 self.theta_sat.append(deepcopy(self.zero_map))
                 self.theta_fc.append(deepcopy(self.zero_map))
-                self.theta_100.append(scalar(self.ini_param.get("W100_30mm")))
-                self.theta_wp.append(scalar(self.ini_param.get("WP_z01")))
+                self.theta_wp.append(self.mask * scalar(self.ini_param.get("WPZ01")))
             elif layer == 2:
-                self.theta_sat.append(self.mask * vector[self.names.index('SATz2')] * self.upper[self.names.index('SATz2')])
-                self.theta_fc.append(self.mask * vector[self.names.index('FCz2')] * self.upper[self.names.index('FCz2')])
-                self.theta_100.append(self.mask * vector[self.names.index('W100_1550mm')] * self.upper[self.names.index('W100_1550mm')])
-                self.theta_wp.append(self.mask * vector[self.names.index('WPz2')] * self.upper[self.names.index('WPz2')])
+                self.theta_sat.append(self.mask * scalar(self.ini_param.get("SATZ")))
+                self.theta_fc.append(self.mask * scalar(self.ini_param.get("FCZ")))
+                self.theta_wp.append(self.mask * scalar(self.ini_param.get("WPZ")))
             else:
-                self.theta_sat.append(self.mask * vector[self.names.index('SATZ')] * self.upper[self.names.index('SATZ')])
-                self.theta_fc.append(self.mask * vector[self.names.index('FCZ')] * self.upper[self.names.index('FCZ')])
-                self.theta_100.append(self.mask * vector[self.names.index('W100_1555mm')] * self.upper[self.names.index('W100_1555mm')])
-                self.theta_wp.append(self.mask * vector[self.names.index('WPZ')] * self.upper[self.names.index('WPZ')])
+                self.theta_sat.append(self.mask * scalar(self.ini_param.get("SATZ")))
+                self.theta_fc.append(self.mask * scalar(self.ini_param.get("FCZ")))
+                self.theta_wp.append(self.mask * scalar(self.ini_param.get("WPZ")))
 
             if start_jday() < 166:
                 name = 'd14_theta_z' + str(layer)
@@ -255,9 +226,6 @@ class BeachModel(DynamicModel, MonteCarloModel):
             else:
                 name = 'd166_theta_z' + str(layer)
                 self.theta.append(readmap(name))
-
-            self.theta[layer] = ifthenelse(self.theta[layer] > self.theta_sat[layer], self.theta_sat[layer], self.theta[layer])
-
 
         """ Soil Properties """
         # Soil bulk density (g/cm^3)
@@ -408,9 +376,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Set mass fractions <- background fractions
             self.lightmass.append(deepcopy(self.light_back[layer]))
             self.lightmass_ini.append(deepcopy(self.light_back[layer]))
-            self.lightaged_ini.append(deepcopy(self.light_aged[layer]))
+
             self.heavymass.append(deepcopy(self.heavy_back[layer]))
             self.heavymass_ini.append(deepcopy(self.heavy_back[layer]))
+
+            self.lightaged_ini.append(deepcopy(self.light_aged[layer]))
+            self.heavyaged_ini.append(deepcopy(self.heavy_aged[layer]))
 
             # Combined bioavailable and aged masses
             self.light_real.append(self.lightmass[layer] + self.light_aged[layer])
@@ -450,7 +421,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         self.cum_baseflx_ug_z3 = deepcopy(self.zero_map)
 
-        self.cum_degZ0_L_g = deepcopy(self.zero_map)
+        self.cum_appZ0_g = deepcopy(self.zero_map)
+        self.cum_degZ0_g = deepcopy(self.zero_map)
         self.cum_aged_deg_L_g = deepcopy(self.zero_map)
         self.cum_deg_L_g = deepcopy(self.zero_map)  # Total cum deg
         self.cum_roZ0_L_g = deepcopy(self.zero_map)
@@ -617,6 +589,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.theta_fc[0] = timeinputscalar('thetaFC_agr.tss', nominal(self.landuse))  # * self.fc_adj  # field capacity
         self.theta_fc[1] = deepcopy(self.theta_fc[0])
 
+        # print(self.currentTimeStep())
+        excess_z0 = ifthenelse(self.theta[0] > self.theta_sat[0], self.theta[0] - self.theta_sat[0], scalar(0))
+        excess_z1 = ifthenelse(self.theta[1] > self.theta_sat[1], self.theta[1] - self.theta_sat[1], scalar(0))
+        self.theta[0] = ifthenelse(self.theta[0] > self.theta_sat[0], self.theta_sat[0], self.theta[0])
+        self.theta[1] = ifthenelse(self.theta[1] > self.theta_sat[1], self.theta_sat[1], self.theta[1])
+
         if self.TEST_thProp:
             checkMoistureProps(self, self.theta_sat, 'aSATz')
             checkMoistureProps(self, self.theta_fc, 'aFCz')
@@ -772,6 +750,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         light_applied = deepcopy(self.zero_map)
         heavy_applied = deepcopy(self.zero_map)
         light_volat = deepcopy(self.zero_map)
+        heavy_volat = deepcopy(self.zero_map)
 
         """
         Applications and Volatilization (on application days only)
@@ -784,6 +763,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
             heavy_applied = mass_applied - light_applied
             self.lightmass[0] += light_applied
             self.heavymass[0] += heavy_applied
+            self.cum_appZ0_g += light_applied + heavy_applied
             self.aged_days = ifthenelse(mass_applied > 0, scalar(0), self.aged_days)
 
             if mapminimum(self.lightmass[0]) < 0:
@@ -831,6 +811,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 if mapminimum(self.heavymass[layer]) < 0:
                     print("Err Start, heavy")
 
+                # Excess due to changes in saturation capacities
+                precip += (excess_z0 + excess_z1)  # One approach to distribute excess moisture
                 z0_IRO = getTopLayerInfil(self, precip, CN2, crop_type,
                                           jd_sim, jd_dev, jd_mid, jd_end, len_dev_stage)
                 runoff_z0 = z0_IRO.get("roff")  # [mm]
@@ -863,7 +845,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                     if float(val) > float(1e-02):
                         print("Corrected Percolation(), SAT exceeded, layer " + str(layer + 1) + ' by ' + str(val))
 
-                # infil_z1 is not added here because it has been already to the layer below, See above: SW1
+                # infil_z1 is not added here because already added to the layer below, See above: SW1
                 percolation.append(getPercolation(self, layer, k_sat[layer], isPermeable=permeable))  # [mm]
                 water_flux_z0 = infil_z1 + percolation[layer]
 
@@ -900,13 +882,13 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 if mapminimum(self.heavymass[layer]) < 0:
                     print("Err RO, heavy")
 
-
                 # Discharge due to runoff at the outlet
                 runoff_m3 = runoff_z0 * cellarea() / 1000  # m3
                 accu_runoff_m3 = accuflux(self.ldd_subs, runoff_m3)
                 out_runoff_m3 = areatotal(accu_runoff_m3, self.outlet_multi)
 
             else:  # Layers 1, 2, 3 & 4
+
                 if layer == (self.num_layers - 1):
                     permeable = self.bsmntIsPermeable
 
@@ -915,10 +897,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 if mapminimum(self.heavymass[layer]) < 0:
                     print("Err Startz1, heavy")
 
-                if mapmaximum(self.theta[layer]) > mapmaximum(self.theta_sat[layer]):
-                    val = float(mapmaximum(self.theta[layer])) - float(mapmaximum(self.theta_sat[layer]))
+                excess = ifthenelse(self.theta[layer] > self.theta_sat[layer],
+                                    self.theta[layer] - self.theta_sat[layer], scalar(0))
+                if mapmaximum(excess) > scalar(0):
+                    val = float(mapmaximum(excess))
                     if float(val) > float(1e-06):
-                        print("Error at right before Percolation() layers: 2, 1, 3, SAT exceeded, layer " + str(layer))
+                        print("Error at right before Percolation(), layer > 0, SAT exceeded at layer " + str(layer))
                     self.theta[layer] = ifthenelse(self.theta[layer] > self.theta_sat[layer], self.theta_sat[layer],
                                                    self.theta[layer])
 
@@ -935,18 +919,19 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.lightmass[layer] += light_leached[layer - 1]
                 self.heavymass[layer] += heavy_leached[layer - 1]
 
-                if mapmaximum(self.theta[layer]) > mapmaximum(self.theta_sat[layer]):
-                    val = float(mapmaximum(self.theta[layer])) - float(mapmaximum(self.theta_sat[layer]))
-                    if float(val) > float(1e-06):
-                        print(
-                            "Error at Percolation() layers: 2, 1, 3, SAT exceeded, layer " + str(layer) + ' by ' + str(
-                                val))
+                excess = ifthenelse(self.theta[layer] > self.theta_sat[layer],
+                                    self.theta[layer] - self.theta_sat[layer], scalar(0))
+                if mapmaximum(excess) > scalar(0):
+                    val = float(mapmaximum(excess))
+                    if val > float(1e-06):
+                        print("Error at Percolation() layers: 1, 2, 3, "
+                              "SAT exceeded, layer " + str(layer) + ' by ' + str(val))
                     self.theta[layer] = ifthenelse(self.theta[layer] > self.theta_sat[layer], self.theta_sat[layer],
                                                    self.theta[layer])
 
                 percolation.append(getPercolation(self, layer, k_sat[layer], isPermeable=permeable))
 
-                if layer < (len(self.layer_depth) - 1):  # layers: 0,2,1,3
+                if layer < (len(self.layer_depth) - 1):  # layers: 1,2,3
                     sw_check_bottom = self.theta[layer + 1] * self.layer_depth[layer + 1] + percolation[layer]
                     exceed_mm = max(sw_check_bottom - self.theta_sat[layer + 1] * self.layer_depth[layer + 1],
                                     scalar(0))
@@ -1081,7 +1066,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
                 self.theta[layer] = ifthenelse(self.theta[layer] > self.theta_sat[layer], self.theta_sat[layer],
                                                self.theta[layer])
                 if float(val) > float(1e-06):
-                    print("Error at getLateralFlow(), SAT exceeded, layer " + str(layer) + ' by ' + str(val))
+                    print("getLateralFlow(), Corrected SAT excess, layer " + str(layer) + ' by ' + str(val))
 
             # else:  # Basement layer
             #     latflow_outlet_mm.append(deepcopy(self.zero_map))
@@ -1118,16 +1103,20 @@ class BeachModel(DynamicModel, MonteCarloModel):
         if mapminimum(SWbsmt) < 0:
             val = float(mapminimum(SWbsmt))
             if val < float(-1e-06):
-                print("Negative Basement Soil Water")
+                print("Negative Basement Soil Water by: " + str(val))
         self.theta[-1] = max(SWbsmt / self.layer_depth[-1], scalar(0))
 
         accu_baseflow_m3 = accuflux(self.ldd_subs, baseflow_mm * cellarea() / 1000)
         out_baseflow_m3 = areatotal(accu_baseflow_m3, self.outlet_multi)
 
         light_deg = []
+        heavy_deg = []
         light_aged_deg = []
+        heavy_aged_deg = []
         ch_storage_light = []
+        ch_storage_heavy = []
         ch_storage_light_aged = []
+        ch_storage_heavy_aged = []
         for layer in range(self.num_layers):
             # Temperature
             temp_dict = getLayerTemp(self, layer, bio_cover, temp_bare_soil)
@@ -1153,8 +1142,11 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
             light_deg.append(deg_light_dict.get("mass_deg_aq") +
                              deg_light_dict.get("mass_deg_ads"))
+            heavy_deg.append(deg_heavy_dict.get("mass_deg_aq") +
+                             deg_heavy_dict.get("mass_deg_ads"))
 
             light_aged_deg.append(deg_light_dict["mass_deg_aged"])
+            heavy_aged_deg.append(deg_heavy_dict["mass_deg_aged"])
 
             self.heavymass[layer] = deg_heavy_dict["mass_tot_new"]
             self.heavy_aged[layer] = deg_heavy_dict["mass_aged_new"]
@@ -1178,6 +1170,12 @@ class BeachModel(DynamicModel, MonteCarloModel):
             ch_storage_light_aged.append(self.light_aged[layer] -
                                          self.lightaged_ini[layer])
 
+            ch_storage_heavy.append((self.heavymass[layer] -
+                                    self.heavymass_ini[layer]))
+
+            ch_storage_heavy_aged.append(self.heavy_aged[layer] -
+                                         self.heavyaged_ini[layer])
+
             self.lightmass_ini[layer] = deepcopy(self.lightmass[layer])
             self.lightaged_ini[layer] = deepcopy(self.light_aged[layer])
 
@@ -1191,13 +1189,14 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                       self.r_standard) * 1000  # [permille]
 
         """ Layer analysis """
-        for layer in range(self.num_layers):
-            if layer == (self.num_layers - 1):
-                getLayerAnalysis(self, layer, percolation, latflow_outlet_mm, evap, transp,
-                                 root_depth, out_baseflow_m3=out_baseflow_m3)
-            else:
-                getLayerAnalysis(self, layer, percolation, latflow_outlet_mm, evap, transp,
-                                 root_depth)
+        if self.TEST_theta:
+            for layer in range(self.num_layers):
+                if layer == (self.num_layers - 1):
+                    getLayerAnalysis(self, layer, percolation, latflow_outlet_mm, evap, transp,
+                                     root_depth, out_baseflow_m3=out_baseflow_m3)
+                else:
+                    getLayerAnalysis(self, layer, percolation, latflow_outlet_mm, evap, transp,
+                                     root_depth)
 
         # Update state variables
         # Change in storage - Moisture
@@ -1209,8 +1208,9 @@ class BeachModel(DynamicModel, MonteCarloModel):
             self.theta_ini[layer] = deepcopy(self.theta[layer])
             ch_storage_m3 += ch_storage[layer]  # Reservoir storage (m3)
 
-        getCatchmentStorage(self)
-        getAverageMoisture(self)
+        if self.TEST_theta:
+            getCatchmentStorage(self)
+            getAverageMoisture(self)
 
         # Get Transect concentrations
         # Observed conc. is betw 2 and 8 ug/g dry soil (on transect)
@@ -1239,6 +1239,37 @@ class BeachModel(DynamicModel, MonteCarloModel):
             soils_valley = reportSoilTSS(self, cell_mass_real, cell_massXdelta_real, 'valley', type='real')
             soils_south = reportSoilTSS(self, cell_mass_real, cell_massXdelta_real, 'south', type='real')
 
+            # Real mass catchment z0 and z+
+            catch_light_real_z0 = areatotal(self.light_real[0], self.is_catchment)
+            catch_heavy_real_z0 = areatotal(self.heavy_real[0], self.is_catchment)
+            catch_light_real_zX = deepcopy(self.zero_map)
+            catch_heavy_real_zX = deepcopy(self.zero_map)
+
+            # Aged mass catchment z0 and z+
+            catch_light_aged_z0 = areatotal(self.light_aged[0], self.is_catchment)
+            catch_heavy_aged_z0 = areatotal(self.heavy_aged[0], self.is_catchment)
+            catch_light_aged_zX = deepcopy(self.zero_map)
+            catch_heavy_aged_zX = deepcopy(self.zero_map)
+
+            for layer in range(1, self.num_layers):
+                catch_light_real_zX += areatotal(self.light_real[layer], self.is_catchment)
+                catch_heavy_real_zX += areatotal(self.heavy_real[layer], self.is_catchment)
+                catch_light_aged_zX += areatotal(self.light_aged[layer], self.is_catchment)
+                catch_heavy_aged_zX += areatotal(self.heavy_aged[layer], self.is_catchment)
+
+            # Real (z0, zX, heavy and light)
+            reportSoilMass(self, "resM_light_real_z0", catch_light_real_z0)
+            reportSoilMass(self, "resM_heavy_real_z0", catch_heavy_real_z0)
+            reportSoilMass(self, "resM_light_real_zX", catch_light_real_zX)
+            reportSoilMass(self, "resM_heavy_real_zX", catch_heavy_real_zX)
+
+            # Aged (z0, zX, heavy and light)
+            reportSoilMass(self, "resM_light_aged_z0", catch_light_aged_z0)
+            reportSoilMass(self, "resM_heavy_aged_z0", catch_heavy_aged_z0)
+            reportSoilMass(self, "resM_light_aged_zX", catch_light_aged_zX)
+            reportSoilMass(self, "resM_heavy_aged_zX", catch_heavy_aged_zX)
+
+
         #####################
         # End of Model Loop #
         self.jd_cum += self.jd_dt  # updating JDcum, currently dt = 2 day
@@ -1256,12 +1287,27 @@ class BeachModel(DynamicModel, MonteCarloModel):
                                              out_drain_m3, baseflow=out_baseflow_m3)
         self.tot_Q_m3_tss.sample(tot_vol_disch_m3)
 
-        computeGlobalWaterBalance(self, ch_storage_m3, percolation, etp_m3,
-                                  catch_n_latflow_m3,
-                                  cell_lat_outflow_m3,
-                                  outlet_latflow_m3,
-                                  tot_rain_m3, out_runoff_m3, q_obs, out_drain_m3,
-                                  out_baseflow_m3=out_baseflow_m3)
+        # Percolation Basement
+        # percol_basement_m3 = percolation[-1] * cellarea() / 1000  # m3
+        # out_percol_m3 = accuflux(self.ldd_subs, percol_basement_m3)
+        # out_percol_m3 = areatotal(out_percol_m3, self.outlet_multi)
+
+        # Evapotranspiration
+        out_etp_m3 = accuflux(self.ldd_subs, etp_m3)
+        out_etp_m3 = areatotal(out_etp_m3, self.outlet_multi)
+
+        # Change in storage
+        accu_ch_storage_m3 = accuflux(self.ldd_subs, ch_storage_m3)
+        accu_ch_storage_m3 = areatotal(accu_ch_storage_m3, self.outlet_multi)
+
+        # Cumulative
+        # reportCumHydro(self, q_obs, out_runoff_m3, out_drain_m3, tot_rain_m3,
+        #               out_etp_m3, outlet_latflow_m3, out_percol_m3=None)
+
+        reportGlobalWaterBalance(self, tot_rain_m3, out_runoff_m3, out_drain_m3,
+                                 outlet_latflow_m3, out_etp_m3, accu_ch_storage_m3,
+                                 out_percol_m3=None,
+                                 out_baseflow_m3=out_baseflow_m3)
 
         if self.TEST_theta and self.currentTimeStep() % 2 == 0:
             checkMoisture(self, self.theta, 'athz')
@@ -1270,64 +1316,98 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Pesticide Balance ##
         ######################
         # Applied mass on catchment
-        catch_app_light = areatotal(light_applied, self.is_catchment)  #
-        self.resM_accAPP_g_tss.sample(catch_app_light)
+        catch_app = areatotal(light_applied + heavy_applied, self.is_catchment)  #
+        self.resM_accAPP_g_tss.sample(catch_app)
+        reportTransectSinkTSS(self, 'APP_mass', self.cum_appZ0_g, 'north')
+        reportTransectSinkTSS(self, 'APP_mass', self.cum_appZ0_g, 'valley')
+        reportTransectSinkTSS(self, 'APP_mass', self.cum_appZ0_g, 'south')
 
         # Degradation
         light_deg_tot = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
+        heavy_deg_tot = deepcopy(self.zero_map)
+        for layer in range(1, self.num_layers):
             light_deg_tot += light_deg[layer]
-        catch_deg_light = areatotal(light_deg_tot, self.is_catchment)
-        z0_light_deg_catch = areatotal(light_deg[0], self.is_catchment)
-        self.cum_degZ0_L_g += z0_light_deg_catch
+            heavy_deg_tot += heavy_deg[layer]
 
-        self.resM_accDEG_L_tss.sample(catch_deg_light)
-        self.resM_accDEGz0_L_tss.sample(z0_light_deg_catch)
-        self.cum_degZ0_L_g_tss.sample(self.cum_degZ0_L_g)
+        z0_deg_catch = areatotal(light_deg[0] + heavy_deg[0], self.is_catchment)
+        zX_deg_catch = areatotal(light_deg_tot + heavy_deg_tot, self.is_catchment)
+
+        self.resM_accDEGzX_tss.sample(zX_deg_catch)
+        self.resM_accDEGz0_tss.sample(z0_deg_catch)
+        reportTransectSinkTSS(self, 'DEG_mass', light_deg[0] + heavy_deg[0], 'north')
+        reportTransectSinkTSS(self, 'DEG_mass', light_deg[0] + heavy_deg[0], 'valley')
+        reportTransectSinkTSS(self, 'DEG_mass', light_deg[0] + heavy_deg[0], 'south')
+
+        # self.cum_degZ0_g += z0_deg_catch
+        # self.cum_degZ0_g_tss.sample(self.cum_degZ0_g)
 
         # Aged
         light_aged_tot = deepcopy(self.zero_map)
+        heavy_aged_tot = deepcopy(self.zero_map)
         light_aged_deg_tot = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
+        heavy_aged_deg_tot = deepcopy(self.zero_map)
+        for layer in range(1, self.num_layers):
             light_aged_tot += self.light_aged[layer]
+            heavy_aged_tot += self.heavy_aged[layer]
             light_aged_deg_tot += light_aged_deg[layer]
+            heavy_aged_deg_tot += heavy_aged_deg[layer]
 
-        catch_aged_light = areatotal(light_aged_tot, self.is_catchment)
-        catch_aged_deg_light = areatotal(light_aged_deg_tot, self.is_catchment)
+        z0_aged_catch = areatotal(self.light_aged[0] + self.heavy_aged[0], self.is_catchment)
+        zX_aged_catch = areatotal(light_aged_tot + heavy_aged_tot, self.is_catchment)
+        z0_aged_deg_catch = areatotal(light_aged_deg[0] + heavy_aged_deg[0], self.is_catchment)
+        zX_aged_deg_catch = areatotal(light_aged_deg_tot + heavy_aged_deg_tot, self.is_catchment)
 
-        self.cum_aged_deg_L_g += catch_aged_deg_light
-        self.cum_aged_deg_L_g_tss.sample(self.cum_aged_deg_L_g)
-        self.resM_accAGED_L_tss.sample(catch_aged_light)
-        self.resM_accAGED_DEG_L_tss.sample(catch_aged_deg_light)
+        self.resM_accAGEDz0_tss.sample(z0_aged_catch)
+        self.resM_accAGEDzX_tss.sample(zX_aged_catch)
+        self.resM_accAGED_DEGz0_tss.sample(z0_aged_deg_catch)
+        self.resM_accAGED_DEGzX_tss.sample(zX_aged_deg_catch)
+        reportTransectSinkTSS(self, 'AGE_mass', self.light_aged[0] + self.heavy_aged[0], 'north')
+        reportTransectSinkTSS(self, 'AGE_mass', self.light_aged[0] + self.heavy_aged[0], 'valley')
+        reportTransectSinkTSS(self, 'AGE_mass', self.light_aged[0] + self.heavy_aged[0], 'south')
+        # self.cum_aged_deg_L_g += catch_aged_deg_light
+        # self.cum_aged_deg_L_g_tss.sample(self.cum_aged_deg_L_g)
 
         # Volatilized
-        catch_volat_light = areatotal(light_volat, self.is_catchment)
-        self.resM_accVOLAT_L_tss.sample(catch_volat_light)
+        catch_volat = areatotal(light_volat + heavy_volat, self.is_catchment)
+        self.resM_accVOLATz0_tss.sample(catch_volat)
+        reportTransectSinkTSS(self, 'VOLA_mass', light_volat + heavy_volat, 'north')
+        reportTransectSinkTSS(self, 'VOLA_mass', light_volat + heavy_volat, 'valley')
+        reportTransectSinkTSS(self, 'VOLA_mass', light_volat + heavy_volat, 'south')
 
         # Mass loss to run-off
         # Index: 0 <- light, Index: 2 <- heavy
-        catch_runoff_light = areatotal(mass_runoff[0], self.is_catchment)
+        catch_runoff_light = areatotal(mass_runoff[0] + mass_runoff[1], self.is_catchment)
         catch_runoff_heavy = areatotal(mass_runoff[1], self.is_catchment)
-        self.resM_accRO_L_tss.sample(catch_runoff_light)
+        catch_runoff_mass = catch_runoff_light + catch_runoff_heavy
+        self.resM_accROz0_tss.sample(catch_runoff_mass)
+        reportTransectSinkTSS(self, 'ROFF_mass', mass_runoff[0] + mass_runoff[1], 'north')
+        reportTransectSinkTSS(self, 'ROFF_mass', mass_runoff[0] + mass_runoff[1], 'valley')
+        reportTransectSinkTSS(self, 'ROFF_mass', mass_runoff[0] + mass_runoff[1], 'south')
 
         # z0-mass leached
         catch_leach_light_z0 = areatotal(light_leached[0], self.is_catchment)
-        self.cum_lchZ0_L_g += catch_leach_light_z0
-        self.resM_accLCHz0_L_tss.sample(catch_leach_light_z0)
-        self.resM_cumLCHz0_L_g_tss.sample(self.cum_lchZ0_L_g)
+        catch_leach_heavy_z0 = areatotal(heavy_leached[0], self.is_catchment)
+        z0_catch_leach = catch_leach_light_z0 + catch_leach_heavy_z0
+        self.resM_accLCHz0_tss.sample(z0_catch_leach)
+        reportTransectSinkTSS(self, 'LCH_mass', light_leached[0] + heavy_leached[0], 'north')
+        reportTransectSinkTSS(self, 'LCH_mass', light_leached[0] + heavy_leached[0], 'valley')
+        reportTransectSinkTSS(self, 'LCH_mass', light_leached[0] + heavy_leached[0], 'south')
+        # self.cum_lchZ0_L_g += catch_leach_light_z0
+        # self.resM_cumLCHz0_L_g_tss.sample(self.cum_lchZ0_L_g)
 
         # z1-mass leached
-        catch_leach_light_z1 = areatotal(light_leached[1], self.is_catchment)
-        self.resM_accDPz1_L_tss.sample(catch_leach_light_z1)
+        catch_leach_light_z1 = areatotal(light_leached[1] + heavy_leached[1], self.is_catchment)
+        self.resM_accLCHz1_tss.sample(catch_leach_light_z1)
 
         # Basement-mass leached = zero, if no basement percolation
-        catch_leach_light_Bsmt = areatotal(light_leached[-1], self.is_catchment)
-        self.resM_accDP_L_tss.sample(catch_leach_light_Bsmt)
+        # catch_leach_light_Bsmt = areatotal(light_leached[-1], self.is_catchment)
+        # self.resM_accDP_L_tss.sample(catch_leach_light_Bsmt)
 
         # Artificial drained mass (layer z2)
         catch_drain_light = areatotal(light_drained, self.is_catchment)
         catch_drain_heavy = areatotal(heavy_drained, self.is_catchment)
-        self.resM_accADR_L_tss.sample(catch_drain_light)
+        # catch_drain_heavy = areatotal(heavy_drained, self.is_catchment)
+        self.resM_accADR_tss.sample(catch_drain_light + catch_drain_heavy)
         # catch_drain_heavy = areatotal(z1_heavy_drain, self.is_catchment)
 
         # Lateral flux at outlet cells
@@ -1343,13 +1423,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Lateral flux (Required in MB)
         latflux_light_catch = deepcopy(self.zero_map)
         latflux_heavy_catch = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
+
+        for layer in range(0, self.num_layers):
             latflux_light_catch += ligth_latflow[layer]
             latflux_heavy_catch += heavy_latflow[layer]
 
         catch_latflux_light = areatotal(latflux_light_catch, self.outlet_multi)  # Needed for MB
         catch_latflux_heavy = areatotal(latflux_heavy_catch, self.outlet_multi)  # Needed for MB
-        self.resM_accLF_L_tss.sample(catch_latflux_light)  # Reports the outlet-only loss
+        self.resM_accLF_tss.sample(catch_latflux_light + catch_latflux_heavy)  # Reports the outlet-only loss
+
+        # For mass balance Z0 layer
+        z0_latflux = areatotal(ligth_latflow[0] + heavy_latflow[0], self.outlet_multi)
 
         # Baseflow flux
         # out_baseflow_light = areatotal(baseflow_light, self.is_catchment)
@@ -1360,14 +1444,19 @@ class BeachModel(DynamicModel, MonteCarloModel):
         for layer in range(self.num_layers):
             ch_storage_light_catch += ch_storage_light[layer]
 
-        catch_ch_storage_light = areatotal(ch_storage_light_catch, self.is_catchment)
-        self.resM_accCHS_L_tss.sample(catch_ch_storage_light)
+        # catch_ch_storage_light = areatotal(ch_storage_light_catch, self.is_catchment)
+        z0_ch_storage = areatotal(ch_storage_light[0] + ch_storage_heavy[0], self.is_catchment)
+        # self.resM_accCHS_L_tss.sample(catch_ch_storage_light)
 
-        ch_storage_light_aged_catch = deepcopy(self.zero_map)
-        for layer in range(self.num_layers):
-            ch_storage_light_aged_catch += ch_storage_light_aged[layer]
-        catch_ch_storage_light_aged = areatotal(ch_storage_light_aged_catch, self.is_catchment)
-        self.resM_accCHS_AGED_L_tss.sample(catch_ch_storage_light_aged)
+        # ch_storage_light_aged_catch = deepcopy(self.zero_map)
+        # ch_storage_heavy_aged_catch = deepcopy(self.zero_map)
+        # for layer in range(self.num_layers):
+        #     ch_storage_light_aged_catch += ch_storage_light_aged[layer]
+        #     ch_storage_heavy_aged_catch += ch_storage_heavy_aged[layer]
+
+        z0_ch_storage_aged = areatotal(ch_storage_light_aged[0] + ch_storage_heavy_aged[0], self.is_catchment)
+        # catch_ch_storage_light_aged = areatotal(ch_storage_light_aged_catch, self.is_catchment)
+        # self.resM_accCHS_AGED_L_tss.sample(catch_ch_storage_light_aged)
 
         ####################
         # Outlet Pesticide #
@@ -1375,7 +1464,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # Total mass export
         outlet_light_export = (catch_runoff_light + catch_drain_light + catch_latflux_light)
         outlet_heavy_export = (catch_runoff_heavy + catch_drain_heavy + catch_latflux_heavy)
-        self.resM_EXP_Smet_g_tss.sample(outlet_light_export)  # grams
+        self.resM_EXP_light_g_tss.sample(outlet_light_export)  # grams
+        self.resM_EXP_heavy_g_tss.sample(outlet_heavy_export)  # grams
 
         conc_ugL = (outlet_light_export + outlet_heavy_export) * 1e6 / (tot_vol_disch_m3 * 1e3)
         conc_ROFF_ug_L = (catch_runoff_light + catch_runoff_heavy) * 1e6 / (tot_vol_disch_m3 * 1e3)
@@ -1387,14 +1477,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.resM_oCONC_LF_ugL_tss.sample(conc_LF_ug_L)  # ug/L
         self.resM_oCONC_ADR_ugL_tss.sample(conc_ADR_ug_L)  # ug/L
 
-        repCumOutMass(self,
-                      conc_outlet_obs, outlet_light_export,
-                      catch_latflux_light, catch_drain_light, catch_runoff_light,
-                      catch_volat_light, catch_deg_light)
+        # repCumOutMass(self,
+        #               conc_outlet_obs, outlet_light_export,
+        #               catch_latflux_light, catch_drain_light, catch_runoff_light,
+        #               catch_volat_light, catch_deg_light)
 
         # Isotope signature - outlet
         out_delta = ((outlet_heavy_export / outlet_light_export - self.r_standard) /
                      self.r_standard) * 1000  # [permille]
+
+        self.resM_outISO_d13C_tss.sample(out_delta)
+
         roff_delta = ((catch_runoff_heavy / catch_runoff_light - self.r_standard) /
                       self.r_standard) * 1000  # [permille]
         latflux_delta = ((catch_latflux_heavy / catch_latflux_light - self.r_standard) /
@@ -1402,48 +1495,46 @@ class BeachModel(DynamicModel, MonteCarloModel):
         drain_delta = ((catch_drain_heavy / catch_drain_light - self.r_standard) /
                        self.r_standard) * 1000  # [permille]
 
+        self.resM_outISO_ROFF_d13C_tss.sample(roff_delta)
+        self.resM_outISO_LF_d13C_tss.sample(latflux_delta)
+        self.resM_outISO_ADR_d13C_tss.sample(drain_delta)
+
         reportGlobalPestBalance(self,
-                                catch_app_light,
-                                catch_deg_light,
-                                catch_aged_deg_light,
-                                catch_volat_light,
-                                catch_runoff_light,
-                                catch_leach_light_Bsmt,
-                                catch_drain_light,
-                                catch_latflux_light,
-                                catch_ch_storage_light,
-                                catch_ch_storage_light_aged)
+                                catch_app,
+                                z0_deg_catch,
+                                z0_aged_deg_catch,
+                                catch_volat,
+                                catch_runoff_mass,
+                                z0_catch_leach,
+                                # catch_drain_light,
+                                z0_latflux,
+                                z0_ch_storage,
+                                z0_ch_storage_aged)
+
+        # Total days with data (needed for mean calculations)
+        self.days_cum += ifthenelse(q_obs >= 0, scalar(1), scalar(0))
 
         """
         Nash computations
         """
-        # Total days with data (needed for mean calculations)
-        self.days_cum += ifthenelse(q_obs >= 0, scalar(1), scalar(0))
-
         # Analysis (NASH Discharge)
-        reportNashHydro(self, q_obs, tot_vol_disch_m3)
+        # reportNashHydro(self, q_obs, tot_vol_disch_m3)
 
         # Analysis (NASH Pest)
-        if self.PEST:
-            repNashOutConc(self, conc_outlet_obs, conc_ugL)
-            repNashOutIso(self, iso_outlet_obs, out_delta,
-                          roff_delta, latflux_delta, drain_delta)
-            # TODO:
-            # repNashOutCombined()
+        # if self.PEST:
+        #     repNashOutConc(self, conc_outlet_obs, conc_ugL)
+        #     repNashOutIso(self, iso_outlet_obs, out_delta,
+        #                   roff_delta, latflux_delta, drain_delta)
+        #
+        #     repNashConcComposites(self,
+        #                           soils_north['ave_conc'],
+        #                           soils_valley['ave_conc'],
+        #                           soils_south['ave_conc'])
+        #     reptNashIsoComposites(self,
+        #                           soils_north['d13C'],
+        #                           soils_valley['d13C'],
+        #                           soils_south['d13C'])
 
-            # TODO:
-            # Combine Composites and detailed
-            repNashConcComposites(self,
-                                  soils_north['ave_conc'],
-                                  soils_valley['ave_conc'],
-                                  soils_south['ave_conc'])
-            reptNashIsoComposites(self,
-                                  soils_north['d13C'],
-                                  soils_valley['d13C'],
-                                  soils_south['d13C'])
-
-            # repNashSoilConc()
-            # repNashSoilIso()
 
     def postmcloop(self):
         pass
@@ -1455,6 +1546,35 @@ class BeachModel(DynamicModel, MonteCarloModel):
         # aguila --quantiles=[0.25,0.75,0.25] --timesteps=[170,280,2] q
 
 
+
+# Define models to run
+
+problem = get_problem()
+names = problem['names']
+upper = problem['upper']
+samples = 50
+param_values = latin.sample(problem, samples)
+saveLHSmatrix(param_values)
+# param_values = np.loadtxt('lhs_vectors.txt')
+
+firstTimeStep = start_jday()  # 166 -> 14/03/2016
+nTimeSteps = 286  # 360
+# aguila("clone_nom")
+myAlteck16 = BeachModel("clone_nom.map", names, param_values, upper, staticDT50=False)
+dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
+                                firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
+mcModel = MonteCarloFramework(dynamicModel, samples)
+
+t0 = datetime.now()
+# dynamicModel.run()
+mcModel.run()
+t1 = datetime.now()
+
+duration = t1 - t0
+tot_min = duration.total_seconds() / 60
+print("Total minutes: ", tot_min)
+print("Minutes/monte carlo", tot_min / int(samples))
+print("Minutes/Yr: ", (duration.total_seconds() / 60) / (nTimeSteps - firstTimeStep) * 365)
 # Visualization
 # aguila 2\at0dC000.177 2\at1dC000.177
 # aguila --scenarios='{2,1}' --multi=1x4  --timesteps=[175,179,2] aLEACH aLEACHz aLF aLFz
@@ -1467,77 +1587,10 @@ class BeachModel(DynamicModel, MonteCarloModel):
 #  aguila --scenarios='{2,1,3}' thFCz2 thSATz2
 #  aguila --scenarios='{2}' --timesteps=[1,300,1] aROm3 athz0 athz1 athz2 athz3
 #  aguila --scenarios='{2}' --timesteps=[1,300,1] aROm3 aZ1LCH
-# aguila --scenarios='{1}' --timesteps=[1,300,1] RDpctz0 RDpctz1 RDpctz2 RDpctz3 RDpctz4
+# aguila --scenarios='{1}' --timesteps=[1,300,1] thz1  iniThZ1
 
 # Time series
 # aguila 2\res_nash_q_m3.tss 6\res_nash_q_m3.tss
 # aguila 2\resW_accStorage_m3.tss
 # aguila 2\resM_norCONC.tss 2\resM_valCONC.tss 2\resM_souCONC.tss
 
-nrOfSamples = int(runs)  # Samples are each a MonteCarlo realization
-firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 286  # 360
-myAlteck16 = BeachModel("clone_nom.map", names, params, bounds)
-dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
-                                firstTimestep=firstTimeStep)  # an instance of the Dynamic Framework
-mcModel = MonteCarloFramework(dynamicModel, nrOfSamples)
-
-t0 = datetime.now()
-# dynamicModel.run()
-mcModel.run()
-t1 = datetime.now()
-
-duration = t1 - t0
-tot_min = duration.total_seconds() / 60
-print("Total minutes: ", tot_min)
-print("Minutes/monte carlo", tot_min / int(runs))
-print("Minutes/Yr: ", (duration.total_seconds() / 60) / (nTimeSteps - firstTimeStep) * 365)
-
-# if morris:
-#     # First test of soil-water holding capacity on:
-#     ouput_vars = [
-#         # Outlet - Hydro
-#         "resW_tot_accVol_m3",  # Tot Q-sim
-#         "resW_accEtp_m3",
-#         "resW_accRunoff_m3",
-#         "resW_o_accDrain_m3",
-#         "resW_o_cellLatflow_m3",
-#         "resW_accChStorage_m3",  # needed?
-#         "resW_accBaseflow_m3",
-#         # Outlet - Mass
-#         "resM_EXP_Smet_g",  # TOT = RO + ADR + LF
-#         "resM_oCONC_ugL",  # Tot concentration outlet
-#         "resM_oCONC_ROFF_ugL",
-#         "resM_oCONC_LF_ugL",
-#         "resM_oCONC_ADR_ugL_tss",
-#         # Outlet - ISO
-#         "resM_outISO_d13C",  # TOT = RO + ADR + LF
-#         "resM_outISO_ROFF_d13C",
-#         "resM_outISO_LF_d13C",
-#         "resM_outISO_ADR_d13C",
-#         # Soils - Mass
-#         "resM_accDEG_L",
-#         "resM_accDEGz0_L",
-#         "resM_accAGED_L",
-#         "resM_accAGED_DEG_L",
-#         "resM_accVOLAT_L",
-#         "resM_accRO_L",
-#         "resM_accLCHz0_L",  # Leaching z0
-#         "resM_accDPz1_L",  # Leaching z1
-#         "resM_accADR_L",
-#         "resM_accLF_L",  # Outlet cell mass-loss
-#         # Nash - outlet
-#         "resNash_q_m3",  # Q
-#         "resNash_outConc_ugL",  # Conc
-#         "resNash_outIso_delta",  # Iso
-#         # Nash - soils
-#         "nashN_compConc_L",
-#         "nashV_compConc_L",
-#         "nashS_compConc_L",
-#         "nashN_compIso",
-#         "nashV_compIso",
-#         "nashS_compIso"
-#     ]
-#
-#     morris_results = getSiList(ouput_vars, problem, params, grid_jump, p, runs)
-#     saveMorris(ouput_vars, morris_results)

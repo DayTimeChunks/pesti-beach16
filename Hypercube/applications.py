@@ -3,6 +3,14 @@ from pcraster.framework import *
 
 
 def getApplications(model, fa_cr, plot_codes, massunit='g'):
+    """
+
+    :param model:
+    :param fa_cr:
+    :param plot_codes:
+    :param massunit:
+    :return: # default mass is grams (to each pixel)
+    """
     if massunit == 'g':
         factor = 1  # grams
     else:

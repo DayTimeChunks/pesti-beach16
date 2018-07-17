@@ -37,6 +37,33 @@ def importPlotMaps(model):
         model.plot_maps[plot_map] = nominal(model.readmap(plot_map))
 
 
+def defineMassTSS(model, mMap="outlet_v3"):
+    try:
+        model.catch_dict
+    except AttributeError:
+        model.catch_dict = dict()
+
+    names = [
+        # Real
+        "resM_light_real_z0",
+        "resM_heavy_real_z0",
+        "resM_light_real_zX",
+        "resM_heavy_real_zX",
+        # Aged
+        "resM_light_aged_z0",
+        "resM_heavy_aged_z0",
+        "resM_light_aged_zX",
+        "resM_heavy_aged_zX"
+    ]
+    for i in range(len(names)):
+        tss_name = names[i]
+        model.catch_dict[tss_name] = TimeoutputTimeseries(names[i], model, nominal(mMap), noHeader=False)
+
+
+def reportSoilMass(model, name, var):
+    model.catch_dict[name].sample(var)
+
+
 def defineSoilTSS(model):
     try:
         model.soil_dict
@@ -166,4 +193,60 @@ def reportSoilTSS(model, cell_mass, cell_massXdelta, transect, type='real'):
     # Report
     return {'ave_conc': transect_ave_conc,
             'd13C': transect_d13C}
+
+
+def defineTransectSinkTSS(model, sink_name):
+    try:
+        model.sink_dict
+    except AttributeError:
+        model.sink_dict = dict()
+
+    transects = ['north', 'valley', 'south']
+    for tr in range(len(transects)):
+        transect = transects[tr]
+        transect_sink = transect[0:3] + sink_name
+        transect_map = transect + '_ave'
+
+        # Sinks (e.g. degradation or leaching or volat. )
+        model.sink_dict[transect_sink] = TimeoutputTimeseries("resM_" + transect_sink, model, ordinal(transect_map),
+                                                              noHeader=False)
+    # plots = ['n1', 'n2', 'n3', 'n4', 'n5', 'n7', 'n8',
+    #          'v4', 'v5', 'v7', 'v8', 'v9', 'v10',
+    #          's11', 's12', 's13']
+    # for plot in range(len(plots)):
+    #     plot_name = plots[plot]
+    #     plot_map = plot_name + '_out'  # 1-pixel map
+    #
+    #     plot_sink = plot_name + sink_name
+    #
+    #     # Sinks (e.g. degradation or leaching or volat. )
+    #     model.sink_dict[plot_sink] = TimeoutputTimeseries("resM_" + plot_sink, model, ordinal(plot_map), noHeader=False)
+
+
+def reportTransectSinkTSS(model, sink_name, sink, transect):
+
+    if transect == 'north':
+        plots = ['n1', 'n2', 'n3', 'n4', 'n5', 'n7', 'n8']
+        plot_sampling_pts = [4, 6, 6, 4, 4, 5, 5]
+        transect_sampling_pts = 30
+    elif transect == 'valley':
+        plots = ['v4', 'v5', 'v7', 'v8', 'v9', 'v10']
+        plot_sampling_pts = [4, 4, 5, 5, 5, 5]
+        transect_sampling_pts = 25
+    else:
+        transect = 'south'
+        plots = ['s11', 's12', 's13']
+        plot_sampling_pts = [8, 7, 5]
+        transect_sampling_pts = 26
+
+    # Record Transect
+    transect_map = transect + '_nom'
+    transect_tot_mass = areatotal(sink, model.plot_maps[transect_map])
+
+    # Sink per sample (divide by 4 m2 to get per m2)
+    transect_ave_mass = transect_tot_mass / scalar(transect_sampling_pts)
+
+    transect_sink = transect[0:3] + sink_name
+
+    model.sink_dict[transect_sink].sample(transect_ave_mass)
 

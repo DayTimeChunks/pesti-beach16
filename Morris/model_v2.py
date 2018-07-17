@@ -175,7 +175,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         defineAverageMoistTSS(self)  # output.py
 
         definePestTSS(self)  # output.p
-        defineSoilTSS(self)  # soil_samples.py
+        defineSoilTSS(self)  # output_soils.py
 
 
         defineNashHydroTSS(self)  # nash.py
