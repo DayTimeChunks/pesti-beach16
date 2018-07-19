@@ -1,0 +1,58 @@
+---
+title: "BulkCalibration"
+author: "PAZ"
+date: "19 juillet 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+MAC = F
+WIN = F
+if (MAC) {
+  if (WIN){
+    path = file.path("C:/Users/DayTimeChunks/Documents/PhD/HydrologicalMonitoring")
+    
+  } else {
+    # path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
+    path = file.path("/Users/DayTightChunks/Documents/PhD/hydrological-monitoring")
+    time = read.csv2("/Users/DayTightChunks/Documents/PhD/Models/phd-model-master/Analysis/Data/Time.csv")
+    time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
+  }
+} else {
+  path = file.path("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring")
+  time = read.csv2("D:/Documents/these_pablo/Models/BEACH2016/Analysis/Data/Time.csv")
+  time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
+}
+# Lab parameters and field constants
+source(file.path(path, "global.R"))
+
+```
+
+
+
+# Compute Bulk catchment measurements for 1st stage Isotope Calibration
+
+Good set of possible data files:
+
+- 'Data/MassBalance_R.csv'
+- 'Data/WeeklySoils_Rng.csv'
+
+Will need to modify the area considered in the second file becuase that file assumes total area by counting only the plots in the transect with application. Instead the areas that need to be calculated are those of full transect areas corresponding to the GISA shape file *TransectAreas_A*, which reads the following:
+
+- North: 139,266.25 m2
+- Valley: 43,713.44 m2
+- South: 133,175.05
+
+```{r}
+soils = read.csv2(file.path(path, "Data/WeeklySoils_Rng.csv")) # Corrected with only ngC > 2.0
+names(soils)
+soils$Date.ti <- as.POSIXct(soils$Date.ti, "%Y-%m-%d %H:%M", tz = "EST")
+#soils$Date.ti <- as.POSIXct(soils$Date.ti, "%d/%m/%Y %H:%M", tz = "EST")
+sum(is.na(soils$Date.ti))
+
+```
+
+
