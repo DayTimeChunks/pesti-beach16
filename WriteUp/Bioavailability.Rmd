@@ -8,9 +8,13 @@ output:
 bibliography: library.bib
 ---
 
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+
+# bioavailable
 
 \begin{equation}
 M_{ads, bioav}(t+1) = M_{ads}e^{-k_{nba,ads} \Delta t}

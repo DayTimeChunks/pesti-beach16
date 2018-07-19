@@ -5,7 +5,7 @@ output:
   pdf_document:
     citation_package: natbib
     keep_tex: yes
-  # word_document: default
+  word_document: default
 bibliography: library.bib
 ---
 
@@ -29,156 +29,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Hydrological Framework
 
-To determine the change in soil moisture content ($\frac{d\theta_i}{dt}$) in the unsaturated zone at each cell *i*, the following hydrological processes are included:
-
-[comment]:$$
-\begin{equation}
-D\frac{d\theta_i}{dt} = P_i + R_i + \Delta LF_i - Ea_i - Ta_i - DP_i 
-\label{eq:hydro} 
-\end{equation}
-[comment]:$$
-
-where *D* is depth of soil moisture simulation (mm), $\theta$ is soil moisture content (m^3^ m^-3^), *dt* is model time step (day), *P* is precipitation (mm), *R* is runoff (mm), $\Delta LF$ is the difference between lateral inflow and outflow from a given cell (mm), *Ea* is the actual evaporation (mm), *Ta* actual transpiration (mm) and *DP* is the deep percolation (mm).
-
-
-### Infiltration and Runoff
-
-To calculate infiltration *I*  and surface runoff *R*, soil moisture conditions are determined by following the SCS curve number (BEACH-CN) method defined by the U.S. Soil Conservation Service (SCS, 1972). The method depends on permeability, land use, slope and antecedent moisture conditions. Curve numbers are classified according to three moisture conditions: dry (wilting point - $CN_1$), average moisture ($CN_2$) and wet (field capacity - $CN_3$). 
-
-Typical curve number values for average moisture conditions (i.e. $CN_2$) for various land covers, hydrologic conditions  and soil types at a 5% slope are given in Nietsch et al. [-@Neitsch2009]. $CN_2$ values are adjusted dynamically (i.e. per time step)  by crop cover and leaf area index (LAI) and used to derive the value of $CN_3$ before slope adjustment:
-
-[comment]:$$
-\begin{equation}  
-CN_3 = CN_2 \cdot \exp [0.00673 \cdot (100-CN_2)] 
-\label{eq:CN3}  
-\end{equation}
-[comment]:$$
-
-The CN2 values are then re-adjusted to account for slope differences such that [@Neitsch2009]:
-
-\begin{equation}  
-CN_{2s} = \frac{CN_3 - CN_2}{3} \cdot [1-2 \cdot \exp (-13.86 \cdot slope)] + CN_2 
-\label{eq:CN2s}  
-\end{equation}
-
-where $CN_{2s}$ is the curve number for average moisture conditions adjusted to the local slope. $CN_1$ values accounting for slope are then calculated as:
-
-\begin{equation}  
-CN_{1} = CN_{2s} - \frac{20 \cdot (100 - CN_{2s}}{\Big(100 - CN_{2s} + \exp [2.533-0.0636 \cdot (100 - CN_{2s})]\Big)} 
-\label{eq:CN1}  
-\end{equation}
-
-Finally, adjustment to $CN_3$ values are calculated by using the original equation and replacing $CN_{2s}$ by $CN_2$.
-
-The run-off equation is given by \cite{Neitsch2009}:
-
-\[
-    R = 
-\begin{dcases}
-     ~0,                                     & P \leq I_a \\
-    \frac{(P-I_a)^2}{P-I_a+S},              & P > I_a 
-\end{dcases}
-\stepcounter{equation}\tag{\theequation}\label{eq:R}
-\]
-
-
-where $I_a$ (mm) is the initial abstraction capacity  of the surface layer, which includes surface storage, interception and infiltration prior to runoff, and typically ranges from 0.05S to 0.2S \citep{Lim2006}. The model adopts the latter of these values as it has provided reliable results for previous rainfall-runoff events. S is the retention parameter after run-off (mm) given as a function of the soil profile water content:
-
-\begin{equation}
-S = S_{max} \cdot \Big(1-\frac{SW}{(SW+ \exp[w_1-w_2 \cdot SW]  )} \Big) 
-\label{eq:S}  
-\end{equation}
-
-where w1 (mm) and w2 (-) are shape coefficients, SW is the soil profile water content excluding the amount of water held in the soil profile at wilting point (mm) such that:
-
-\begin{equation}
-SW = max \Big[ \Big\{(\frac{D_{zl} \theta _{zl} + D_1 \theta _1}{D_{zl}+D_1} - \theta _{wp} ) \cdot (D_{zl}+D_1) \Big\},\Big\{0 \Big\} \Big]
-\label{eq:SW}
-\end{equation}
-
-and $S_{max}$ is the maximum value that the retention parameter (mm) can take such that:
-
-\begin{equation}
-S_{max} = 254 \cdot \big(\frac{100}{CN_1} -1 \big)
-\label{eq:Smax}  
-\end{equation}
-
-Calculation of $w_1$ and $w_2$ further assumes that:
-
-\begin{equation}
-S_3= 254 \cdot \big(\frac{100}{CN_3}-1 \big)
-\label{eq:S3}
-\end{equation}
-
-and that when completely saturated $CN$ = 99 (S = 2.54 mm) such that:
-
-\begin{equation}
-w_1 = ln \Big[\frac{FC}{(1-\frac{S_3}{S_{max}}} )-FC \Big]+w_2 \cdot FC
-\label{eq:w1}
-\end{equation}
-
-\begin{equation}
-w_2 = \frac{ln \Big[\frac{FC}{(1-\frac{S_3}{S_{max}}} )-FC \Big]- ln \Big[ \frac{SAT}{(1-\frac{2.54}{S_{max}}}-SAT \Big]}{SAT-FC}
-\label{eq:w2}  \end{equation}
-
-where FC is the soil profile water content at field capacity (mm), S3 is the retention parameter (mm) corresponding to field capacity (i.e. CN3) and SAT is the soil profile water content at saturation (mm).  
-
-Infiltration (mm) is then given by:
-
-\begin{equation}
-I=P-R	
-\label{eq:I}  
-\end{equation}
-
-After computation of the runoff equation and infiltration (and in order to compute evapotranspiration, drainage and lateral flow), the cell moisture content for the top layer needs to be updated. This is done by adding infiltration (I) across the soil profile and subtracting the fraction of water content that exceeds the saturation capacity  $\theta_{satex,t}$ such that:
-
-\begin{equation}
-\theta_{t+1}=(\frac{\theta_t+I}{D_1} )-\theta_{satex,t}
-\label{eq:thetat1}  
-\end{equation}
-
-\begin{equation}
-\theta_{satex,t}=(\frac{\theta_t+I}{D_1})-\theta_{sat},  ~~~~if~~(\frac{\theta_t+I}{D_1})>\theta_{sat}
-\label{eq:thetat}  
-\end{equation}
-
-The water content exceeding saturation capacity plus calculated runoff is then added together and reported as actual runoff. The discharge at the outlet is calculated here as a function of time and spatial propagation (i.e. LDD, Runoff). 
-
-### Deep Percolation
-
-Deep percolation (DP) is assumed to be negligible at moisture levels below field capacity. Above this moisture level percolation is given by \cite{Raes2002}:
-
-\begin{equation}
-DP_z = D_z \tau_z (\theta_{sat, z} - \theta_{fc, z}) \frac{e^{\theta_z-\theta_{fc,z}}-1}{e^{\theta_{sat, z}-\theta_{fc,z}}-1},~~if~ \theta_z > \theta_{fc, z} 
-\label{eq:DP}  
-\end{equation}
-
-where $D_z$ is the soil profile depth of layer $z$ and $\tau$ is a dimensionless drainage characteristic given by:
-
-
-\begin{equation}
-\tau = 0.0866 \cdot e^{0.8063 \cdot log_{10}(K_{sat})}, ~~0< \tau \leq 1
-\label{eq:tau}  
-\end{equation}
-
-where $K_{sat}$ is the saturated hydraulic conductivity.
-
-
-#### Program steps
-
-Consider first layer z0 (with immediate update on z1, due to low thickness of z0)
-
-1. Get surface layer infiltration ,
-  - which yields infiltration to z0 and z1, and 
-  - updates moisture content on those layers
-
-2. Subtract z0 percolation
-
-Now layers z1, z2, z3
-
-1. Add percolation from above layer -> Exceeds capacity for z2!
-2. 
-
 ### Lateral/subsurface flow
 
 Later flow occurs when the soil moisture content exceeds the field capacity and is represented as the difference between inflow and outflow at a cell $j$ for each soil layer $z$ according to \cite{Manfreda2005}:
@@ -197,116 +47,9 @@ TWI =ln\Big(\frac{a}{tan \beta} \Big)
 
 were $a$ is the drainage area per unit contour length (defined by the Local Drain Direction (LDD) network and cell area) and tan $\beta$, the local slope in radians derived from the Digital Elevation Model (DEM).
 
-### Evapotranspiration
 
-To account for evapotranspiration processes the FAO56 reference evaporation rate, $ET_0$ (mm), has been considered and adjusted dynamically according to crop and climate-specific factors. The approach assumes a dual crop coefficient approach appropriate for daily time-step calculations [@Allen1998] and made up of a basal crop coefficient ($K_{cb}$) and a soil water evaporation coefficient ($K_e$). 
+### Old Plant height
 
-Potential evapotranspiration $(ET_p)$ is then given by
-
-\begin{equation}
-ET_p=K_c \cdot ET_0
-\label{eq:ETp}  
-\end{equation}
-
-\begin{equation}
-K_c = K_{cb} + K_e
-\label{eq:Kc}  
-\end{equation}
-
-where $K_{cb}$ varies according to crop-specific development stage. In cases where the mean value for daily relative humidity during the mid- or late-season growth stage ($RH_{min}$\%) differs from 45\% or where wind speed varies by more than 2 m/s the $K_{cb}$ values for mid- and late-season must be adjusted according to:
-
-\begin{equation}
-K_{cb}=K_{cb_{mid/end}} + \Big[ 0.04(U_2-2)-0.004(RH_{min}-45) \Big] \Big( \frac{h_{crop}}{3} \Big) ^{0.3}
-\label{eq:Kcb}  
-\end{equation}
-
-\begin{equation}
-K_e= K_{cmax}-K_{cb}
-\label{eq:Ke}  
-\end{equation}    
-
-where $K_{cb_{mid/end}}$ represent the reference values for sub-humid climate and moderate wind speeds [see @Allen1998]. $U2$ is the wind speed at a height of 2 meters (m/s), $RH_{min}$ is the minimum relative humidity (\%) and $h_crop$ is crop height.
-    
-$K_e$ is the soil evaporation coefficient and $K_{cmax}$ represents an upper limit to evapotranspiration from cropped surfaces, typically ranges between 1.05 to 1.30 (-) and given by [@Sheikh2009]:  
-
-\begin{equation}
-K_{cmax}=max \Big[ \Big\{ K_{cb}+0.05 \Big\} , \Big\{ 1.2 + [0.04(U_2-2)-0.004(RH_{min}-45)] \cdot (\frac{h}{3})^{0.3} \Big\} \Big]
-\label{eq:Kcmax}  
-\end{equation}
-
-When available soil moisture is limited potential evapotranspiration is reduced (i.e., $ET_a < ET_p$). 
-
-#### Transpiration
-
-To account for potential transpiration processes, water uptake by roots is considered and regulated by atmospheric demand and soil water content. When there is sufficient water in the soil, potential transpiration ($T_p$) equals atmospheric demand [@Sheikh2009]\footnote{Error in Sheikh2009, where $K_{c}f$ should be $K_{cb}$}: 
-
-\begin{equation}
-T_p=K_{cb} \cdot ET_0
-\label{eq:Tp}  
-\end{equation}
-
-Potential transpiration is further subject to root water uptake capacity where the maximum daily uptake $T_{p(z)}$ (mm) at each layer $z$ is given by [@Prasad1988]:
-
-\begin{equation}
-T_{p(z)} = 2 \Big( 1- \frac{RD_{z/2} }{RD} \Big) \Big( \frac{RD_z}{RD} \Big) T_p
-\label{eq:Tpz}  
-\end{equation}
-
-where $RD$ (m) is the total or individual soil layer's rooting depth and $RD_{z/2}$ is the soil depth at the middle of the root extension for layer $z$.    
-
-When soil water is insufficient to meet atmospheric demand, actual transpiration is lower than potential transpiration and given by [@Sheikh2009]:
-
-\begin{equation}
-T_{a(z)} = K_s \cdot T_p
-\label{eq:Taz}  
-\end{equation}
-
-\begin{equation}
-K_s= max \Big[ 0, min(1, \frac{\theta_t - \theta_{wp} }{ \theta_c - \theta_{wp} }) \Big]
-\label{eq:Ks}  
-\end{equation}
-
-\begin{equation}
-\theta_c = \theta_{wp} + (1 - p)(\theta_{fc}- \theta_{wp}) 
-\label{eq:theta_c}  
-\end{equation}
-
-\begin{equation}
-p = p_{tab} + 0.04(5-ET_p)
-\label{eq:p}  
-\end{equation}
-
-where $K_s$ is a transpiration reduction parameter (0-1), which depends on soil water content, $\theta_t$ $(m^3/m^3)$ and the critical soil moisture content $\theta_c$ $(m^3/m^3)$ that defines the transition between unstressed and stressed transpiration rate. $p$ (-) is the fraction of total depletable soil water and $p_{tab}$ the depletion factor (-) for $ET_p \approx 5$ $mm/d$ [@Allen1998, Table no. 22]. 
-
-#### Evaporation
-
-Evaporation is considered only on bare surfaces and assumed to be negligible under plant cover and regulated by atmospheric deman along the first $\approx$ 0.15 m of soil [@Sheikh2009]. Considering the difference between actual ($E_a$, mm/d) and potential evaporation ($E_p$, mm/d) [@Allen1998]:
-
-\begin{equation}
-E_p=K_e \cdot ET_0
-\label{eq:Ep}  
-\end{equation}
-
-\begin{equation}
-E_a=K_r \cdot E_p
-\label{eq:Ea}  
-\end{equation}
-
-where $K_r$ is an evaporation reduction coefficient (-) given by:
-
-\begin{equation}
-K_r = \frac{ \theta_t - \theta_{dr} }{ \theta_{fc} - \theta_{dr} }
-\label{eq:Kr}  
-\end{equation}
-
-where $\theta_t$ is soil moisture ($m^3/m^3$) and $\theta_{dr}$ is the moisture ($m^3/m^3$) of air-dry soil\footnote{Note: In model, $\theta_{dr} = 0.33 \cdot \theta_{wp}$ (Sheikh et al., 2009)}. 
-
-
-### Crop Growth
-
-#### Height
-
-Height is determined as a function of the stage of crop development. 
 
 [comment]:$$
 \begin{equation} 
@@ -318,10 +61,6 @@ Height is determined as a function of the stage of crop development.
 \end{dcases}
 \end{equation}
 [comment]:$$
-
-
-
-- Root depth
 
 
 ### Soil Temperature
@@ -395,60 +134,7 @@ f=1-exp(-\mu*LAI)
 
 where $\mu$ is light-use efficiency of the crop $(kg~ha^{-1}~m^2~MJ^{-1})$.
 
-## Pesticide Fate 
-
-### Pesticide distribution
-
-The concentration of pesticide within the soil system ($g/L$) along each layer $z$ is given as a function of its partitioning across the soil's gaseous, aqueous and adsorbed phases by:
-
-\begin{equation}
-C_{tot_z} = \theta_{gas_z}(t)C_{gas_z}(t) + \theta_z(t)C_{aq_z}(t) + \rho_{b_z}(t)C_{ads_z}
-\label{eq:conc_tot}  
-\end{equation}
-
-where $\theta_{gas_z}(t) = \theta_{sat_z}(t) - \theta_{z}(t)$, $C_{gas_z}$ is the concentration in the gas phase $(g/L)$, $C_{aq_z}$ the concentration in aqueous phase ($g/L$) and $C_{ads_z}$ the concentration in adsorbed phase ($g/Kg~soil$) with the bulk soil density $\rho_{b_z}$ in $Kg/L$.
-
-Converting to mass $(g)$ based on the cell area ($A_i$, $m^2$) and model layer depth ($D_z$, $mm$):
-
-\begin{equation}
-M_{tot_z} = A_iD_z\theta_{gas_z}(t)C_{gas_z}(t) + A_iD_z\theta_z(t)C_{aq_z}(t) + A_iD_z\rho_{b_z}(t)C_{ads_z}
-\label{eq:mass_tot}  
-\end{equation}
-
-simplifying to the respective fractions,
-
-\begin{equation}
-M_{tot_z} = V_{gas_z}(t)C_{gas_z}(t) + V_{H_2O}(t)C_{aq_z}(t) + M_{soil}(t)C_{ads_z}
-\label{eq:mass_tot_simple}  
-\end{equation}
-
-and substituting phase concentrations for their equivalent in $C_{aq}$ according to eq. \ref{eq:kd} and eq. \ref{eq:henry} yields,
-
-\begin{equation}
-M_{tot_z} = V_{gas_z}C_{aq_z}(t)/K_H + V_{H_2O}(t)C_{aq_z}(t) + M_{soil}(t)K_dC_{aq_z}(t)
-\label{eq:mass_tot_sub}  
-\end{equation}
-
-Solving for $C_{aq}$ $(g/L~H_2O)$ with $K_d$ units in $(L/Kg)$,
-
-\begin{equation}
-C_{aq} = \frac{M_{tot_z} }{  V_{gas_z}(t)/K_H + V_{H_2O}(t) + M_{soil}(t)K_d }
-\label{eq:mass_tot_conc_aq1}  
-\end{equation}
-
-\begin{equation}
-C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)/K_H + \theta_{aq}(t) + \rho_{b_z}(t)K_d \Big)}
-\label{eq:mass_tot_conc_aq2}  
-\end{equation}
-
-and substituting the retardation factor from eq. \ref{eq:retard_linear},
-
-\begin{equation}
-C_{aq} = \frac{M_{tot_z} }{ A_iD_z \Big( \theta_{gas_z}(t)/K_H + \theta_{aq}(t)R_z(t) \Big)}
-\label{eq:mass_tot_conc_aq2}  
-\end{equation}
-
-
+## Pesticide transport 
 
 Aqueous concentration is obtained with the following function. Note that the input parameter, `mass`, may be equal to the total concentration or either the heavy or light fractions, whichever output is required by the user.
 
@@ -488,152 +174,8 @@ def getConcAq(model, layer, theta_sat, mass,
 
 ```
 
-An analogous re-arrangement is applied to obtained the concentration in gas $C_{gas}$ $(g/L~air)$ and solid (adsorbed) $C_{ads}$ $(g/Kg~soil)$ phases:
-
-\begin{equation}
-C_{g} = \frac{C_{aq}}{K_H} 
-\label{eq:conc_gas}  
-\end{equation}
-
-\begin{equation}
-C_{ads} = \frac{M_{tot_z} }{ A_i\cdot D_z \Big( \theta_{gas_z}(t)/(K_H \cdot K_d) + \theta_{aq}(t)/K_d + \rho_{b_z}(t)\Big)}
-\label{eq:mass_tot_conc_aq2}  
-\end{equation}
-
-To obtain the adsorbed concentration $C_{ads}$ $(g/Kg~soil)$, the following function is used:
-
-```{python}
-def getConcAds(model, layer, theta_sat, mass, gas=True):
-    # mass / Kg soil
-    if layer == 0:
-        depth = model.z0
-        theta_layer = model.theta_z0
-    elif layer == 1:
-        depth = model.z1
-        theta_layer = model.theta_z1
-    elif layer == 2:
-        depth = model.z2
-        theta_layer = model.theta_z2
-
-    if gas:
-        theta_gas = max(theta_sat - theta_layer, scalar(0))
-        # [mass pest/Kg soil]
-        conc_ads = mass / ((cellarea() * depth) *
-                           (theta_gas / (model.k_h * model.k_d) +
-                            theta_layer / model.k_d +
-                            model.p_b))
-    else:
-        print("No implementation without gas available")
-        raise NotImplementedError
-
-    return conc_ads
-```
-
-
-
-### Sorption
-
-#### Linear sorption 
-
-The partition of pesticide concentrations into the dissolved $C_{aq}$ ($g/L$) and adsorbed phases $C_{ads}$ $(g/Kg)$ is determined by the pesticide dissociation coefficient $K_d$ $(L/Kg)$:
-
-\begin{equation}
-K_d = \frac{ C_{ads} }{ C_{aq}  }
-\label{eq:kd}
-\end{equation} 
-
-\begin{equation}
-K_d = K_{oc} \cdot f_{oc}
-\label{eq:kd}
-\end{equation} 
-
-where $K_{oc}$ $(L/Kg)$ is the pesticide octanol partition coefficient and $f_{oc}$ is the fraction of organic carbon (-) in soil. The retardation factor $R_z$ (-) is given by:
-
-\begin{equation}
-R_z(t) = 1 + \frac{ \rho_{b_z}(t) \cdot K_d }{ \theta_z(t) }
-\label{eq:retard_linear}
-\end{equation} 
-
 
 ### Volatilization
-
-```{r include=FALSE}
-# Note: Consider only where evaporation occurs (i.e. 0.15 m depth), but only first layer (i.e. < 15cm)
-```
-
-Pesticide volatilization follows Leistra \textit{et al.} [-@Leistra2001], where a boundary air layer is conceptualized through which pesticide difusses before escaping into the atmosphere. The thickness ($d_a$, $m$) of this layer, assumed to be equivalent to the topmost soil layer's thickness or mixing layer, regulates the transport resistance ($r_a$, $d/m$) such that:
-
-\begin{equation}
-r_a(t) = \frac{ d_a }{ D_a(t) }
-\label{eq:resistance_air}
-\end{equation} 
-
-where $D_a$ ($m^2/d$) is the diffusion coefficient in air for Metolachlor at the observed environmental temperature and adjusted relative to the reference diffusion coefficient ($D_{a,r}$, $m^2/d$) as:
-
-
-\begin{equation}
-D_a(t) = \Big(\frac{ T(t) }{ T_r } \Big)^{1.75} D_{a,r}
-\label{eq:Da}
-\end{equation} 
-
-where $T$ and $T_r$ are the environmental temperature at time $t$ and at the reference temperature at 293.15$^\circ$K, respectively.
-
-The total volatilization is given by the flux across the air layer boundary ($J_{v,air}$) and the flux across the topmost soil layer ($J_{v,soil}$) such that: 
-
-\begin{equation}
-J_{v,air}(t) = - \frac{ C_{gas,top}(t) - C_{air}(t) }{ r_a }
-\label{eq:Jva}
-\end{equation} 
-
-\begin{equation}
-J_{v,soil}(t) = - \frac{ C_{gas,z_0}(t) - C_{gas,top}(t) }{ r_s }
-\label{eq:Jvs}
-\end{equation} 
-
-where $C_{gas,top}$ ($mg/m^3$) is the concentration in gas phase at the soil surface, $C_{air}$ ($mg/m^3$) the concentration in air, $C_{gas,z_0}$ ($mg/m^3$) the concentration in gas phase at the center of the uppermost soil layer and $r_s$ ($d/m$) the diffusion resistance across the topmost soil layer and given by:
-
-\begin{equation}
-r_s(t)= \frac{ 0.5 D_z }{ D_{rdiff,g}(t) }
-\label{eq:resistance_soil}
-\end{equation} 
-
-To calculate the relative diffusion ($D_{rdiff,gas}$, $m^2/d$) the model provides two options. Under option 1 [@Millington1960],
-
-\begin{equation}
-D_{rdiff,gas} = \frac{ D_a(t) \Big(\theta_{gas_z}(t)\Big)^a}{ \Big(\theta_z(t) \Big)^b }
-\label{eq:d_rdiff1}
-\end{equation} 
-
-where Jin and Jury [-@Jin1996] recommend that $a=2$ and $b=2/3$. Under option 2 [@Currie1960],
-
-\begin{equation}
-D_{rdiff,gas} = D_a(t) \Big(a\Big) \Big( \theta_{gas_z}(t)  \Big)^b
-\label{eq:d_rdiff2}
-\end{equation} 
-
-where Bakker \textit{et al.} [-@Bakker1987] recommend $a=2.5$ and $b=3$ for moderately aggregated plough layers of loamy soils and humic sandy soils [@Leistra2001].
-
-Finally, it is assumed that flux across both layer boundaries is equivalent ($J_{v,soil} = J_{v,air}$) [@Leistra2001]. Considering pesticide concentration in air to be negligble ($C_{air} = 0$), the concentration at the soil surface is:
-
-\begin{equation}
-C_{gas,top}(t) = \frac{r_a}{(r_a + r_s)} C_{gas,z_{0}(t)}
-\label{eq:conc_gas_top}
-\end{equation} 
-
-The gas concentration in the soil layer is related to the dimensionless Henry constant ($K_H$), where:
-
-\begin{equation}
-C_{gas,z_0}(t) = C_{aq,z_0}(t) K_H  
-\label{eq:henry}
-\end{equation} 
-
-Substituting eq. \ref{eq:conc_gas_top} into eq. \ref{eq:Jva} yields the mass flux lost to the atmosphere ($g/m^2d$):
-
-\begin{equation}
-J_{v,air} = - \frac{C_{gas,z_0}}{(r_a + r_s)}
-\label{eq:Jva_final}
-\end{equation} 
-
 
 To obtain the pesticide mass volatilized at each time step, the following function is defined:
 
@@ -681,56 +223,6 @@ def getVolatileMass(model, temp_air, theta_sat, mass, frac,
 
 
 ### Run-off Loss
-
-#### \textit{Non-uniform mixing-layer-model-runoff (nu-mlm-ro)}
-
-Multiple models are available to simulate mass transfer to overland flow. The first of these models, the \textit{Non-uniform mixing-layer-model-runoff} (nu-mlm-ro) is adapted from Ahuja and Lehman, 1983 [see @Shi2011, eq. 1 and p. 1217] and given by:
-
-\begin{equation}
-\frac{\partial (EDI \theta C_m)}{\partial t} = -RO \beta C_m
-\label{eq:nu-mlm-ro}
-\end{equation} 
-
-\begin{equation}
-\beta = e^{(-bz)}
-\label{eq:beta-nu-mlm}
-\end{equation} 
-
-where the Effective Depth of Interaction (EDI) refers to the mixing layer depth $(mm)$, $\theta$ is soil moisture $(L/L)$, RO is run-off $(mm)$ and $C_m$ is concentration in the mixing layer $(g/L)$. The paramater $b$ is a calibration constant (assuming, $1 \ge b > 0$) and where $z$ is the depth of the simulated top-soil layer. In this model, $\beta$ accounts for an exponential decrease in the ability of overland flow to mix with soil water as depth increases. 
-
-#### \textit{Non-uniform mixing-layer (nu-mlm)}
-
-The adaptation above of the original model by Ahuja and Lehman replaces precipitation by $RO$, and thus considers the ability of rainfall water to mix with soil water instead. To test the original formulation, this second model is also made available as \textit{Non-uniform mixing layer model} (nu-mlm). 
-
-#### \textit{Distributed mixing-layer model (d-mlm)}
-
-The \textit{Distributed mixing-layer model} considered is adapted from Havis [-@Havis1992], and mass transfer to overland flow based on a mass flux coefficient $(K_L$, $mm/day)$. The change in mass in the overland flow (and consequently in the mixing layer) is given by:
-
-\begin{equation}
-\frac{\partial (h_{runoff} C_{runoff}) }{\partial t} + \frac{\partial(qC_{runoff}) }{\partial x} = K_L (C_m - C_{runoff})
-\label{eq:d-mlm-of}
-\end{equation} 
-
-where $h_{runoff}$ is overland flow height (mm), $q$ is overland flow discharge rate per unit width (mm$^2$/day).   
-
-Instead of considering $K_L$ as calibration parameter, the model defines $K_L$ (mm/day) as the ratio of the mass flux ($\varrho$, mg/mm$^2$ day) from the soil surface to overland flow and the solute concentration difference between overland flow and the surface soil (i.e., $K_L = \varrho /(C_m - C_{runoff})$). Note that due to small concentations in overland flow, it may be assumed that $C_{runoff} \approx 0$. For laminar flow, based on Bennett and Myers [-@Bennet1982], $K_L$ is given by: 
-
-\begin{equation}
-K_L = 0.664 \frac{D_w}{L}Re^{1/2}S_c^{1/3}
-\label{eq:K_L}
-\end{equation} 
-
-\begin{equation}
-Re = \frac{\rho v L}{\mu}
-\label{eq:Re}
-\end{equation} 
-
-\begin{equation}
-S_c = \frac{ \mu}{\rho D_w}
-\label{eq:S_c}
-\end{equation} 
-
-where the $D_w$ is the solute diffusivity (cm$^2$/s), $Re$ is the Reynolds number (-) and $S_c$ is the Schmidt number (-). Parameters include the cell length (L, mm), the dynamic viscocity of water ($\mu$ at 25 $^\circ C$, 8.9e-03 g/cm sec), the soil bulk density ($\rho$, g/cm$^3$) and the runoff velocity ($v$, mm/day) or amount of runoff generated in each cell per day. 
 
 To obtain the mass lost to run-off the following function is defined:
 
@@ -800,30 +292,7 @@ def getKfilm(model, runoffvelocity):
 ```
 
 
-### Vertical mass flux (i.e., leaching)
-
-Vertical flux can be computed differently across soil layers. Under the first approach, and only for the uppermost layer, the model follows McGrath [-@Mcgrath2008]:
-
-\begin{equation}
-C_{z_0,aq}(t+1) = C_{z_0,aq}(t) exp \Big( \frac{ -P(t) }{ \theta_{z_0}(t) \cdot R_{z_0}(t) \cdot D_{z_0} } \Big) 
-\label{eq:conc_mcgrath}
-\end{equation} 
-
-The mass leached ($g$) is thus given by:
-
-\begin{equation}
-M_{z_0,lch}(t) =  D_{z_0} \cdot A_i  \Big(\theta_{z_0}(t)C_{z_0,aq}(t)- \theta_{z_0}(t+1) C_{z_0,aq}(t+1) \Big) 
-\label{eq:leached_mcgrath}
-\end{equation} 
-
-where $A$ is the area ($m^2$) for each cell $i$. 
-
-Under the second approach, available on all layers, mass leached is proportional to the aqueous concentration in percolated water such that: 
-
-\begin{equation}
-M_{z,lch}(t) = DP_z(t) \cdot C_{z,aq }(t) \cdot A_i
-\label{eq:leached_prop}
-\end{equation} 
+### Leachate mass
 
 ```{python}
 def getLeachedMass(model, layer, theta_sat,
@@ -880,7 +349,7 @@ def getLeachedMass(model, layer, theta_sat,
 ```
 
 
-### Lateral mass flux
+### Lateral mass flux (OLD - Manfreda)
 
 Later mass flux is proportional to the aqueous concentration in lateral water flow. It is obtained by adapting eq. \ref{eq:LF}, where the difference between mass loss in upstream cells $i$ and mass loss at cell $j$ is:
 
@@ -951,49 +420,9 @@ def getLatMassFlux(model, layer, theta_sat, theta_fcap,
 ```
 
 
-### Biodegradation
+### Biodegradation  (OLD - differences kept here)
 
-Biodegradation in the soil is assumed to occur only on the dissolved and sorbed fractions. Assuming a first-order rate law, the change in mass due to degradation is given by:
-
-\begin{equation}
-\frac{dM_{tot_z}}{dt} = -k_{b,aq}(V_{H_2O_z(t)}C_{aq_z}(t))-k_{b,ads}(M_{soil_z}C_{ads_z}(t))
-\label{eq:dM_bio}
-\end{equation}
-
-where $k_{b}$ $(d^{-1})$ is the biodegradation rate constant in the aquoeous $(aq)$ and sorbed soil sites $(ads)$. Considering degradation on each phase respectively equation \ref{eq:dM_bio} can subdivided and written in integrated for concentrations as:
-
-\begin{equation}
-C_{aq_z}(t+1) = C_{aq_z}e^{-k_{b,aq} \Delta t} 
-\label{eq:Maq_t1}
-\end{equation}
-
-\begin{equation}
-C_{ads_z}(t+1) = C_{ads_z}e^{-k_{b,ads} \Delta t}
-\label{eq:Mads_t1}
-\end{equation}
-
-where $C_{aq}$ and $C_{ads}$ are the contamimant concentrations in liquid and sorbed sites, respectively. Updating for total contaminant mass for all fractions:
-
-\begin{equation}
-M_{tot_z}(t+1) = V_{gas_z}(t)C_{gas_z}(t) + V_{H_2O}(t)C_{aq_z}(t+1) + M_{soil}(t)C_{ads_z}(t+1)
-\label{eq:Mtot_t1}
-\end{equation}
-
-The biodegradation rate constant for the aqueous phase $k_{b,aq}$ is given by:
-
-\begin{equation}
-k_{b,aq} = \frac{ln(2)}{t_\frac{1}{2}} 
-\label{eq:k_b}
-\end{equation} 
-
-where $t_\frac{1}{2}$ is the reference half-life (d) of the contaminant considered. The degradation in the sorbed fraction is assumed to be a fraction of that in the aqueous phase such that:
-
-\begin{equation}
-k_{b,ads} = s_f \cdot k_{b,aq}   
-\label{eq:k_bads}
-\end{equation} 
-
-where $0 \leq s_f \leq 1$ $(-)$ is an adjustment parameter for degradation rate. Although a decrease in degradation rates with increasing depth reltive to top soils may be associated to a decrease in microbial activity **(Rodríguez-Cruz et al., 2006; Si et al., 2009)**, currently no depth variation is considered. However, this could be easily implemented by assuming an exponential decrease in the degradation rate constant as a function of depth such that: 
+Although a decrease in degradation rates with increasing depth reltive to top soils may be associated to a decrease in microbial activity **(Rodríguez-Cruz et al., 2006; Si et al., 2009)**, currently no depth variation is considered. However, this could be easily implemented by assuming an exponential decrease in the degradation rate constant as a function of depth such that: 
 
 \begin{equation}
 k_{{b,aq}_z} = k_{b,aq}\cdot exp(-\gamma \cdot D_{z/2}) 
@@ -1001,32 +430,6 @@ k_{{b,aq}_z} = k_{b,aq}\cdot exp(-\gamma \cdot D_{z/2})
 \end{equation} 
 
 where $\gamma$ $(-)$ is a calibration parameter $0 \leq \gamma \leq 1$ and $D_{z/2}~(m)$ the depth to center of layer $z$. 
-
-Adapting the reference half-life to temperature and moisture changes the half-life becomes:
-
-\begin{equation}
-t_\frac{1}{2}=t_\frac{1}{2}^{ref}\cdot F_T \cdot F_\theta
-\label{eq:DT50}	
-\end{equation} 
-
-where $t_\frac{1}{2}^{ref}$ is the half-life (days) at the reference moisture and temperature. $F_T$ and $F_\theta$ are factor changes in degradation rates associated to temperature and moisture conditions, following \cite{Schroll2006} and the Arrhenius equation, respectively. To account for the influence of water content across a range of saturation conditions $F_\theta$ is given by:
-
-[comment]:$$
-\begin{equation} 
-    F_\theta = 
-\begin{dcases}
-     ~~~~~0~,                 & \theta_t \leq 0.5 \cdot \theta_{wp} \\
-    \Big(\frac{ \theta_t- 0.5 \cdot \theta_{wp} } { \theta_{fc} - \theta_{wp} }\Big)^{\beta_{\theta} },    & \theta_t <  \theta_{fc} \\
-     ~~~~~1~,                 & \theta_t > \theta_{fc} 
-\end{dcases}
-\end{equation}
-[comment]:$$
-
-\begin{equation} 
-F_T = e^{(E_a/R)(1/T_{ref} - 1/T)}
-\end{equation} 
-
-where T is the temperature in soil converted to Kelvin. $T_{ref}$ is the reference temperature at which the experimental half-life is reported (i.e. typically 20 $^{\circ}$C). $E_a$ is the activation energy generally equal to 54,000 (KJ mol$^{-1}$) and R is the gas constant 8.314 (J mol$^{-1}$ K$^{-1}$).
 
 To compute  mass degradation, the following method is used:
 
@@ -1116,7 +519,7 @@ To obtain the masses of heavy $M^h$ and light isotopes $M^l$, the isotope signat
 
 \begin{equation} 
 R_{smp} = \frac{M^h}{M^l} 
-\end{equation}
+\end{equation} 
 
 \begin{equation} 
 R_{std} = 11237.2 \cdot 10^{-6}
@@ -1139,6 +542,8 @@ M^h = M_{tot} - M^l
 \end{equation}
 
 
+#```{r test-child, child = 'Bioavailability.Rmd'}
+#```
 
 
 
