@@ -1605,20 +1605,20 @@ class BeachModel(DynamicModel, MonteCarloModel):
 # Define models to run
 problem = get_problem()
 names = problem['names']
-test = True
+test = False
 if test:
     samples = 2
     param_values = get_vector_test()  # Return a vector, with same values as names
     upper = np.ones(len(param_values)).tolist()
     # param_values = np.loadtxt('lhs_vectors.txt')
 else:
-    samples = 50
+    samples = 250
     upper = problem['upper']
     param_values = latin.sample(problem, samples)
     saveLHSmatrix(param_values)
 
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 185  # 360
+nTimeSteps = 290  # 360
 
 myAlteck16 = BeachModel("clone_nom.map", names, param_values, upper, staticDT50=False, test=test)
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
