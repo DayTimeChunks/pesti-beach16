@@ -14,8 +14,11 @@ generate_maps = {
     "outlets": False,
     "weekly_soils": False,
     "applications": False,
-    "create_ldd": False
+    "create_ldd": False,
+    'create_transAreas': True
 }
+
+
 
 create_outlet = generate_maps['outlets']
 if create_outlet:
@@ -328,5 +331,14 @@ if create_apps:
     report(burn_farmcrop, 'farm_burn_v3.map')
 
 
-pcodes = readmap('plot_code16')
-aguila(pcodes)
+# pcodes = readmap('plot_code16')
+
+if generate_maps['create_transAreas']:
+    transects = readmap('transectsA16')
+    north = ifthen(transects == 0, nominal(1))
+    valley = ifthen(transects == 1, nominal(1))
+    south = ifthen(transects == 2, nominal(1))
+    aguila(north, valley, south)
+    report(north, 'norArea.map')
+    report(valley, 'valArea.map')
+    report(south, 'souArea.map')
