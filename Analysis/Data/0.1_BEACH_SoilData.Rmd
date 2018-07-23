@@ -7,7 +7,7 @@ output: pdf_document
 
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL", "English")
-SAVE = T # Mode
+SAVE = F # Mode
 ```
 
 # Purpose
@@ -20,7 +20,7 @@ Generate BEACH soil calibration data with:
 
 
 ```{r}
-MAC = F
+MAC = T
 WIN = F
 if (MAC) {
   if (WIN){
@@ -152,7 +152,7 @@ delta_cal = subset(delta_cal, !is.na(delta_cal$d13C))
 
 if (SAVE) {
   write.table(conc_cal, "BEACH_R/conc_comp_cal.tss", sep="\t", row.names = F)
-  write.table(delta_cal, "BEACH_R/delta_comp_cal.tss", sep="\t", row.names = F)
+  write.table(delta_cal, "BEACH_R/d13c_comp_cal.tss", sep="\t", row.names = F)
 }
 ```
 
@@ -317,7 +317,7 @@ delta_det_cal = subset(delta_det_cal, !is.na(delta_det_cal$d13C))
 
 if (SAVE) {
   write.table(conc_det_cal, "BEACH_R/conc_det_cal.tss", sep="\t", row.names = F)
-  write.table(delta_det_cal, "BEACH_R/delta_det_cal.tss", sep="\t", row.names = F)
+  write.table(delta_det_cal, "BEACH_R/d13c_det_cal.tss", sep="\t", row.names = F)
 }
 
 ```

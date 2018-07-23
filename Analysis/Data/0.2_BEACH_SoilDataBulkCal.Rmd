@@ -7,9 +7,8 @@ output: pdf_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
-
-MAC = F
+SAVE = F
+MAC = T
 WIN = F
 if (MAC) {
   if (WIN){
@@ -32,7 +31,6 @@ source(file.path(path, "global.R"))
 ```
 
 
-
 # Compute Bulk catchment measurements for 1st stage Isotope Calibration
 
 Good set of possible data files:
@@ -47,11 +45,66 @@ Will need to modify the area considered in the second file becuase that file ass
 - South: 133,175.05
 
 ```{r}
-soils = read.csv2(file.path(path, "Data/WeeklySoils_Rng.csv")) # Corrected with only ngC > 2.0
+soils = read.csv2(file.path(path, "Data/MassBalance_R.csv")) # Corrected with only ngC > 2.0
 names(soils)
-soils$Date.ti <- as.POSIXct(soils$Date.ti, "%Y-%m-%d %H:%M", tz = "EST")
+# soils$Date.ti <- as.POSIXct(soils$ti, "%Y-%m-%d %H:%M", tz = "EST")
+soils$DayMoYr <- as.POSIXct(soils$ti, "%Y-%m-%d", tz = "EST")
 #soils$Date.ti <- as.POSIXct(soils$Date.ti, "%d/%m/%Y %H:%M", tz = "EST")
-sum(is.na(soils$Date.ti))
+#sum(is.na(soils$Date.ti))
+
+
+```
+
+
+## Correction of Bulk calculations
+
+The bulk concentrations calculated in Book 07 consider the bulk relative to the transect areas, not the sampled soil mass. The correction is implemented below and used to compare against model.
+
+The isotope bulk calculation also differed here to avoid assumptions of areas and bulk densities, but the differences are not significant. 
+
+```{r}
+
+soils$Blk.Conc = (
+  soils$MassSoil.g.North * soils$Conc.mug.g.dry.soil.N +
+  soils$MassSoil.g.Talweg * soils$Conc.mug.g.dry.soil.T +
+  soils$MassSoil.g.South * soils$Conc.mug.g.dry.soil.S)/(
+    soils$MassSoil.g.North + soils$MassSoil.g.Talweg + soils$MassSoil.g.South
+  )
+
+
+soils$Blk.Conc.SD = (soils$Conc.mug.g.dry.soil.N + soils$Conc.mug.g.dry.soil.T + soils$Conc.mug.g.dry.soil.S)/3.0
+
+# p_b = 1.05 # Mean bulk density all fields, P. v Dijk
+soils$Blk.d13C = (
+  soils$MassSoil.g.North * soils$Conc.mug.g.dry.soil.N * soils$comp.d13C.North +
+    soils$MassSoil.g.Talweg * soils$Conc.mug.g.dry.soil.T * soils$comp.d13C.Talweg +
+    soils$MassSoil.g.South * soils$Conc.mug.g.dry.soil.S * soils$comp.d13C.South)/(
+      soils$MassSoil.g.North * soils$Conc.mug.g.dry.soil.N + 
+        soils$MassSoil.g.Talweg * soils$Conc.mug.g.dry.soil.T + 
+        soils$MassSoil.g.South * soils$Conc.mug.g.dry.soil.S
+    )
+soils$Bulk.d13C.SD = (soils$comp.d13C.SD.North + soils$comp.d13C.SD.Talweg + soils$comp.d13C.SD.South)/3.0
+
+bulk = soils[ c(4:nrow(soils)), c('DayMoYr', 'Blk.Conc', 'Blk.Conc.SD', 'Blk.d13C', 'Bulk.d13C.SD')]
+bulk = subset(bulk, !is.na(Blk.Conc))
+
+names(bulk)
+colnames(bulk) = c("DayMoYr", "ug.g", "ug.g.SD", "d13C",	"d13C.SD")
+
+bt = merge(time, bulk, by = "DayMoYr", all = T)
+bt$IDcal = paste("B-", bt$Jdays, sep = "")
+
+conc = bt[, c("Jdays", "DayMoYr", "IDcal", "ug.g", "ug.g.SD")]
+d13c = bt[, c("Jdays", "DayMoYr", "IDcal", "d13C",	"d13C.SD")]
+
+conc = subset(conc, !is.na(ug.g))
+d13c = subset(d13c, !is.na(d13C))
+
+
+if (SAVE){
+  write.table(conc, "BEACH_R/conc_bulk_cal.tss", sep="\t", row.names = F)
+  write.table(d13c, "BEACH_R/d13c_bulk_cal.tss", sep="\t", row.names = F)
+}
 
 ```
 
