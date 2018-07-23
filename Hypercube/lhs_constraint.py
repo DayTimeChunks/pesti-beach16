@@ -62,18 +62,40 @@ problem = {
 
 # from SALib.sample import latin
 from SALib.sample import latin
+from copy import deepcopy
 import numpy as np
+from random import randint
 
 # Define models to run
 # problem = get_problem()
 names = problem['names']
-samples = 2
+samples = 5
 upper = problem['upper']
-param_values = latin.sample(problem, samples)
-new_values = latin.sample(problem, samples)
-
-updated_matrix = np.vstack([param_values, new_values[0]])
 
 
-print(param_values.shape)
-cprint(updated_matrix.shape)
+def get_constrained_matrix(smps):
+    tot_len = 0
+    while tot_len < 1:
+        smps_values = latin.sample(problem, smps)
+        new_values = deepcopy(smps_values)
+        for row in range(len(smps_values))[::-1]:
+            v = smps_values[row]
+            if v[1] < v[2] or v[5] < v[6]:
+                # print("Deleting: ", new_values[row])
+                new_values = np.delete(new_values, row, axis=0)
+        tot_len = len(new_values)
+    return new_values
+
+test_values = get_constrained_matrix(samples)
+
+print("Start")
+print(len(test_values))
+print(test_values)
+
+while len(test_values) < samples:
+    resample = get_constrained_matrix(samples)
+    test_values = np.vstack([test_values, resample[randint(0, len(resample)-1)]])
+
+print("End")
+print(len(test_values))
+print(test_values)
