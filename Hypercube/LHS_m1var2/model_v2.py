@@ -1612,7 +1612,7 @@ if test:
     upper = np.ones(len(param_values)).tolist()
     # param_values = np.loadtxt('lhs_vectors.txt')
 else:
-    samples = 20
+    samples = 25
     upper = problem['upper']
     param_values = latin.sample(problem, samples)
     saveLHSmatrix(param_values)
