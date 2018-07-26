@@ -8,7 +8,7 @@ output: pdf_document
 ```{r, echo=FALSE, message=FALSE, include=FALSE}
 Sys.setlocale("LC_ALL", "English")
 
-MAC = F
+MAC = T
 WIN = F
 ```
 
@@ -27,7 +27,9 @@ if (MAC) {
     
   } else {
     # path = file.path("/Users/DayTightChunks/Documents/PhD/HydrologicalMonitoring")
-    path = file.path("/Users/DayTightChunks/Documents/PhD/HydroMonitor/.nosync/HydrologicalMonitoring")
+    path = file.path("/Users/DayTightChunks/Documents/PhD/hydrological-monitoring")
+    time = read.csv2("/Users/DayTightChunks/Documents/PhD/Models/phd-model-master/Analysis/Data/Time.csv")
+    time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
   }
 } else {
   path = file.path("D:/Documents/these_pablo/Alteckendorf2016/HydrologicalMonitoring")
@@ -125,6 +127,10 @@ qDay$VolTot.m3 = round(qDay$Volday.L/10^3, 3)
 
 qTime = merge(time, qDay, by = "DayMoYr", all = T)
 
+qTime_cal = subset(qTime, !is.na(VolTot.m3))
+qTime_cal = qTime_cal[, c("Jdays", "VolTot.m3")]
+names(qTime_cal) = c("Jdays", "Qm3")
+
 mean(qTime$VolTot.m3, na.rm = T)
 sd(qTime$VolTot.m3, na.rm = T)
 Volm3_tss = qTime[,c("Jdays", "VolTot.m3")] 
@@ -133,6 +139,7 @@ Volm3_tss$VolTot.m3 = ifelse(is.na(Volm3_tss$VolTot.m3), -1.0, Volm3_tss$VolTot.
 
 if (F) {
   write.table(Volm3_tss, "BEACH_R/q_obs_m3day.tss", sep="\t", row.names = F, col.names = F)  
+  write.table(qTime_cal, "BEACH_R/q_out_cal.tss", sep="\t", row.names = F, col.names = T) # m3day 
 }
 
 if (F) {
@@ -328,9 +335,18 @@ qmBlk_mass = merge(qmBlk, m, by = "DayMoYr", all = T)
 # Att:!!! not to use concentration as observation point, only as approximate loading totals
 # Convert to grams (to match model output)
 qmBlk_mass$MassSmOut_g = ((qmBlk_mass$ConSmOut_ugL.blk)/10**6)*qmBlk_mass$VolTot.L
-qmBlk_mass$MassSmOut_g = ifelse(is.na(qmBlk_mass$MassSmOut_g), 0, qmBlk_mass$MassSmOut_g)
+
+qmBlk_mass$MassSmOut_g = ifelse(is.na(qmBlk_mass$MassSmOut_g), 0,
+                                qmBlk_mass$MassSmOut_g)
 qmBlk_mass$CumMassSmOut_g = cumsum(qmBlk_mass$MassSmOut_g)
 
+
+
+### CALIBRATION DATA FRAME here!!
+# Data frame for calibration (removed NAs)
+qmBlk_cal = merge(qmBlk90, m, by = "DayMoYr", all = T)
+qmBlk_cal$MassSmOut_g = ((qmBlk_cal$ConSmOut_ugL.blk)/10**6)*qmBlk_cal$VolTot.L
+qmBlk_cal = subset(qmBlk_cal, !is.na(MassSmOut_g))
 ```
 
 4. Incorporate Julian days before saving
@@ -340,8 +356,29 @@ qmBlk_mass$CumMassSmOut_g = cumsum(qmBlk_mass$MassSmOut_g)
 qmBlk90 = merge(time, qmBlk90, by = "DayMoYr", all = T)
 qmBlk_mass = merge(time, qmBlk_mass, by = "DayMoYr", all = T)
 
+# Calibration Sests
+qmBlk90cal = merge(time, qmBlk_cal, by = "DayMoYr", all = T) 
+
+# Loads
+loads_g_cal = subset(qmBlk90cal, !is.na(MassSmOut_g))
+loads_g_cal = loads_g_cal[, c("Jdays", "MassSmOut_g")]
+names(loads_g_cal) =  c("Jdays", "smloads.g")
+
+# Concentration (outlet)
+conc_out_cal = subset(qmBlk90cal, !is.na(ConSmOut_ugL.blk))
+conc_out_cal = conc_out_cal[, c("Jdays", "ConSmOut_ugL.blk")]
+names(conc_out_cal) = c("Jdays", "ug.L")
+
+# Delta outlet
+d13c_out_cal = subset(qmBlk90cal, !is.na(deltaOut.blk))
+d13c_out_cal = d13c_out_cal[, c("Jdays", "deltaOut.blk")]
+names(d13c_out_cal) = c("Jdays", "d13C")
+
 if (F) {
   # write.csv(qmBlk, "qmBlk_R.csv", row.names = F) # , sep = ";", dec = ".")  
+  write.table(loads_g_cal, "BEACH_R/lds_out_cal.tss", sep="\t", row.names = F, col.names = T)
+  write.table(conc_out_cal, "BEACH_R/conc_out_cal.tss", sep="\t", row.names = F, col.names = T)
+  write.table(d13c_out_cal, "BEACH_R/d13c_out_cal.tss", sep="\t", row.names = F, col.names = T)
 }
 
 ```
