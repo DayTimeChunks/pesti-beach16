@@ -73,7 +73,7 @@ def get_problem(Mini_TEST=False):
                   [0.5, 1.0], [0.0, 0.4],  # gamma01, gammaZ
                   [0.3, 0.8],  # f_transp
                   [0.01, 0.05],  # f_oc,
-                  [0.3, 5000],  # k_oc <- New (max Kd possible = 250), new min due to﻿Boithias2014
+                  [0.3, 5000],  # k_oc, max Kd = 250, min due to Boithias2014
                   [0.01, 0.4],  # beta_runoff
                   [140.0, 7000.0],  # age_rate
                   [130.0, 230.0],  # dt_50_ab
