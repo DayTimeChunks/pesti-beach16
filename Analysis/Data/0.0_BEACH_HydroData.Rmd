@@ -168,7 +168,7 @@ if (F) {
 
 ## Merge 2-min disch with sub-weekly markers
 
-- Convert to mass (and corresponding SD) discharged 
+- Convert to mass discharged 
 
 
 ```{r}
