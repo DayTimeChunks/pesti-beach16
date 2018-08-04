@@ -12,7 +12,7 @@ from random import randint
 
 from mlhs_v5 import *  # Defines the LHS sampling problem
 
-from applications import getApplications
+from applications_v2 import getApplications
 from hydro_v2 import *
 from pesti_v2 import *
 from output_soils import *
