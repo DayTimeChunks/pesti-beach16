@@ -325,7 +325,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Pesticides Maps
         """
         # Application days
-        self.app_days = [171, 177, 196, 200, 213, 238, 245]
+        self.app_days = [171, 177, 196, 238, 245]
         self.aged_days = ifthen(boolean(self.is_catchment), scalar(365))
 
         # Mass
@@ -1585,16 +1585,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
 
 # Define models to run
-def get_constrained_matrix(smps):
+def get_constrained_matrix(smps, on=True):
     tot_len = 0
     while tot_len < 1:
         smps_values = latin.sample(problem, smps)
         new_values = deepcopy(smps_values)
-        for row in range(len(smps_values))[::-1]:
-            v = smps_values[row]
-            if v[1] < v[2] or v[5] < v[6]:
-                # print("Deleting: ", new_values[row])
-                new_values = np.delete(new_values, row, axis=0)
+        if on:
+            for row in range(len(smps_values))[::-1]:
+                v = smps_values[row]
+                if v[1] < v[2] or v[5] < v[6]:
+                    # print("Deleting: ", new_values[row])
+                    new_values = np.delete(new_values, row, axis=0)
         tot_len = len(new_values)
     return new_values
 
@@ -1607,24 +1608,27 @@ if test:
     upper = np.ones(len(test_values)).tolist()
     # param_values = np.loadtxt('lhs_vectors.txt')
 else:
-    samples = 250
+    check_sampling = False
+    samples = 50
     upper = problem['upper']
-    test_values = get_constrained_matrix(samples)
+    # Turned off to return to full Latin Hypercube
+    test_values = get_constrained_matrix(samples, on=check_sampling)
     print("Before sampling, total samples:")
     print(len(test_values))
 
     # Add a random vector from the re-sampled hypercube
     # until the desired number of samples meeting constraints are met.
     while len(test_values) < samples:
-        resample = get_constrained_matrix(samples)
+        resample = get_constrained_matrix(samples, on=check_sampling)
         test_values = np.vstack([test_values, resample[randint(0, len(resample) - 1)]])
 
     print("After re-sampling, total samples:")
     print(len(test_values))
     saveLHSmatrix(test_values)
 
+
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 286  # 360
+nTimeSteps = 300  # 360
 
 myAlteck16 = BeachModel("clone_nom.map", names, test_values, upper, staticDT50=False, test=test)
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
@@ -1632,13 +1636,15 @@ dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
 mcModel = MonteCarloFramework(dynamicModel, samples)
 
 t0 = datetime.now()
+print(datetime.today().strftime('%Y-%m-%d %HH:%MM'))
 # dynamicModel.run()
 mcModel.run()
 t1 = datetime.now()
+print(datetime.today().strftime('%Y-%m-%d %HH:%MM'))
 
 duration = t1 - t0
-tot_min = duration.total_seconds() / 60
-print("Total minutes: ", tot_min)
+tot_min = duration.total_seconds() / 60.
+print("Total hrs: ", tot_min/60.)
 print("Minutes/monte carlo", tot_min / int(samples))
-print("Minutes/Yr: ", (duration.total_seconds() / 60) / (nTimeSteps - firstTimeStep) * 365)
+print("Minutes/Yr: ", (duration.total_seconds() / 60.) / (nTimeSteps - firstTimeStep) * 365)
 
