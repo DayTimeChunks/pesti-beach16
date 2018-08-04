@@ -10,7 +10,7 @@ from datetime import datetime
 from SALib.sample import latin
 from random import randint
 
-from mlhs_v5 import *  # Defines the LHS sampling problem
+from mlhs_v6 import *  # Defines the LHS sampling problem
 
 from applications_v2 import getApplications
 from hydro_v2 import *

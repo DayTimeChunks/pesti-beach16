@@ -13,7 +13,7 @@ import numpy as np
 # from pyDOE import *
 
 """
-Version 5 (bounds_v5)
+Version 6 (bounds_v6)
 
 This version is for models ending with versions "7", like: fix7+ and var7+
 The changes in this version include narrower boundaries to Koc ranges.
@@ -77,9 +77,9 @@ def get_problem(Mini_TEST=False):
                   [0.01, 0.4],  # beta_runoff
                   [140.0, 7000.0],  # age_rate
                   [130.0, 230.0],  # dt_50_ab
-                  [10.0, 40.0],  # dt_50_ref
-                  [0.5, 5.0],  # epsilon (in absolute, convert to negative!!)
-                  [0.01, 1.0]]
+                  [1.0, 50.0],  # dt_50_ref
+                  [0.5, 4.0],  # epsilon (in absolute, convert to negative!!) <- New v9
+                  [0.01, 1.0]]  # beta_moisture
 
         names = ['z3_factor',
                  'cZ0Z1', 'cZ',
