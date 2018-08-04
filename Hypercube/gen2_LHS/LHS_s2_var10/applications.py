@@ -72,16 +72,17 @@ def getApplications(model, fa_cr, plot_codes, massunit='g'):
                       ifthenelse(fa_cr == 1611, 1 * app_conc * cellarea(),  # 1611 (Kopp-Beet),
                                  0 * app_conc * cellarea()))
 
-    # 2nd App, Friess on Julian day 200 (April...).
-    Friess2ndApp = m_beet_Friess * m_gold * model.mask
-    app3 = ifthenelse(plot_codes == 16, 1 * Friess2ndApp * cellarea(),  # (2nd Friess-Beet, app Day 200, North)
-                      ifthenelse(plot_codes == 21, 1 * Friess2ndApp * cellarea(),
-                                 # (2nd Friess-Beet, app Day 200, Valley)
-                                 0 * app_conc * cellarea()))
-
-    # Pesticide applied (mass-unit) on Julian day 213 (April 30, 2016).
-    app4 = ifthenelse(fa_cr == 1511, 1 * app_conc * cellarea(),  # 1511 (2nd Burger-Beet, app Day 213 (209-216)
-                      0 * app_conc * cellarea())
+    # Removed from Generation 2 - Use of CSIA to constrain initial applications
+    # # 2nd App, Friess on Julian day 200 (April...).
+    # Friess2ndApp = m_beet_Friess * m_gold * model.mask
+    # app3 = ifthenelse(plot_codes == 16, 1 * Friess2ndApp * cellarea(),  # (2nd Friess-Beet, app Day 200, North)
+    #                   ifthenelse(plot_codes == 21, 1 * Friess2ndApp * cellarea(),
+    #                              # (2nd Friess-Beet, app Day 200, Valley)
+    #                              0 * app_conc * cellarea()))
+    #
+    # # Pesticide applied (mass-unit) on Julian day 213 (April 30, 2016).
+    # app4 = ifthenelse(fa_cr == 1511, 1 * app_conc * cellarea(),  # 1511 (2nd Burger-Beet, app Day 213 (209-216)
+    #                   0 * app_conc * cellarea())
 
     # Pesticide applied (mass-unit) on Julian day 238 (May 25, 2016).
     # May 25, Schmidt and Speich, and (out of transect): Friess and Mahler
@@ -96,4 +97,4 @@ def getApplications(model, fa_cr, plot_codes, massunit='g'):
     app6 = ifthenelse(fa_cr == 1212, 1 * app_conc * cellarea(),  # 1212 (Speich-Corn)
                       0 * app_conc * cellarea())
 
-    return [app0, app1, app2, app3, app4, app5, app6]  # default mass is grams
+    return [app0, app1, app2, app5, app6]  # default mass is grams
