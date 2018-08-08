@@ -10,9 +10,9 @@ from datetime import datetime
 from SALib.sample import latin
 from random import randint
 
-from mlhs_v6 import *  # Defines the LHS sampling problem
+from mlhs_v7 import *  # Defines the LHS sampling problem
 
-from applications import getApplications
+from applications_v3 import getApplications
 from hydro_v2 import *
 from pesti_v2 import *
 from output_soils import *
@@ -21,7 +21,7 @@ from test_suite import *
 
 
 """
-Using bounds_v6, for models v9+
+Using bounds_v5, for models v7+
 """
 
 print(os.getcwd())
@@ -325,7 +325,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         Pesticides Maps
         """
         # Application days
-        self.app_days = [171, 177, 196, 200, 213, 238, 245]
+        self.app_days = [171, 177, 196, 238, 245]
         self.aged_days = ifthen(boolean(self.is_catchment), scalar(365))
 
         # Mass
@@ -1609,7 +1609,7 @@ if test:
     # param_values = np.loadtxt('lhs_vectors.txt')
 else:
     check_sampling = False
-    samples = 300
+    samples = 50
     upper = problem['upper']
     # Turned off to return to full Latin Hypercube
     test_values = get_constrained_matrix(samples, on=check_sampling)
@@ -1626,6 +1626,7 @@ else:
     print(len(test_values))
     saveLHSmatrix(test_values)
 
+
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
 nTimeSteps = 300  # 360
 
@@ -1635,13 +1636,15 @@ dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
 mcModel = MonteCarloFramework(dynamicModel, samples)
 
 t0 = datetime.now()
+print(datetime.today().strftime('%Y-%m-%d %HH:%MM'))
 # dynamicModel.run()
 mcModel.run()
 t1 = datetime.now()
+print(datetime.today().strftime('%Y-%m-%d %HH:%MM'))
 
 duration = t1 - t0
-tot_min = duration.total_seconds() / 60
-print("Total minutes: ", tot_min)
+tot_min = duration.total_seconds() / 60.
+print("Total hrs: ", tot_min/60.)
 print("Minutes/monte carlo", tot_min / int(samples))
-print("Minutes/Yr: ", (duration.total_seconds() / 60) / (nTimeSteps - firstTimeStep) * 365)
+print("Minutes/Yr: ", (duration.total_seconds() / 60.) / (nTimeSteps - firstTimeStep) * 365)
 

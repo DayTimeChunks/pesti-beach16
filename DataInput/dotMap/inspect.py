@@ -15,7 +15,7 @@ generate_maps = {
     "weekly_soils": False,
     "applications": False,
     "create_ldd": False,
-    'create_transAreas': True
+    'create_transAreas': False
 }
 
 
@@ -342,3 +342,14 @@ if generate_maps['create_transAreas']:
     report(north, 'norArea.map')
     report(valley, 'valArea.map')
     report(south, 'souArea.map')
+
+is_north = defined(readmap("norArea"))
+aguila(readmap("norArea"))
+aguila(readmap("valArea"))
+aguila(readmap("souArea"))
+
+nor = maparea(readmap("norArea"))
+val = maparea(readmap("valArea"))
+sou = maparea(readmap("souArea"))
+tot = nor + val + sou
+print(float(nor), float(val), float(sou))
