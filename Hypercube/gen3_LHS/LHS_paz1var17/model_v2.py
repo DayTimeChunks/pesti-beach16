@@ -21,7 +21,7 @@ from test_suite import *
 
 
 """
-Using bounds_v5, for models v7+
+Using bounds_v7, for models v17+
 """
 
 print(os.getcwd())
@@ -1628,7 +1628,7 @@ else:
 
 
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 300  # 360
+nTimeSteps = 286  # 360
 
 myAlteck16 = BeachModel("clone_nom.map", names, test_values, upper, staticDT50=False, test=test)
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
