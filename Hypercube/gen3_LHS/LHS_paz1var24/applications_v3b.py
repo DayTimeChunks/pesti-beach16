@@ -28,7 +28,7 @@ def getApplications(model, fa_cr, plot_codes, massunit='g'):
     m_beet = scalar(0.6) * 1 / 10 ** 4
     m_corn = scalar(2.0) * 1 / 10 ** 4
     #
-    m_beet_Friess = scalar(0.6) * 1 / 10 ** 4 * (double)  # 0.6 L/Ha * 2 Ha / 10000 m2 = L/m2
+    m_beet_Friess = scalar(0.6) * 1 / 10 ** 4 * (double) # 0.6 L/Ha * 2 Ha / 10000 m2 = L/m2
     m_beet_Mathis = scalar(0.6) * 1 / 10 ** 4 * (double)
     m_beet_Burger = scalar(0.6) * 1 / 10 ** 4 * (double)  #
     m_beet_Kopp = scalar(0.6) * 1 / 10 ** 4 * (double)

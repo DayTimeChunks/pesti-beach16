@@ -66,19 +66,20 @@ def get_problem(Mini_TEST=False):
         }
     else:
         # Will be scaled with scale()
-        bounds = [[0.87, 0.97],  # z3_factor
+        bounds = [[0.85, 0.97],  # z3_factor <- New
                   [0.6, 1.0], [0.2, 0.6],  # 'cZ0Z1', 'cZ'
                   [0.2, 0.4],  # cadr
                   [1500.0, 3650.0],  # k_g
-                  [0.8, 1.0], [0.0, 0.1],  # gamma01, gammaZ
-                  [0.5, 0.6],  # f_transp
+                  [0.2, 0.8],  # gamma01, <- New KEY!!
+                  [0.0, 0.4],  # gammaZ <- New
+                  [0.4, 0.6],  # f_transp <- New
                   [0.01, 0.05],  # f_oc,
-                  [0.3, 2000],  # k_oc, possible max Kd = 100
+                  [0.3, 2000],  # k_oc, max Kd = 100
                   [0.01, 0.4],  # beta_runoff
                   [140.0, 7000.0],  # age_rate
                   [130.0, 230.0],  # dt_50_ab
                   [1.0, 50.0],  # dt_50_ref
-                  [0.5, 4.0],  # epsilon (in absolute, convert to negative!!) <- New v9
+                  [0.5, 4.0],  # epsilon (in absolute, convert to negative!!)
                   [0.01, 1.0]]  # beta_moisture
 
         names = ['z3_factor',

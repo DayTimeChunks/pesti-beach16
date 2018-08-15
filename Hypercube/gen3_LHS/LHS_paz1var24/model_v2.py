@@ -10,9 +10,9 @@ from datetime import datetime
 from SALib.sample import latin
 from random import randint
 
-from mlhs_v6 import *  # Defines the LHS sampling problem
+from mlhs_v8 import *  # Defines the LHS sampling problem
 
-from applications_v3 import getApplications
+from applications_v3b import getApplications
 from hydro_v2 import *
 from pesti_v2 import *
 from output_soils import *
@@ -21,7 +21,9 @@ from test_suite import *
 
 
 """
-Using bounds_v5, for models v7+
+Using bounds_v8, for models v24+
+back to Applications, where all farmers apply double.
+ -> Including Friess.
 """
 
 print(os.getcwd())
@@ -1628,7 +1630,7 @@ else:
 
 
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 300  # 360
+nTimeSteps = 286  # 360
 
 myAlteck16 = BeachModel("clone_nom.map", names, test_values, upper, staticDT50=False, test=test)
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,
@@ -1640,11 +1642,11 @@ print(datetime.today().strftime('%Y-%m-%d %HH:%MM'))
 # dynamicModel.run()
 mcModel.run()
 t1 = datetime.now()
-print(datetime.today().strftime('%Y-%m-%d %HH:%MM'))
+
 
 duration = t1 - t0
 tot_min = duration.total_seconds() / 60.
 print("Total hrs: ", tot_min/60.)
 print("Minutes/monte carlo", tot_min / int(samples))
 print("Minutes/Yr: ", (duration.total_seconds() / 60.) / (nTimeSteps - firstTimeStep) * 365)
-
+print(datetime.today().strftime('%Y-%m-%d %HH:%MM'))
