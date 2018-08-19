@@ -66,13 +66,13 @@ def get_problem(Mini_TEST=False):
         }
     else:
         # Will be scaled with scale()
-        bounds = [[0.85, 0.97],  # z3_factor <- New
+        bounds = [[0.85, 0.97],  # z3_factor
                   [0.6, 1.0], [0.2, 0.6],  # 'cZ0Z1', 'cZ'
                   [0.2, 0.4],  # cadr
                   [1500.0, 3650.0],  # k_g
-                  [0.2, 1.],  # gamma01, <- New KEY!!
-                  [0.0, 0.4],  # gammaZ <- New
-                  [0.4, 0.6],  # f_transp <- New
+                  [0.2, 1.],  # gamma01, <- New!
+                  [0.0, 0.4],  # gammaZ
+                  [0.4, 0.6],  # f_transp
                   [0.01, 0.05],  # f_oc,
                   [0.3, 2000],  # k_oc, max Kd = 100
                   [0.01, 0.4],  # beta_runoff
