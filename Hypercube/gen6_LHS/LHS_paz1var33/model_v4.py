@@ -1633,7 +1633,7 @@ if test:
     # param_values = np.loadtxt('lhs_vectors.txt')
 else:
     check_sampling = False
-    samples = 2
+    samples = 75
     upper = problem['upper']
     # Turned off to return to full Latin Hypercube
     test_values = get_constrained_matrix(samples, on=check_sampling)
@@ -1652,7 +1652,7 @@ else:
 
 
 firstTimeStep = start_jday()  # 166 -> 14/03/2016
-nTimeSteps = 250  # 286, 360
+nTimeSteps = 286  # 286, 360
 
 myAlteck16 = BeachModel("clone_nom.map", names, test_values, upper, staticDT50=False, test=test)
 dynamicModel = DynamicFramework(myAlteck16, lastTimeStep=nTimeSteps,

@@ -6,9 +6,6 @@ from pcraster.framework import *
 # import time
 from copy import deepcopy
 
-DEBUG_pest = False
-global DEBUG_pest
-
 
 def getConcAq(model, layer, mass, sorption_model="linear", gas=True):
     # Note that p_b (g/cm3) x k_d (L/Kg) -> unit-less

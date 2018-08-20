@@ -8,8 +8,6 @@ from test_suite import *
 # import time
 # print(os.getcwd())
 
-DEBUG = False
-
 
 def getBiomassCover(model, frac_soil_cover):
     # biomass cover conversion (SWAT adaptation)
