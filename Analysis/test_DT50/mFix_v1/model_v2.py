@@ -467,7 +467,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
 
         """ Physical parameters for each layer """
         self.gamma = []  # coefficient to calibrate Ksat1
-        self.s = []  # Not used now <- see hydro_v2.py
+        self.s = []  # Not used now <- see hydro_v3.py
         self.c_lf = []
         for layer in range(self.num_layers):
             self.gamma.append(scalar(self.ini_param.get("gamma" + str(layer))))  # percolation coefficient
