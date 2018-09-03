@@ -28,6 +28,7 @@ state = -1
 """
 Gen9:
  - Distribution factor (f_evap) for evaporation between top two layers
+ - Burned initial soil temperatures.
 """
 
 def get_state(old_state):
@@ -463,20 +464,17 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.temp_ave_air = scalar(12.)  # 11.6
         self.lag = scalar(0.8)  # lag coefficient (-), 0 < lag < 2; -> in SWAT, lag = 0.80
         # Generating initial surface temp map
-        if start_jday() < 100:
-            temp_ini = 13.2
-        else:
-            temp_ini = 3.3
-
-        self.temp_fin = []
-        self.temp_surf_fin = self.zero_map + temp_ini
         for layer in range(self.num_layers):
-            if layer == 0:
-                self.temp_fin.append(self.zero_map + temp_ini)
+            if start_jday() < 100:
+                name = "d14_temp_z" + str(layer)
+                self.temp_surf_fin = readmap("d14_temp_z0")
             else:
-                self.temp_fin.append(self.zero_map + self.temp_ave_air)
+                name = "d166_temp_z" + str(layer)
+                self.temp_surf_fin = readmap("d166_temp_z0")
 
-                                     # Maximum damping depth (dd_max)
+            self.temp_fin.append(readmap(name))
+
+        # Maximum damping depth (dd_max)
         # The damping depth (dd) is calculated daily and is a function of max. damping depth (dd_max), (mm):
         self.dd_max = (scalar(2500) * self.p_bZ) / (self.p_bZ + 686 * exp(-5.63 * self.p_bZ))
 
