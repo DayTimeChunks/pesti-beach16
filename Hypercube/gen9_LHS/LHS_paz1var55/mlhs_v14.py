@@ -72,7 +72,7 @@ def get_problem(Mini_TEST=False):
                   [0.3, 2000],  # k_oc, max Kd = 100
                   [0.01, 0.5],  # beta_runoff
                   [10.0, 3000.0],  # age_rate
-                  [50.0, 350.0],  # dt_50_ab
+                  [65.0, 350.0],  # dt_50_ab
                   [5.0, 65.0],  # dt_50_ref
                   [0.3, 5.],  # epsilon (in absolute, convert to negative!!)
                   [0.01, 1.0]]  # beta_moisture
