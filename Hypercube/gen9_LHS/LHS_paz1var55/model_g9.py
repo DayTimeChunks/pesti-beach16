@@ -464,6 +464,7 @@ class BeachModel(DynamicModel, MonteCarloModel):
         self.temp_ave_air = scalar(12.)  # 11.6
         self.lag = scalar(0.8)  # lag coefficient (-), 0 < lag < 2; -> in SWAT, lag = 0.80
         # Generating initial surface temp map
+        self.temp_fin = []
         for layer in range(self.num_layers):
             if start_jday() < 100:
                 name = "d14_temp_z" + str(layer)
@@ -1148,7 +1149,8 @@ class BeachModel(DynamicModel, MonteCarloModel):
             # Temperature
             # temp_dict = getLayerTemp(self, layer, bio_cover, temp_bare_soil)
             temp_dict = getLayerTemp(self, layer, temp_bare_soil)
-            self.temp_surf_fin = temp_dict["temp_surface"]
+            if layer == 0:
+                self.temp_surf_fin = temp_dict["temp_surface"]
             self.temp_fin[layer] = temp_dict["temp_layer"]
 
             # if self.currentTimeStep() == 360:
