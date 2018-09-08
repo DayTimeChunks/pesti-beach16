@@ -438,14 +438,19 @@ def getActualEvap(model, layer, pot_evapor, run=True):
             depth *= 0.5  # Act only on fraction of the second layer.
 
         # Evaporation reduction parameter
-        # Moisture content of air-dry soil = 0.33 * theta_wp [@Allen 1998 in @Sheikh2009]
-        kr_layer = max(scalar(0), min(1, (model.theta[layer] - 0.33 * theta_wp) / (model.theta_fc[layer] - 0.33 * theta_wp)))
+        # Moisture content of air-dry soil = 0.33 * theta_wp [@Sheikh2009]
+        #  0.5 * theta_wp [@Allen 1998]
+        kr_layer = max(scalar(0), min(1, (model.theta[layer] - 0.5 * theta_wp) / (model.theta_fc[layer] - 0.5 * theta_wp)))
 
+        if layer == 0:
+            kr_layer *= model.f_evap
+        else:
+            kr_layer *= (1 - model.f_evap)
         # Actual Evaporation (mm)
         act_evaporation_layer = ifthenelse((model.theta[layer] * depth) < (kr_layer * pot_evapor),
-                                           model.theta[layer] * depth, kr_layer * pot_evapor)
-        # model.report(act_evaporation_layer, "rEva_z" + str(layer))
-        # model.report(kr_layer, "kr_z" + str(layer))
+                                           max((model.theta[layer] * depth - (0.5 * theta_wp * depth)), scalar(0)),
+                                           kr_layer * pot_evapor)
+
     else:
         act_evaporation_layer = deepcopy(model.zero_map)
 
@@ -557,7 +562,6 @@ def getPotET(model, sow_yy, sow_mm, sow_dd, root_depth_tot, min_root_depth,
     # ke=2.10;
     ke = kcmax - kcb
     pot_evapor = ke * et0
-    # model.report(pot_evapor, "pEva")
 
     # Potential Evapo-transpiration
     pot_et = pot_transpir + pot_evapor

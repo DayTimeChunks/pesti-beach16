@@ -21,7 +21,7 @@ from test_suite import *
 
 
 """
-Using bounds_v5, for models v7+
+Using bounds_v6, for models v9+
 """
 
 print(os.getcwd())
