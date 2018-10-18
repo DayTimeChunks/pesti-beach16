@@ -14,9 +14,14 @@ WIN = F
 
 # Purpose
 
-Generate BEACH calibration data with:
+Generate BEACH calibration data.
 
-- **groupAlteck2016_R.csv** (Book 04)
+This is same approach as version 1, however, it has now been corrected due to error in merging "qm".
+
+Data uses:
+
+- **groupAlteck2016_R.csv** (Hydro-Monitoring: Book 04)
+- **MarkerResponse_R05.csv** (Model: Book 05)
 
 # Lab parameters and field constants
 
@@ -81,9 +86,13 @@ q = q[ , c("Date", "DateCheck", "Q.HW1", "DayMoYr", "Vol.L", "sampleQ", "Type", 
 names(q)
 
 mark = read.csv(file.path(path, "Data/MarkerResponse_R05.csv"))
-mark = mark[, c("WeekSubWeek", 
-                # "AveDischarge.m3.h", "Volume.m3",  "Sampled.Hrs", 
-                # "Sampled", 
+mark$ti = as.POSIXct(strptime(mark$ti, "%Y-%m-%d %H:%M", tz="EST"))
+mark$tf = as.POSIXct(strptime(mark$tf, "%Y-%m-%d %H:%M", tz="EST"))
+mark$Sampled = as.character(mark$Sampled)
+mark$ISO.x = ifelse(is.na(mark$diss.d13C), F, T)
+mark = mark[, c("WeekSubWeek", "ti", "tf",  
+                "Duration.Hrs", "Volume.m3", "Sampled.Hrs", "Sampled", "ISO.x",
+                # "AveDischarge.m3.h",
                 "Conc.mug.L" , "Conc.SD",
                 # "Vol.SPE.L", "Conc.in500uL", 
                 "OXA_mean", "OXA_SD", "ESA_mean", "ESA_SD", 
@@ -166,14 +175,103 @@ if (F) {
 ```
 
 
-## Merge 2-min disch with sub-weekly markers
+## Merge 2-min disch with concentrations bounded by sampling periods
+
+Merging in two steps to set limits of 2-min concentrations by sample interf dt = tf - ti:
+```{r}
+names(mark)
+# Old merge, erroneous! v1
+# qm = merge(q, mark, by.x = "SubWeeks", by.y = "WeekSubWeek", all = T)
+
+# First Merge
+qm = merge(q, mark, by.x = "Date", by.y = "ti", all = T)
+
+# Get only the markers for "tf" (end of sample period)
+tf = mark[, c("tf", "Sampled", "Conc.mug.L", "Conc.SD", "diss.d13C", "SD.d13C",
+              "OXA_mean", "OXA_SD", "ESA_mean", "ESA_SD",
+              "MES.mg.L" , "MES.sd" , "Conc.Solids.mug.gMES", "Conc.Solids.ug.gMES.SD")]
+tf$ISO.y = ifelse(is.na(tf$diss.d13C), F, T)
+
+# Second merge
+qm = merge(qm, tf, by.x = "Date", by.y = "tf", all = T)
+
+# Sampled vs. non-sampled
+qm$Sampled.x = ifelse(is.na(qm$Sampled.x), qm$Sampled.y, qm$Sampled.x)
+qm$Sampled.x = na.locf(qm$Sampled.x)
+
+# Input end of sample measure
+qm$Conc.mug.L = ifelse(is.na(qm$Conc.mug.L.x), qm$Conc.mug.L.y, qm$Conc.mug.L.x)
+qm$Conc.mug.L = na.locf(qm$Conc.mug.L, na.rm = F) # Copy/Drag cells down
+qm$Conc.mug.L = ifelse(qm$Sampled.x=="Sampled", qm$Conc.mug.L, NA) # Correct carry-over to non-sampled.
+
+qm$Conc.SD = ifelse(is.na(qm$Conc.SD.x), qm$Conc.SD.y, qm$Conc.SD.x)
+qm$Conc.SD = na.locf(qm$Conc.SD, na.rm = F) # Copy/Drag cells down
+qm$Conc.SD = ifelse(qm$Sampled.x=="Sampled", qm$Conc.SD, NA) # Correct carry-over to non-sampled.
+
+# ISO vs. non-ISO (Special case)
+qm$ISO.x = ifelse(is.na(qm$ISO.x), qm$ISO.y, qm$ISO.x)
+qm$ISO.x = na.locf(qm$ISO.x)
+
+qm$diss.d13C = ifelse(is.na(qm$diss.d13C.x), qm$diss.d13C.y, qm$diss.d13C.x)
+qm$diss.d13C = na.locf(qm$diss.d13C, na.rm = F) # Copy/Drag cells down
+qm$diss.d13C = ifelse(qm$ISO.x==T, qm$diss.d13C, NA) # Correct carry-over to non-sampled.
+
+qm$SD.d13C = ifelse(is.na(qm$SD.d13C.x), qm$SD.d13C.y, qm$SD.d13C.x)
+qm$SD.d13C = na.locf(qm$SD.d13C, na.rm = F) # Copy/Drag cells down
+qm$SD.d13C = ifelse(qm$ISO.x==T, qm$SD.d13C, NA) # Correct carry-over to non-sampled.
+
+
+# Repeat for 
+# OXA
+qm$OXA_mean = ifelse(is.na(qm$OXA_mean.x), qm$OXA_mean.y, qm$OXA_mean.x)
+qm$OXA_mean = na.locf(qm$OXA_mean, na.rm = F) # Copy/Drag cells down
+qm$OXA_mean = ifelse(qm$Sampled.x=="Sampled", qm$OXA_mean, NA) # Correct carry-over to non-sampled.
+
+qm$OXA_SD = ifelse(is.na(qm$OXA_SD.x), qm$OXA_SD.y, qm$OXA_SD.x)
+qm$OXA_SD = na.locf(qm$OXA_SD, na.rm = F) # Copy/Drag cells down
+qm$OXA_SD = ifelse(qm$Sampled.x=="Sampled", qm$OXA_SD, NA) # Correct carry-over to non-sampled.
+
+# ESA
+qm$ESA_mean = ifelse(is.na(qm$ESA_mean.x), qm$ESA_mean.y, qm$ESA_mean.x)
+qm$ESA_mean = na.locf(qm$ESA_mean, na.rm = F) # Copy/Drag cells down
+qm$ESA_mean = ifelse(qm$Sampled.x=="Sampled", qm$ESA_mean, NA) # Correct carry-over to non-sampled.
+
+qm$ESA_SD = ifelse(is.na(qm$ESA_SD.x), qm$ESA_SD.y, qm$ESA_SD.x)
+qm$ESA_SD = na.locf(qm$ESA_SD, na.rm = F) # Copy/Drag cells down
+qm$ESA_SD = ifelse(qm$Sampled.x=="Sampled", qm$ESA_SD, NA) # Correct carry-over to non-sampled.
+
+# Suspended solids
+qm$MES.mg.L = ifelse(is.na(qm$MES.mg.L.x), qm$MES.mg.L.y, qm$MES.mg.L.x)
+qm$MES.mg.L = na.locf(qm$MES.mg.L, na.rm = F) # Copy/Drag cells down
+qm$MES.mg.L = ifelse(qm$Sampled.x=="Sampled", qm$MES.mg.L, NA) # Correct carry-over to non-sampled.
+
+qm$MES.sd = ifelse(is.na(qm$MES.sd.x), qm$MES.sd.y, qm$MES.sd.x)
+qm$MES.sd = na.locf(qm$MES.sd, na.rm = F) # Copy/Drag cells down
+qm$MES.sd = ifelse(qm$Sampled.x=="Sampled", qm$MES.sd, NA) # Correct carry-over to non-sampled.
+
+# SM concentration in Suspendeed soilds
+qm$Conc.Solids.mug.gMES = ifelse(is.na(qm$Conc.Solids.mug.gMES.x), qm$Conc.Solids.mug.gMES.y, qm$Conc.Solids.mug.gMES.x)
+qm$Conc.Solids.mug.gMES = na.locf(qm$Conc.Solids.mug.gMES, na.rm = F) # Copy/Drag cells down
+qm$Conc.Solids.mug.gMES = ifelse(qm$Sampled.x=="Sampled", qm$Conc.Solids.mug.gMES, NA) # Correct carry-over to non-sampled.
+
+qm$Conc.Solids.ug.gMES.SD = ifelse(is.na(qm$Conc.Solids.ug.gMES.SD.x), qm$Conc.Solids.ug.gMES.SD.y, qm$Conc.Solids.ug.gMES.SD.x)
+qm$Conc.Solids.ug.gMES.SD = na.locf(qm$Conc.Solids.ug.gMES.SD, na.rm = F) # Copy/Drag cells down
+qm$Conc.Solids.ug.gMES.SD = ifelse(qm$Sampled.x=="Sampled", qm$Conc.Solids.ug.gMES.SD, NA) # Correct carry-over to non-sampled.
+
+
+
+names(qm)
+qm = qm[, c("Date", "tf", "DateCheck", "Q.HW1", "DayMoYr" ,"Vol.L", "sampleQ","Type", "Sampled.x","ISO.x",
+            "SubWeeks", "Weeks", "WeekNo", "Min" ,"WeekSubWeek" ,"Duration.Hrs",  "Volume.m3" , "Sampled.Hrs", 
+            "Conc.mug.L", "Conc.SD", "MES.mg.L", "MES.sd", "Conc.Solids.mug.gMES", "Conc.Solids.ug.gMES.SD", "diss.d13C", "SD.d13C",
+            "OXA_mean", "OXA_SD", "ESA_mean", "ESA_SD" )]
+
+```
+
 
 - Convert to mass discharged 
 
-
 ```{r}
-qm = merge(q, mark, by.x = "SubWeeks", by.y = "WeekSubWeek", all = T)
-
 # Dissolved
 qm$SmetOut_ug.obs = qm$Vol.L*qm$Conc.mug.L
 qm$SmetOut_ug.sd = qm$Vol.L*qm$Conc.SD
@@ -236,13 +334,16 @@ qmDay <- qm %>%
                    delta.sd = (sum(MassDelta.sd^2))^0.5/(sum(SmetOut_ug.sd^2))^0.5
                    )
 
+write.csv(qmDay, 
+           'BEACH_R/allOut_multiDay_R00.csv', row.names = F)
+
 # Step 2
 # Get all duplicated days with data
 allDup = qmDay %>%
   group_by(DayMoYr) %>% 
   filter(n()>1 & !is.na(SmOut_ug.obs))
 
-# Do flow proportional average
+# Do vol. proportional average
 qmBlkDup = allDup %>%
   group_by(DayMoYr) %>%
   dplyr::summarize(VolTot.L = sum(Volday.L),
@@ -320,8 +421,8 @@ qmBlk50_obs = qmBlk50_obs[order(qmBlk50_obs$DayMoYr), ]
 # Natural log (ln) for low concentrations
 qmBlk90$lnConSmOut_ugL.blk = log(qmBlk90$ConSmOut_ugL.blk)
 
-mean(qmBlk90$ConSmOut_ugL.blk, na.rm = T)  # = 1.9897
-mean(qmBlk90$lnConSmOut_ugL.blk, na.rm = T)  # -0.644
+mean(qmBlk90$ConSmOut_ugL.blk, na.rm = T)  # = 1.33
+mean(qmBlk90$lnConSmOut_ugL.blk, na.rm = T)  # -1.197
 mean(qmBlk90$deltaOut.blk, na.rm = T)  # -30.52
 
 ```
@@ -356,7 +457,7 @@ qmBlk_cal = subset(qmBlk_cal, !is.na(MassSmOut_g))
 qmBlk90 = merge(time, qmBlk90, by = "DayMoYr", all = T)
 qmBlk_mass = merge(time, qmBlk_mass, by = "DayMoYr", all = T)
 
-# Calibration Sests
+# Calibration Sets
 qmBlk90cal = merge(time, qmBlk_cal, by = "DayMoYr", all = T) 
 
 # Loads

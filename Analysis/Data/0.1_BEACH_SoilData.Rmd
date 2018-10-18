@@ -156,6 +156,37 @@ if (SAVE) {
 }
 ```
 
+# Convert gravimetric to volumetric moisture (used in calibration)
+
+```{r}
+grav = read.csv('BEACH_R/theta_grav.csv')
+pb_r = read.csv('BEACH_R/pb_range.csv')
+pb_r$Date = as.POSIXct(strptime(pb_r$Date, "%d/%m/%Y", tz="EST"))
+grav$Date = as.POSIXct(strptime(grav$Date, "%d/%m/%Y", tz="EST"))
+
+pb_merged = merge(pb_r, grav, by = "Date", all = T)
+pb_merged = pb_merged[complete.cases(pb_merged$theta_grav),]
+
+pb_merged$theta = pb_merged$theta_grav*pb_merged$pb_ave
+pb_merged$theta_min = pb_merged$theta_grav*pb_merged$pb_min
+pb_merged$theta_max = pb_merged$theta_grav*pb_merged$pb_max
+pb_merged$IDcal = paste(pb_merged$Transect, pb_merged$Jdays, sep = "-")
+
+comp_theta_cal = pb_merged[, c("Jdays", "Transect", "IDcal", "theta")] 
+
+
+bulk_theta_cal <- comp_theta_cal %>%
+  group_by(Jdays) %>%
+  dplyr::summarize(theta = mean(theta))
+
+bulk_theta_cal$IDcal = paste("B", bulk_theta_cal$Jdays, sep = "-")
+
+if (SAVE) {
+  write.table(comp_theta_cal, "BEACH_R/theta_comp_cal.tss", sep="\t", row.names = F)
+  write.table(bulk_theta_cal, "BEACH_R/theta_bulk_cal.tss", sep="\t", row.names = F)
+}
+```
+
 
 # Detail concentration and isotopes
 

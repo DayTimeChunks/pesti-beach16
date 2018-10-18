@@ -1,8 +1,0 @@
-
-1.Open the Anaconda prompt
-
-2.Activate python env.& start notebook:
-
-cd /d D:\Documents\these_pablo\Models\BEACH2016
-activate Python27-PyCharm
-jupyter notebook

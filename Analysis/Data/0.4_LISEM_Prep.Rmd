@@ -1,0 +1,69 @@
+---
+title: "LISEM Prep"
+author: "PAZ"
+date: "15/10/2018"
+output: pdf_document
+---
+
+```{r, echo=FALSE, message=FALSE, include=FALSE}
+Sys.setlocale("LC_ALL", "English")
+
+# Plotting functions
+library("scales")
+library("tidyr")
+library("dplyr")
+library("reshape")
+library("zoo") # na.approx()
+
+path = file.path("/Users/DayTightChunks/Documents/PhD/hydrological-monitoring")
+time = read.csv2("/Users/DayTightChunks/Documents/PhD/Models/phd-model-master/Analysis/Data/Time.csv")
+time$DayMoYr = as.POSIXct(strptime(time$Date, "%d/%m/%Y", tz="EST"))
+#time$tDayMoYr = format(as.POSIXct(time$DayMoYr), "%Y-%m-%d %H:%M:%S")
+
+source(file.path(path, "global.R"))
+    
+out = read.csv(file.path(path, "Data/MarkerResponse_R05.csv"))
+names(out)
+```
+
+## Merge all outlet data summarized by multi-day (Model book 00) with yClust (HydroMonit Book 10.3)
+
+```{r}
+qmDay = read.csv("BEACH_R/allOut_multiDay_R00.csv")
+qmDay = qmDay[, c("DayMoYr", "SubWeeks", "Volday.L", "SmpHrs", 
+                  "ConcSmOut_ugL.obs", "ConcSmOut_ugL.sd" , 
+                  "SmOut_ug.obs", "SmOut_ug.sd",
+                  "delta.obs", "delta.sd" )]
+names(qmDay)
+
+clust = read.csv(file.path(path, "Data/PCA4Lutz_R_Oct2018.csv"), sep = ";", dec = ",")
+
+clust = clust[, c("Events", "WeekSubWeek", "Q.Ave", "T.Hrs", "Vol", "Q.Max", "Cluster",  "EventLabel")]
+names(clust)
+# Adding markers: ti and tf
+out2 = out[, c("WeekSubWeek", "ti", "tf")]
+
+outlet = merge(out2, clust, by = "WeekSubWeek", all = T)
+outlet = merge(outlet , qmDay, by.x = "WeekSubWeek", by.y = "SubWeeks", all = T)
+outlet$DayMoYr = as.POSIXct(strptime(outlet$DayMoYr, "%Y-%m-%d", tz="EST"))
+outlet$ti = as.POSIXct(strptime(outlet$ti, "%Y-%m-%d %H:%M:%S", tz="EST"))
+
+time = time[, c("Jdays", "DayMoYr")]
+
+outlet = merge(time, outlet, by = "DayMoYr", all = F)
+outlet = outlet[complete.cases(outlet$ti), ]
+
+write.csv(outlet, 
+           'BEACH_R/visuals_b2l_R04.csv', row.names = F)
+
+# For plotting Discharge gainst chemo-bars
+q = read.csv2(file.path(path, "Data/groupAlteck2016_R.csv"))
+q$Vol.L = q$Vol2min * 1000
+q = q[ , c("Date", "Q.HW1", "DayMoYr", "Vol.L", "SubWeeks" )]
+q$Q.Ls = q$Q.HW1*1000/60
+
+
+write.csv(q, 
+           'BEACH_R/visuals_qLisem_R04.csv', row.names = F)
+```
+
