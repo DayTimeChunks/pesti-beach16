@@ -15,8 +15,36 @@ generate_maps = {
     "weekly_soils": False,
     "applications": False,
     "create_ldd": False,
-    'create_transAreas': False
+    'create_transAreas': False,
+    "remove_burn": False,
+    "lisem_depths": True
+
 }
+
+lisem_depths = generate_maps['lisem_depths']
+if lisem_depths:
+    soildep1 = scalar(readmap("area"))*scalar(31.)
+    soildep2 = scalar(readmap("area"))*scalar(80.)
+    aguila(soildep1, soildep2)
+    report(soildep1, "soildep1.map")
+    report(soildep2, "soildep2.map")
+
+
+remove_burn = generate_maps['remove_burn']
+if remove_burn:
+    luse = readmap("landuse2016")
+    fburn = readmap("farm_burn_v3")
+    # aguila(luse, fburn)
+
+    nb = nominal(defined(fburn))
+    b = ifthenelse(defined(luse), nominal(1), nominal(0))
+    # ch = ifthenelse(luse == scalar(10), scalar(35), scalar(200))
+    ch = cover(fburn, -1)
+    ch = ifthen(defined(luse), ch)
+    # fnew = ifthenelse(defined(fburn), fburn, scalar(5000))
+    # aguila(nb, b, ch)
+    # aguila(val)
+    aguila(ch)
 
 
 
@@ -269,7 +297,6 @@ if detailed:
     # report(south_nom, 'south_nom.map')
     aguila(t8, t8_out, landuse)
 
-
 # Have not run it yet!
 create_apps = generate_maps['applications']
 if create_apps:
@@ -331,8 +358,6 @@ if create_apps:
     report(burn_farmcrop, 'farm_burn_v3.map')
 
 
-# pcodes = readmap('plot_code16')
-
 if generate_maps['create_transAreas']:
     transects = readmap('transectsA16')
     north = ifthen(transects == 0, nominal(1))
@@ -343,13 +368,15 @@ if generate_maps['create_transAreas']:
     report(valley, 'valArea.map')
     report(south, 'souArea.map')
 
-is_north = defined(readmap("norArea"))
-aguila(readmap("norArea"))
-aguila(readmap("valArea"))
-aguila(readmap("souArea"))
+    check = False
+    if check:
+        is_north = defined(readmap("norArea"))
+        aguila(readmap("norArea"))
+        aguila(readmap("valArea"))
+        aguila(readmap("souArea"))
 
-nor = maparea(readmap("norArea"))
-val = maparea(readmap("valArea"))
-sou = maparea(readmap("souArea"))
-tot = nor + val + sou
-print(float(nor), float(val), float(sou))
+        nor = maparea(readmap("norArea"))
+        val = maparea(readmap("valArea"))
+        sou = maparea(readmap("souArea"))
+        tot = nor + val + sou
+        print(float(nor), float(val), float(sou))
