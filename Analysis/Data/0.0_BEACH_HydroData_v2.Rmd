@@ -14,7 +14,11 @@ WIN = F
 
 # Purpose
 
-Generate BEACH calibration data with:
+Generate BEACH calibration data. 
+
+This was a second test approach to calculating daily concentrations. V1 is currently preffered.  
+
+With:
 
 - **groupAlteck2016_R.csv** (Book 04)
 
