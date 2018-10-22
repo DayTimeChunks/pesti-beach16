@@ -53,8 +53,10 @@ time = time[, c("Jdays", "DayMoYr")]
 outlet = merge(time, outlet, by = "DayMoYr", all = F)
 outlet = outlet[complete.cases(outlet$ti), ]
 
-write.csv(outlet, 
-           'BEACH_R/visuals_b2l_R04.csv', row.names = F)
+cluster = outlet[, c("Jdays", "Cluster")]
+cluster = cluster[complete.cases(cluster$Cluster), ]
+
+
 
 # For plotting Discharge gainst chemo-bars
 q = read.csv2(file.path(path, "Data/groupAlteck2016_R.csv"))
@@ -63,7 +65,15 @@ q = q[ , c("Date", "Q.HW1", "DayMoYr", "Vol.L", "SubWeeks" )]
 q$Q.Ls = q$Q.HW1*1000/60
 
 
+if (F) {
+write.csv(outlet, 
+           'BEACH_R/visuals_b2l_R04.csv', row.names = F)
+
 write.csv(q, 
            'BEACH_R/visuals_qLisem_R04.csv', row.names = F)
+
+write.table(cluster, 
+            "BEACH_R/cluster.tss", sep="\t", row.names = F, col.names = T)
+}
 ```
 

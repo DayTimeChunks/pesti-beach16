@@ -1,5 +1,5 @@
 ---
-title: "Observed Data Prep for Model Analysis"
+title: "Observed Data Prep for Model Analysis - 0.0 BEACH_HydrodData"
 author: "PAZ"
 date: "31/01/2018"
 output: pdf_document
@@ -271,6 +271,8 @@ qm = qm[, c("Date", "tf", "DateCheck", "Q.HW1", "DayMoYr" ,"Vol.L", "sampleQ","T
 
 - Convert to mass discharged 
 
+This is just equivalent to assuming the same concentration across the entire period (i.e. conversion is redundant)
+
 ```{r}
 # Dissolved
 qm$SmetOut_ug.obs = qm$Vol.L*qm$Conc.mug.L
@@ -292,7 +294,6 @@ qm$MassDelta.sd = qm$SmetOut_ug.sd*qm$SD.d13C
 names(qm)
 ```
 
-
 ## Compute by-day & by-subweek 
 
 - ignoring solids (for now)
@@ -300,7 +301,9 @@ names(qm)
 We need to obtain a bulk concentration for the day, not by taking the mean concentration, but rather the proportional mass contribution of each sub-sample, determined by the relative volume  such that the concentration of each daily sample $(C_i)$ is :
 
 \begin{equation}
-C_{bulk sample} = \frac{C_1 \cdot V_1 + C_2 \cdot V_2}{V_{tot}}
+$$C_{bulk sample} = \frac{C_1 \cdot V_1 + C_2 \cdot V_2}{V_{tot}}$$
+$$ \bar C_{s} = \frac{ \sum_{s=1}^{S} Vol_{s} \cdot C_{s} }{ \sum_{s=1}^{S} Vol_{s}} $$
+
 \label{eq:conc_bulk}
 \end{equation}
 
@@ -349,13 +352,13 @@ qmBlkDup = allDup %>%
   dplyr::summarize(VolTot.L = sum(Volday.L),
                    TotHrs = sum(SmpHrs),
                    ConSmOut_ugL.blk = sum(ConcSmOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConSmOut_ugL.sd = sum(ConcSmOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConSmOut_ugL.sd = max(ConcSmOut_ugL.sd),
                    ConOxOut_ugL.blk = sum(ConcOxOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConOxOut_ugL.sd = sum(ConcOxOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.sd = max(ConcOxOut_ugL.sd),
                    ConEsOut_ugL.blk = sum(ConcEsOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConEsOut_ugL.sd = sum(ConcEsOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.sd = max(ConcEsOut_ugL.sd),
                    deltaOut.blk = sum(delta.obs * Volday.L)/sum(Volday.L),         
-                   deltaOut.sd =  sum(delta.sd * Volday.L)/sum(Volday.L) 
+                   deltaOut.sd =  max(delta.sd) 
                    )
 
 # Removed rows - Only for reference (not used)
@@ -368,13 +371,13 @@ removedBlk = removed %>%
   dplyr::summarize(VolTot.L = sum(Volday.L),
                    TotHrs = sum(SmpHrs),
                    ConSmOut_ugL.blk = sum(ConcSmOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConSmOut_ugL.sd = sum(ConcSmOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConSmOut_ugL.sd = max(ConcSmOut_ugL.sd),
                    ConOxOut_ugL.blk = sum(ConcOxOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConOxOut_ugL.sd = sum(ConcOxOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.sd = max(ConcOxOut_ugL.sd),
                    ConEsOut_ugL.blk = sum(ConcEsOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConEsOut_ugL.sd = sum(ConcEsOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.sd = max(ConcEsOut_ugL.sd),
                    deltaOut.blk = sum(delta.obs * Volday.L)/sum(Volday.L),         
-                   deltaOut.sd =  sum(delta.sd * Volday.L)/sum(Volday.L) 
+                   deltaOut.sd =  max(delta.sd) 
                    )
 
 
@@ -388,13 +391,13 @@ qmBlk_nDup = ndup %>%
   dplyr::summarize(VolTot.L = sum(Volday.L),
                    TotHrs = sum(SmpHrs),
                    ConSmOut_ugL.blk = sum(ConcSmOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConSmOut_ugL.sd = sum(ConcSmOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConSmOut_ugL.sd = max(ConcSmOut_ugL.sd),
                    ConOxOut_ugL.blk = sum(ConcOxOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConOxOut_ugL.sd = sum(ConcOxOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConOxOut_ugL.sd = max(ConcOxOut_ugL.sd),
                    ConEsOut_ugL.blk = sum(ConcEsOut_ugL.obs * Volday.L)/sum(Volday.L),
-                   ConEsOut_ugL.sd = sum(ConcEsOut_ugL.sd * Volday.L)/sum(Volday.L),
+                   ConEsOut_ugL.sd = max(ConcEsOut_ugL.sd),
                    deltaOut.blk = sum(delta.obs * Volday.L)/sum(Volday.L),         
-                   deltaOut.sd =  sum(delta.sd * Volday.L)/sum(Volday.L) 
+                   deltaOut.sd =  max(delta.sd) 
                    )
 
 
@@ -447,6 +450,7 @@ qmBlk_mass$CumMassSmOut_g = cumsum(qmBlk_mass$MassSmOut_g)
 # Data frame for calibration (removed NAs)
 qmBlk_cal = merge(qmBlk90, m, by = "DayMoYr", all = T)
 qmBlk_cal$MassSmOut_g = ((qmBlk_cal$ConSmOut_ugL.blk)/10**6)*qmBlk_cal$VolTot.L
+qmBlk_cal$MassSmOut_g.sd = ((qmBlk_cal$ConSmOut_ugL.sd)/10**6)*qmBlk_cal$VolTot.L
 qmBlk_cal = subset(qmBlk_cal, !is.na(MassSmOut_g))
 ```
 
@@ -460,20 +464,21 @@ qmBlk_mass = merge(time, qmBlk_mass, by = "DayMoYr", all = T)
 # Calibration Sets
 qmBlk90cal = merge(time, qmBlk_cal, by = "DayMoYr", all = T) 
 
+names(qmBlk90cal)
 # Loads
 loads_g_cal = subset(qmBlk90cal, !is.na(MassSmOut_g))
-loads_g_cal = loads_g_cal[, c("Jdays", "MassSmOut_g")]
-names(loads_g_cal) =  c("Jdays", "smloads.g")
+loads_g_cal = loads_g_cal[, c("Jdays", "MassSmOut_g", "MassSmOut_g.sd")]
+names(loads_g_cal) =  c("Jdays", "smloads.g", "smloads.g.sd")
 
 # Concentration (outlet)
 conc_out_cal = subset(qmBlk90cal, !is.na(ConSmOut_ugL.blk))
-conc_out_cal = conc_out_cal[, c("Jdays", "ConSmOut_ugL.blk")]
-names(conc_out_cal) = c("Jdays", "ug.L")
+conc_out_cal = conc_out_cal[, c("Jdays", "ConSmOut_ugL.blk", "ConSmOut_ugL.sd")]
+names(conc_out_cal) = c("Jdays", "ug.L", "ug.L.sd")
 
 # Delta outlet
 d13c_out_cal = subset(qmBlk90cal, !is.na(deltaOut.blk))
-d13c_out_cal = d13c_out_cal[, c("Jdays", "deltaOut.blk")]
-names(d13c_out_cal) = c("Jdays", "d13C")
+d13c_out_cal = d13c_out_cal[, c("Jdays", "deltaOut.blk", "deltaOut.sd")]
+names(d13c_out_cal) = c("Jdays", "d13C", "d13C.sd")
 
 if (F) {
   # write.csv(qmBlk, "qmBlk_R.csv", row.names = F) # , sep = ";", dec = ".")  
