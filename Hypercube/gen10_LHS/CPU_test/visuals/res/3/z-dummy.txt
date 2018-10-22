@@ -1,2 +1,0 @@
-Empty file, avoids automatic folder delete by
-version control (Git) when folder is empty
