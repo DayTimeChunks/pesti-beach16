@@ -1,0 +1,67 @@
+openLISEM source code install
+=============================
+
+1) The openLISEM model 
+======================
+This is the event based spatial flood, runoff and erosion model openLISEM. Thank you 
+for downloading. openLISEM simulates the spatial dynamics of surface runoff and 
+erosion for small plots of several m2 to catchments of >500 km2. 
+ about the theory and dataset for now can be found on this website (in draft form). openLISEM uses the 
+freeware GIS PCRaster (http://pcraster.geo.uu.nl) for database creation and 
+analysis of the results. 
+
+INSTALL: just unzip the files to a directory of your choice.
+Note that LISEM uses a number of DLL libraries, since version 4 and higher the library "qwindows.dll" 
+has to be present in a subdirectory "platforms".
+
+2) Terms of use 
+===============
+This software is free and open source, hosted by  sourceforge.net. The project 
+details can be found on:  https://sourceforge.net/projects/lisem/
+
+All license details can be found on this website. The compiled model openLISEM 
+and the source code, or parts of the source code can be used for any purpose, 
+but the disclaimer as specified below is in effect. openLISEM in any version 
+(compiled or as source code) cannot be sold or be part of a commercial package, 
+unless express permission is gained from Victor Jetten (v.g.jetten AD utwente.nl). If you 
+use this software for publications, please give the correct references in the 
+text (TO BE FURTHER SPECIFIED, contact victor jetten). 
+
+3) openLISEM development: for programmers 
+=========================================
+a) Code of conduct for developers
+--------------------------------
+-	Changes that are made to the code must be made available to 
+the community. 
+
+-	The process descriptions in a model are often a matter of 
+choice. Please do not delete any of the model code if you want certain processes 
+to be calculated differently, but add your processes as new options to the code. 
+Also the LISEM run file has a certain layout that aims to be backward compatible and 
+must remain so. 
+
+-	If you add lines to the code, please give a comment with your 
+initials, a date and a one-liner describing what you did: 
+//VJ 101216 Solved bug x y 
+
+- A list of author abbreviations and full names and addresses should be 
+maintained in the header file version.h: 
+/* VJ = Victor Jetten, Dept of Earth Systems Analysis, ITC, twente University */ 
+Add your credentials to this list 
+
+b) Downloading and compiling the source code 
+--------------------------------------------
+1.	openLISEM uses the Qt development environmwent. Install the developing 
+environment. Everything is maintained in one single package by Nokia. There are 
+two free LGPL versionsof the "Qt cross platform application and UI framework" 
+(version 4.7.X or later), download the SDK version: 
+http://qt.nokia.com/downloads 
+
+2.	Qwt technical application widgets for Qt: (version 6.0.0) http://qwt.sf.net 
+and https://sourceforge.net/projects/qwt/ 
+
+3.	Tortoise SVN (or another package) for version control: http://tortoisesvn.net/ 
+
+c) Installation 
+--------------- 
+please contact me: v.g.jetten AD utwente.nl 

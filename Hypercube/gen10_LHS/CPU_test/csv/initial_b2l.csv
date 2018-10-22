@@ -1,0 +1,18 @@
+layers ,5
+z0 ,10
+z1 ,300
+z2 ,500
+z3 ,910
+z4 ,910
+WPZ01 ,0.19
+WPZ ,0.19
+FCZ,0.38702
+SATZ ,0.530248
+p_bZ ,1.5
+k_cp ,42600.00
+molar ,283.796
+temp_ref ,20
+theta_ref ,0.20
+activation_e ,23.91
+r_gas ,0.008314
+r_standard ,0.0112372

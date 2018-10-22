@@ -1,0 +1,35 @@
+"LISEM run with:,..\Alteck199.run              "
+"LISEM results at time (min):,   349.950000000              "
+"Catchment area              (ha):",    47.130107754               
+"Total Precipitation         (mm):",    14.340000000               
+"Total interception          (mm):",     0.331726932               
+"Total House interception    (mm):",     0.000000000               
+"Total infiltration          (mm):",    14.008257674               
+"Surface storage             (mm):",     0.000002335               
+"Water in overland flow      (mm):",     0.000003401               
+"Water in flood              (mm):",     0.000000000               
+"Water in channels           (mm):",     0.000000000               
+"Total outflow (all flows)   (mm):",     0.000009654               
+"Total channel+OF discharge  (m3):",     0.004540851               
+"Total flood discharge       (m3):",     0.000000000               
+"Total Tile discharge        (m3):",     0.000000000               
+"Peak time precipitation    (min):",     0.000000000               
+"Peak discharge/Precipitation (%):",     0.000067326               
+"Flood volume (max level)    (m3):",     0.000000000               
+"Flood area (max level)      (m2):",     0.000000000               
+"Splash detachment (land)   (ton):",     0.000000000               
+"Flow detachment (land)     (ton):",     0.000000000               
+"Deposition (land)          (ton):",     0.000000000               
+"Suspended Sediment (land)  (ton):",     0.000000000               
+"Flow detachment (channels) (ton):",     0.000000000               
+"Deposition (channels)      (ton):",     0.000000000               
+"Susp. Sediment (channels)  (ton):",     0.000000000               
+"Flow detachment (flood)    (ton):",     0.000000000               
+"Deposition (flood)         (ton):",     0.000000000               
+"Susp. Sediment (flood   )  (ton):",     0.000000000               
+"Total soil loss            (ton):",     0.000000000               
+"Average soil loss        (kg/ha):",     0.000000000               
+"Peak discharge for outlet 0 (l/s):",     0.007826988               
+"Peak discharge for outlet 1 (l/s):",     0.007826988               
+"Peak time discharge for outlet 0 (min):",   292.050000000               
+"Peak time discharge for outlet 1 (min):",   292.050000000               
