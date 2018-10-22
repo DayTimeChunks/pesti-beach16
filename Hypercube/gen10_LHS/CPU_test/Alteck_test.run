@@ -1,0 +1,304 @@
+[openLISEM runfile version 1.0]
+
+[Input]
+Work Directory=C:/Users/pablo/Documents/Coupling/beach2lisem_v2/master
+Map Directory=C:/Users/pablo/Documents/Coupling/beach2lisem_v2/master/maps/lisem/0
+Include Rainfall=0
+Rainfall Directory=C:/Users/pablo/Documents/Coupling/beach2lisem_v2/master/events/
+Rainfall file=Event_183.txt
+Include Snowmelt=0
+Snowmelt Directory=
+Snowmelt file=
+Include Satellite Image=0
+satImage Directory=
+satImage file=
+
+[Output]
+Result Directory=C:/Users/pablo/Documents/Coupling/beach2lisem_v2/master/res/0/
+Main results file=total.txt
+Filename point output=hydro.txt
+Report point output separate=0
+Timeplot as CSV=0
+Timeplot as PCRaster=0
+Report point output for SOBEK=0
+SOBEK date string=0
+Report digits out=0
+Report format GTiff=0
+Rainfall map=rainfall.map
+Interception map=interception.map
+Infiltration map=infiltration.map
+Runoff map=runoff.map
+WH max level map=whmax.map
+Channel discharge map=chandism3.map
+Channel Max Q=channelmaxq.map
+Channel Max WH=channelmaxhw.map
+
+Flood time map=floodtime.map
+Flood start time=floodstart.map
+Erosion map=detachment.map
+Deposition map=deposition.map
+Soilloss map=soilloss.map
+Channel detachment map=chandet.map
+Channel deposition map=chandep.map
+Filename landunit output=landunits.map
+Flood stats=floodstats.txt
+
+[Simulation times]
+Begin time=0
+End time=510
+Timestep=70
+
+[General options]
+Nr user Cores=0
+Include Rainfall=0
+Include snowmelt=0
+Include Erosion simulation=0
+Advanced sediment=0
+Include main channels=0
+Include channel infil=0
+Include channel baseflow=0
+Hard Surfaces=0
+Include road system=0
+Include house storage=0
+Include raindrum storage=0
+
+[Interception]
+Use canopy storage map=0
+Canopy storage equation=0
+Stemflow fraction=0.054
+Canopy Openess=0.450
+Include litter interception=0
+Litter interception storage=0
+
+[Infiltration]
+Infil Method=4
+Include compacted=0
+Include crusts=0
+Impermeable sublayer=0
+Include percolation=0
+Table Directory=
+Table File=profile.inp
+SWATRE internal minimum timestep=5
+Matric head files=0
+Geometric mean Ksat=0
+Use Water Repellency=0
+Water Repellency A=1.2
+Water Repellency B=0.3
+Water Repellency C=0.12
+Water Repellency D=1
+Include tile drains=0
+
+[Runoff]
+Routing Kin Wave 2D=0
+Timestep Kin Wave 2D=0
+Courant Kin Wave 2D=0
+Flooding courant factor diffusive=0
+Flow Boundary 2D=0
+Flow concentration 2D=0
+
+[Flooding]
+Include channel flooding=0
+Minimum reported flood height=0
+Flooding mixing coefficient=0
+Flooding runoff partitioning=0
+Flood initial level map=0
+Flooding courant factor=0
+Flood max iterations=0
+Flooding SWOF Reconstruction=0
+Flooding SWOF flux limiter=0
+Timestep flood=0
+Include flow barriers=0
+Flow barrier table filename=0
+Variable Timestep=0
+Use Heun=0
+Use MUSCL=0
+Use time avg V=0
+
+[Kinetic Energy]
+KE parameters EQ1=1,28.300,0.520,0.042
+KE parameters EQ2=0,8.900,8.440
+KE parameters EQ3=0,7.600,0.220
+KE time based=0
+Detachment efficiency=0
+Use material depth=0
+
+[Sediment]
+Advanced sediment configuration=0
+River BL method=0
+River SS method=0
+Estimate grain size distribution=0
+Number of grain size classes (simulated)=0
+Read grain distribution maps=0
+Grain size class maps=0
+Use material depth=0
+Flooding SS method=0
+Flooding BL method=0
+Sigma diffusion=0
+Sediment bulk density=0
+
+[Conservation]
+Include grass strips=0
+Grassstrip Mannings n=0
+Include Sediment traps=0
+
+[Calibration]
+Grain Size calibration=1.00
+Ksat calibration=1.00
+N calibration=1.00
+Theta calibration=1.00
+Psi calibration=1.00
+Channel Ksat calibration=1.00
+Channel N calibration=1.00
+Cohesion calibration=1.00
+Cohesion Channel calibration=1.00
+Aggregate stability calibration=1.00
+Splash Delivery Ratio=0.50
+Particle Cohesion of Deposited Layer=0.50
+
+[Output maps]
+Runoff maps in l/s/m=0
+Timeseries as PCRaster=0
+Erosion map units (0/1/2)=0
+Regular runoff output=1
+Output interval=99
+User defined output=0
+Output times=0
+CheckOutputMaps=0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0
+CheckOutputMapsMC=0
+
+[Texture classes]
+ClassMu=0
+
+[map names]
+
+[OutputBASIC]
+OUTRUNOFF=0
+OUTCONC=0
+OUTWH=0
+OUTRWH=0
+OUTTC=0
+OUTEROS=0
+OUTDEPO=0
+OUTSOILLOSS=0
+OUTVELO=0
+OUTINF=infilLM
+OUTSS=0
+OUTCHVOL=0
+OUTTILED=0
+OUTHMX=0
+OUTQF=0
+OUTVF=0
+OUTHMXWH=0
+OUTSED=0
+OUTINT=0
+
+[Rainfall]
+ID=ID.map
+SnowID=snowid.map
+
+[Catchment]
+dem=demslope.map
+barriers=barriers.map
+grad=grad.map
+ldd=ldd.map
+outlet=outlet.map
+outpoint=outpoint.map
+
+[Landuse]
+landunit=landunit.map
+cover=per.map
+litter=litter.map
+lai=lai.map
+ch=ch.map
+road=roadwidt.map
+smax=smax.map
+
+[Surface]
+rr=rr.map
+manning=n.map
+stonefrc=stonefrc.map
+crustfrc=crustfrc.map
+compfrc=compfrc.map
+hardsurf=hardsurf.map
+
+[Erosion]
+coh=coh.map
+cohadd=cohadd.map
+aggrstab=aggrstab.map
+d50=d50.map
+d90=d90.map
+detmat=detmat.map
+sedmixdepth=sedmixdeth.map
+
+[Infiltration]
+[Swatre]
+profmap=profile.map
+profcrst=profcrst.map
+profwltr=profwltr.map
+profgras=profgras.map
+inithead=inithead
+repelcell=repel.map
+[1st layer Green&Ampt/Smith&Parlange]
+ksat1=ksat1.map
+psi1=psi1.map
+thetas1=thetas1.map
+thetai1=thetai1.map
+soildep1=soildep1.map
+[2nd layer Green&Ampt/Smith&Parlange]
+ksat2=ksat2.map
+psi2=psi2.map
+thetas2=thetas2.map
+thetai2=thetai2.map
+soildep2=soildep2.map
+[Special surfaces]
+ksatcrst=ksatcrst.map
+ksatcomp=ksatcomp.map
+ksatgras=ksatgras.map
+porecrst=porecrust.map
+porecomp=porecomp.map
+poregras=poregrass.map
+
+[Channels]
+lddchan=lddchan.map
+chanwidth=chanwidt.map
+chandepth=chandepth.map
+chanside=chanside.map
+changrad=changrad.map
+chanman=chanman.map
+chanksat=chanksat.map
+baseflow=baseflow.map
+chancoh=chancoh.map
+chandetmat=chandetmat.map
+chansedmixdepth=chansedmixdeth.map
+chanmaxq=chanmaxq.map
+
+[Conservation]
+grasswidth=grasswid.map
+sedtrap=sedtrap.map
+
+[Tile drains]
+lddtile=lddtile.map
+tilesink=tilesink.map
+tilewidth=tilewidth.map
+tileheight=tileheight.map
+tiledepth=tiledepth.map
+tilegrad=tilegrad.map
+tileman=tileman.map
+
+[Houses]
+housecover=housecover.map
+roofstore=roofstore.map
+drumstore=drumstore.map
+
+[FlowBarriers]
+flowbarrierindex=flowbarrierindex.map
+flowboundary=flowboundary.map
+
+[Contaminants]
+[Pesticides]
+PCA=pca.map
+epsil=epsil.map
+KD=KD.map
+kr=kr.map
+poro=poro.map
+Kfilm=Kfilm.map

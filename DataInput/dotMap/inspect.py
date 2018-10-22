@@ -17,7 +17,7 @@ generate_maps = {
     "create_ldd": False,
     'create_transAreas': False,
     "remove_burn": False,
-    "lisem_depths": True
+    "lisem_depths": False
 
 }
 
