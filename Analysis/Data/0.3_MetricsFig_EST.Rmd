@@ -163,11 +163,12 @@ soil$Area.N = 139266.25
 soil$Area.T = 43713.44
 soil$Area.S = 133175.05
 
+epsilon_model = -2.5
 soil$DD13C.comp = soil$Blk.d13C - d13Co
 soil$Blab  <- (1- ((1000 + d13Co + soil$DD13C.comp)/(1000+ d13Co))^(1000/epsilon_lab) )*100
 soil$Bmin  <- (1- ((1000 + d13Co + soil$DD13C.comp)/(1000+ d13Co))^(1000/epsilon_lab-0.5) )*100
 soil$Bmax  <- (1- ((1000 + d13Co + soil$DD13C.comp)/(1000+ d13Co))^(1000/epsilon_lab+0.5) )*100
-soil$Bmod  <- (1- ((1000 + d13Co + soil$DD13C.comp)/(1000+ d13Co))^(1000/-2.6) )*100
+soil$Bmod  <- (1- ((1000 + d13Co + soil$DD13C.comp)/(1000+ d13Co))^(1000/epsilon_model) )*100
 
 
 
